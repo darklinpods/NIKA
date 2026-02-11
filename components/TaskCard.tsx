@@ -8,7 +8,7 @@ import { translations } from '../translations';
 import { summarizeTask } from '../services/geminiService';
 
 interface TaskCardProps {
-  task: Case; // Reusing prop name for compatibility, but it's a Case
+  task: Case; 
   index: number;
   onEdit: (task: Case) => void;
   theme: 'light' | 'dark';
@@ -68,10 +68,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEdit, theme, lang })
         >
           <div className="flex justify-between items-start mb-2">
             <div className="flex-1">
-               <p className={`text-[10px] font-bold tracking-widest uppercase mb-1 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
-                 {task.caseNo}
-               </p>
-               <h4 className={`font-bold text-[14px] leading-tight line-clamp-1 pr-4 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-800'}`}>
+               <h4 className={`font-bold text-[14px] leading-tight line-clamp-2 pr-4 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-800'}`}>
                  {task.title}
                </h4>
             </div>
@@ -84,7 +81,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEdit, theme, lang })
                   <button onClick={handleAiSummary} className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[11px] font-bold hover:bg-indigo-500/10">
                     <Sparkles size={14} /> {t.aiSummary}
                   </button>
-                  <button onClick={(e) => e.stopPropagation()} className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[11px] font-bold hover:bg-slate-500/10 border-t border-white/5">
+                  <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(task.id); setIsMenuOpen(false); }} className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[11px] font-bold hover:bg-slate-500/10 border-t border-white/5">
                     <Copy size={14} /> {t.copyCaseId}
                   </button>
                 </div>

@@ -44,12 +44,11 @@ const generateMockLawData = (): BoardData => {
 
     cases[id] = {
       id,
-      caseNo: `(2024)沪01民初${1000 + i}号`,
       clientName: client,
       title: `${typeObj.name} - ${client}案`,
       description: `针对${typeObj.name}案件的全面代理。当前核心：确保证据链闭环。`,
       priority: i % 10 === 0 ? 'high' : priority,
-      tags: [typeObj.name],
+      tags: [typeObj.name, '2024年案'],
       createdAt: new Date(Date.now() - Math.random() * 10000000000).toISOString(),
       subTasks,
       courtName: '上海市第一中级人民法院'

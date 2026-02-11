@@ -1,7 +1,8 @@
+
 import React, { useMemo } from 'react';
 import { BoardData, Case, SubTask } from '../types';
 import { translations } from '../translations';
-import { CheckCircle2, Circle, Clock, AlertCircle, Calendar, Briefcase, ChevronRight } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, AlertCircle, Calendar, Briefcase, ChevronRight, Zap } from 'lucide-react';
 
 interface GlobalTaskViewProps {
   data: BoardData;
@@ -10,6 +11,15 @@ interface GlobalTaskViewProps {
   onToggleTask: (caseId: string, subTaskId: string) => void;
   onOpenCase: (caseObj: Case) => void;
 }
+
+const isApproaching = (dueDate?: string) => {
+  if (!dueDate) return false;
+  const now = new Date();
+  const due = new Date(dueDate);
+  const diff = due.getTime() - now.getTime();
+  const hours = diff / (1000 * 60 * 60);
+  return hours > 0 && hours < 24; 
+};
 
 const GlobalTaskView: React.FC<GlobalTaskViewProps> = ({ data, theme, lang, onToggleTask, onOpenCase }) => {
   const t = translations[lang];
@@ -69,55 +79,65 @@ const GlobalTaskView: React.FC<GlobalTaskViewProps> = ({ data, theme, lang, onTo
           </span>
         </div>
         <div className="space-y-2">
-          {tasks.map(({ task, parent }) => (
-            <div 
-              key={task.id}
-              className={`group flex items-center justify-between p-4 rounded-2xl border transition-all ${
-                theme === 'dark' 
-                  ? 'bg-slate-900/50 border-white/5 hover:border-indigo-500/30 hover:bg-slate-900' 
-                  : 'bg-white border-slate-100 hover:border-indigo-200 hover:shadow-md'
-              }`}
-            >
-              <div className="flex items-center gap-4 flex-1">
-                <button 
-                  onClick={() => onToggleTask(parent.id, task.id)}
-                  className="transition-transform active:scale-90"
-                >
-                  {task.isCompleted ? (
-                    <CheckCircle2 size={22} className="text-emerald-500" />
-                  ) : (
-                    <Circle size={22} className={color === 'bg-rose-500' ? 'text-rose-400' : 'text-slate-400'} />
-                  )}
-                </button>
-                <div className="flex-1">
-                  <p className={`text-sm font-semibold ${task.isCompleted ? 'line-through text-slate-500' : ''}`}>
-                    {task.title}
-                  </p>
-                  <div className="flex items-center gap-3 mt-1">
-                    <button 
-                      onClick={() => onOpenCase(parent)}
-                      className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-500 hover:underline"
-                    >
-                      <Briefcase size={12} />
-                      {parent.title}
-                    </button>
-                    {task.dueDate && (
-                      <div className={`flex items-center gap-1 text-[10px] font-bold ${color === 'bg-rose-500' && !task.isCompleted ? 'text-rose-500' : 'text-slate-500'}`}>
-                        <Calendar size={12} />
-                        {new Date(task.dueDate).toLocaleDateString()}
-                      </div>
+          {tasks.map(({ task, parent }) => {
+            const approaching = isApproaching(task.dueDate);
+            return (
+              <div 
+                key={task.id}
+                className={`group flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                  theme === 'dark' 
+                    ? `bg-slate-900/50 border-white/5 hover:border-indigo-500/30 hover:bg-slate-900 ${approaching ? 'border-rose-500/40 ring-1 ring-rose-500/10 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : ''}` 
+                    : `bg-white border-slate-100 hover:border-indigo-200 hover:shadow-md ${approaching ? 'border-rose-200 bg-rose-50/30' : ''}`
+                }`}
+              >
+                <div className="flex items-center gap-4 flex-1">
+                  <button 
+                    onClick={() => onToggleTask(parent.id, task.id)}
+                    className="transition-transform active:scale-90"
+                  >
+                    {task.isCompleted ? (
+                      <CheckCircle2 size={22} className="text-emerald-500" />
+                    ) : (
+                      <Circle size={22} className={color === 'bg-rose-500' || approaching ? 'text-rose-400' : 'text-slate-400'} />
                     )}
+                  </button>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <p className={`text-sm font-semibold ${task.isCompleted ? 'line-through text-slate-500' : ''}`}>
+                        {task.title}
+                      </p>
+                      {approaching && !task.isCompleted && (
+                        <span className="flex items-center gap-1 text-[9px] font-black text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full uppercase">
+                           <Zap size={10} /> {t.approaching}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 mt-1">
+                      <button 
+                        onClick={() => onOpenCase(parent)}
+                        className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-500 hover:underline"
+                      >
+                        <Briefcase size={12} />
+                        {parent.title}
+                      </button>
+                      {task.dueDate && (
+                        <div className={`flex items-center gap-1 text-[10px] font-bold ${(color === 'bg-rose-500' || approaching) && !task.isCompleted ? 'text-rose-500' : 'text-slate-500'}`}>
+                          <Calendar size={12} />
+                          {new Date(task.dueDate).toLocaleDateString()}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
+                <button 
+                  onClick={() => onOpenCase(parent)}
+                  className="opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-indigo-500 transition-all"
+                >
+                  <ChevronRight size={18} />
+                </button>
               </div>
-              <button 
-                onClick={() => onOpenCase(parent)}
-                className="opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-indigo-500 transition-all"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
@@ -135,7 +155,6 @@ const GlobalTaskView: React.FC<GlobalTaskViewProps> = ({ data, theme, lang, onTo
       {renderSection(t.upcoming, groupedTasks.upcoming, <Calendar size={14} />, "bg-indigo-500")}
       {renderSection(t.completed, groupedTasks.completed, <CheckCircle2 size={14} />, "bg-emerald-500")}
       
-      {/* Fix: Explicitly cast to any[] to resolve 'unknown' property error on .length in strict TypeScript environments */}
       {Object.values(groupedTasks).every((arr: any) => arr.length === 0) && (
         <div className="text-center py-20 opacity-50">
           <Briefcase size={48} className="mx-auto mb-4 text-slate-300" />

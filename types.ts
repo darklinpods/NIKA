@@ -12,13 +12,13 @@ export interface Case {
   id: string;
   title: string;
   description: string;
+  aiSummary?: string;
   priority: Priority;
   tags: string[];
   createdAt: string;
   subTasks: SubTask[];
   clientName: string;
   courtName?: string;
-  caseNo: string;
 }
 
 export interface Column {
