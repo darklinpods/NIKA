@@ -1,3 +1,10 @@
+import { DATE_FORMAT_OPTIONS, APPROACHING_HOURS, MILLIS_PER_HOUR } from '../constants/dateConstants';
+
+/**
+ * 日期工具函数集合
+ * 提供日期格式化、比较和判断等功能
+ */
+
 /**
  * 格式化日期为 yyyy-MM-dd 格式
  * @param dateString - 日期字符串
@@ -5,10 +12,7 @@
  */
 export const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return date.toLocaleDateString('en-CA', DATE_FORMAT_OPTIONS);
 };
 
 /**
@@ -22,7 +26,7 @@ export const formatDateOptional = (dateString?: string): string => {
 };
 
 /**
- * 检查任务是否即将到期(24小时内)
+ * 检查任务是否即将到期
  * @param dueDate - 截止日期字符串
  * @returns 是否即将到期
  */
@@ -31,8 +35,8 @@ export const isApproaching = (dueDate?: string): boolean => {
   const now = new Date();
   const due = new Date(dueDate);
   const diff = due.getTime() - now.getTime();
-  const hours = diff / (1000 * 60 * 60);
-  return hours > 0 && hours < 24;
+  const hours = diff / MILLIS_PER_HOUR;
+  return hours > 0 && hours < APPROACHING_HOURS;
 };
 
 /**

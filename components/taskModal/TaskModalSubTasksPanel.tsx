@@ -4,14 +4,25 @@ import { Case, SubTask } from '../../types';
 import { translations } from '../../translations';
 import { SubTaskItem } from './SubTaskItem';
 
+/**
+ * 任务模态框子任务面板组件属性
+ */
 interface TaskModalSubTasksPanelProps {
+  /** 任务数据 */
   task: Case;
+  /** 主题模式 */
   theme: 'light' | 'dark';
+  /** 语言设置 */
   lang: 'zh' | 'en';
+  /** 切换子任务完成状态 */
   onToggleSubTask: (subTaskId: string) => void;
+  /** 更新子任务标题 */
   onUpdateSubTaskTitle: (subTaskId: string, newTitle: string) => void;
+  /** 更新子任务日期 */
   onUpdateSubTaskDate: (subTaskId: string, newDate: string) => void;
+  /** 删除子任务 */
   onDeleteSubTask: (subTaskId: string) => void;
+  /** 添加子任务 */
   onAddSubTask: () => void;
 }
 
@@ -27,6 +38,11 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
 }) => {
   const t = translations[lang];
 
+  /**
+   * 任务模态框子任务面板组件
+   * 显示和管理任务的所有子任务
+   * 包含进度条和子任务列表
+   */
   // Calculate progress
   const completedCount = task.subTasks.filter(st => st.isCompleted).length;
   const totalCount = task.subTasks.length;

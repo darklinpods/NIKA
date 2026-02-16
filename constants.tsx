@@ -117,23 +117,3 @@ const generateMockLawData = (): BoardData => {
 
 /** 初始看板数据 - 生成50个模拟法律案件 */
 export const INITIAL_DATA: BoardData = generateMockLawData();
-
-/**
- * 优先级对应的样式配置
- * 包含底色、文字颜色、边框颜色以及深色模式适配
- */
-export const PRIORITY_COLORS = {
-  low: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800',       // 低优先级 - 蓝色
-  medium: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800', // 中优先级 - 黄色
-  high: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800',         // 高优先级 - 红色
-};
-
-/**
- * 优先级对应的左边框颜色
- * 用于卡片边框区分优先级
- */
-export const PRIORITY_BORDER_COLORS = {
-  low: 'border-l-blue-400',    // 低优先级左边框
-  medium: 'border-l-amber-400', // 中优先级左边框
-  high: 'border-l-rose-500',    // 高优先级左边框
-};

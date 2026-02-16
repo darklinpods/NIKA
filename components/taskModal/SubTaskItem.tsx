@@ -3,13 +3,23 @@ import { CheckCircle2, Circle, Calendar as CalendarIcon, Trash2 } from 'lucide-r
 import { SubTask } from '../../types';
 import { formatDateOptional, isApproaching } from '../../utils/dateUtils';
 
+/**
+ * 子任务项组件属性
+ */
 interface SubTaskItemProps {
+  /** 子任务数据 */
   subTask: SubTask;
+  /** 主题模式 */
   theme: 'light' | 'dark';
+  /** 语言设置 */
   lang: 'zh' | 'en';
+  /** 切换完成状态 */
   onToggle: () => void;
+  /** 更新标题 */
   onTitleChange: (title: string) => void;
+  /** 更新日期 */
   onDateChange: (date: string) => void;
+  /** 删除子任务 */
   onDelete: () => void;
 }
 
@@ -24,6 +34,11 @@ export const SubTaskItem: React.FC<SubTaskItemProps> = ({
 }) => {
   const approaching = isApproaching(subTask.dueDate);
 
+  /**
+   * 子任务项组件
+   * 显示单个子任务的信息
+   * 包含完成状态、标题、日期和删除按钮
+   */
   return (
     <div className="group flex items-center gap-3 py-2.5 border-b border-white/5 last:border-0">
       {/* Checkbox */}

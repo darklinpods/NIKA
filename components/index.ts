@@ -8,10 +8,8 @@ export { default as StatsBoard } from './StatsBoard';
 export { default as GlobalTaskView } from './GlobalTaskView';
 
 // TaskModal sub-components
-export {
-  TaskModalHeader,
-  TaskModalInfoPanel,
-  TaskModalSubTasksPanel,
-  SubTaskItem,
-  TaskModalFooter
-} from './taskModal';
+export { TaskModalHeader } from './taskModal/TaskModalHeader';
+export { TaskModalInfoPanel } from './taskModal/TaskModalInfoPanel';
+export { TaskModalSubTasksPanel } from './taskModal/TaskModalSubTasksPanel';
+export { SubTaskItem } from './taskModal/SubTaskItem';
+export { TaskModalFooter } from './taskModal/TaskModalFooter';

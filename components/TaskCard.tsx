@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { Case } from '../types';
-import { PRIORITY_BORDER_COLORS } from '../constants';
+import { getPriorityBorderColor } from '../constants/priorities';
 import { MoreVertical } from 'lucide-react';
 import { translations } from '../translations';
 import { summarizeTask } from '../services/geminiService';
@@ -70,7 +70,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEdit, theme, lang })
           {...provided.dragHandleProps}
           onClick={() => onEdit(task)}
           className={`group relative border rounded-xl p-4 flex flex-col justify-between min-w-[240px] max-w-[240px] transition-all duration-300 cursor-pointer border-l-[4px] shrink-0 ${
-            PRIORITY_BORDER_COLORS[task.priority]
+            getPriorityBorderColor(task.priority)
           } ${
             theme === 'dark'
               ? 'bg-slate-900 border-white/5 hover:border-indigo-500/50 hover:shadow-[0_10px_30px_-10px_rgba(99,102,241,0.25)]'

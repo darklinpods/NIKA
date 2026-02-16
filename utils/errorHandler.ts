@@ -1,5 +1,11 @@
 /**
+ * 错误处理工具集合
+ * 提供统一的错误处理和日志记录功能
+ */
+
+/**
  * 自定义应用错误类
+ * 用于封装应用中的各种错误
  */
 export class AppError extends Error {
   constructor(
