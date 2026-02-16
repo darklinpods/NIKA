@@ -151,7 +151,7 @@ const App: React.FC = () => {
           lang={lang}
           isOverviewGenerating={isOverviewGenerating}
           onTaskChange={setEditingTask}
-          onToggleSubTask={toggleSubTask}
+          onToggleSubTask={(subTaskId) => toggleSubTask(editingTask.id, subTaskId)}
           onUpdateSubTaskTitle={updateSubTaskTitle}
           onUpdateSubTaskDate={updateSubTaskDate}
           onDeleteSubTask={deleteSubTask}

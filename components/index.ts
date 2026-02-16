@@ -6,3 +6,12 @@ export { BoardView } from './BoardView';
 export { default as TaskCard } from './TaskCard';
 export { default as StatsBoard } from './StatsBoard';
 export { default as GlobalTaskView } from './GlobalTaskView';
+
+// TaskModal sub-components
+export {
+  TaskModalHeader,
+  TaskModalInfoPanel,
+  TaskModalSubTasksPanel,
+  SubTaskItem,
+  TaskModalFooter
+} from './taskModal';
