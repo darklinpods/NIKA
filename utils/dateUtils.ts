@@ -20,3 +20,27 @@ export const formatDateOptional = (dateString?: string): string => {
   if (!dateString) return '';
   return formatDate(dateString);
 };
+
+/**
+ * 检查任务是否即将到期(24小时内)
+ * @param dueDate - 截止日期字符串
+ * @returns 是否即将到期
+ */
+export const isApproaching = (dueDate?: string): boolean => {
+  if (!dueDate) return false;
+  const now = new Date();
+  const due = new Date(dueDate);
+  const diff = due.getTime() - now.getTime();
+  const hours = diff / (1000 * 60 * 60);
+  return hours > 0 && hours < 24;
+};
+
+/**
+ * 检查任务是否已过期
+ * @param dueDate - 截止日期字符串
+ * @returns 是否已过期
+ */
+export const isOverdue = (dueDate?: string): boolean => {
+  if (!dueDate) return false;
+  return new Date(dueDate) < new Date();
+};

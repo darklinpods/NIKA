@@ -2,7 +2,7 @@ import React from 'react';
 import { Gavel, Sparkles, Loader2, X, CheckCircle2, Circle, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
 import { Case, Priority, SubTask } from '../types';
 import { translations } from '../translations';
-import { formatDateOptional } from '../utils/dateUtils';
+import { formatDateOptional, isApproaching } from '../utils/dateUtils';
 
 interface TaskModalProps {
   task: Case;
@@ -19,15 +19,6 @@ interface TaskModalProps {
   onSave: () => void;
   onClose: () => void;
 }
-
-const isApproaching = (dueDate?: string) => {
-  if (!dueDate) return false;
-  const now = new Date();
-  const due = new Date(dueDate);
-  const diff = due.getTime() - now.getTime();
-  const hours = diff / (1000 * 60 * 60);
-  return hours > 0 && hours < 24;
-};
 
 export const TaskModal: React.FC<TaskModalProps> = ({
   task,

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { Plus, ChevronDown, ChevronRight } from 'lucide-react';
 import { BoardData, Case } from '../types';
@@ -47,9 +47,11 @@ export const BoardView: React.FC<BoardViewProps> = ({
           {data.columnOrder.map((columnId) => {
             const column = data.columns[columnId];
             const isCollapsed = collapsedColumns.has(columnId);
-            const tasks = column.taskIds
-              .map(id => data.tasks[id])
-              .filter(c => c && (c.title.toLowerCase().includes(searchQuery.toLowerCase()) || c.clientName.toLowerCase().includes(searchQuery.toLowerCase())));
+            const tasks = useMemo(() => {
+              return column.taskIds
+                .map(id => data.tasks[id])
+                .filter(c => c && (c.title.toLowerCase().includes(searchQuery.toLowerCase()) || c.clientName.toLowerCase().includes(searchQuery.toLowerCase())));
+            }, [column.taskIds, data.tasks, searchQuery]);
 
             return (
               <div key={column.id} className={`p-5 rounded-3xl border transition-all ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-slate-100/50'}`}>

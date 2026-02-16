@@ -5,11 +5,6 @@ import { translations } from '../translations';
 import { CheckCircle2, Circle, Clock, AlertCircle, Calendar, Briefcase, ChevronRight, Zap } from 'lucide-react';
 import { formatDateOptional, isApproaching, isOverdue } from '../utils/dateUtils';
 
-interface TaskWithParent {
-  task: SubTask;
-  parent: Case;
-}
-
 interface GlobalTaskViewProps {
   data: BoardData;
   theme: 'light' | 'dark';
@@ -18,6 +13,14 @@ interface GlobalTaskViewProps {
   onOpenCase: (caseObj: Case) => void;
 }
 
+const isApproaching = (dueDate?: string) => {
+  if (!dueDate) return false;
+  const now = new Date();
+  const due = new Date(dueDate);
+  const diff = due.getTime() - now.getTime();
+  const hours = diff / (1000 * 60 * 60);
+  return hours > 0 && hours < 24; 
+};
 
 const GlobalTaskView: React.FC<GlobalTaskViewProps> = ({ data, theme, lang, onToggleTask, onOpenCase }) => {
   const t = translations[lang];
@@ -26,10 +29,10 @@ const GlobalTaskView: React.FC<GlobalTaskViewProps> = ({ data, theme, lang, onTo
   const todayEnd = new Date(now.setHours(23, 59, 59, 999));
 
   const groupedTasks = useMemo(() => {
-    const overdue: TaskWithParent[] = [];
-    const today: TaskWithParent[] = [];
-    const upcoming: TaskWithParent[] = [];
-    const completed: TaskWithParent[] = [];
+    const overdue: { task: SubTask; parent: Case }[] = [];
+    const today: { task: SubTask; parent: Case }[] = [];
+    const upcoming: { task: SubTask; parent: Case }[] = [];
+    const completed: { task: SubTask; parent: Case }[] = [];
 
     Object.values(data.tasks).forEach((caseObj: Case) => {
       caseObj.subTasks.forEach((st) => {
@@ -50,7 +53,7 @@ const GlobalTaskView: React.FC<GlobalTaskViewProps> = ({ data, theme, lang, onTo
       });
     });
 
-    const sortByDate = (a: TaskWithParent, b: TaskWithParent) => {
+    const sortByDate = (a: any, b: any) => {
       if (!a.task.dueDate) return 1;
       if (!b.task.dueDate) return -1;
       return new Date(a.task.dueDate).getTime() - new Date(b.task.dueDate).getTime();
@@ -64,7 +67,7 @@ const GlobalTaskView: React.FC<GlobalTaskViewProps> = ({ data, theme, lang, onTo
     };
   }, [data]);
 
-  const renderSection = (title: string, tasks: TaskWithParent[], icon: React.ReactNode, color: string) => {
+  const renderSection = (title: string, tasks: { task: SubTask; parent: Case }[], icon: React.ReactNode, color: string) => {
     if (tasks.length === 0) return null;
     return (
       <div className="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
