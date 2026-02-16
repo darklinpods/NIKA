@@ -1,9 +1,11 @@
 import React from 'react';
-import { Search, Moon, Sun } from 'lucide-react';
+import { Search, Moon, Sun, Monitor } from 'lucide-react';
 import { translations } from '../translations';
+import { ThemeMode } from '../hooks/useTheme';
 
 interface HeaderProps {
   theme: 'light' | 'dark';
+  themeMode: ThemeMode;
   lang: 'zh' | 'en';
   searchQuery: string;
   onSearchChange: (value: string) => void;
@@ -13,6 +15,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   theme,
+  themeMode,
   lang,
   searchQuery,
   onSearchChange,
@@ -20,6 +23,18 @@ export const Header: React.FC<HeaderProps> = ({
   onLangToggle,
 }) => {
   const t = translations[lang];
+
+  // 获取主题图标
+  const getThemeIcon = () => {
+    switch (themeMode) {
+      case 'light':
+        return <Sun size={20} />;
+      case 'dark':
+        return <Moon size={20} className="text-amber-400" />;
+      case 'system':
+        return <Monitor size={20} />;
+    }
+  };
 
   return (
     <header className={`h-20 border-b flex items-center justify-between px-8 shrink-0 ${theme === 'dark' ? 'bg-slate-950 border-slate-900' : 'bg-white border-slate-200'}`}>
@@ -37,8 +52,8 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
       <div className="flex items-center gap-4">
         <button onClick={onLangToggle} className="p-2 text-xs font-bold uppercase tracking-tighter hover:text-indigo-500">{lang}</button>
-        <button onClick={onThemeToggle} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
-          {theme === 'light' ? <Moon size={20} /> : <Sun size={20} className="text-amber-400" />}
+        <button onClick={onThemeToggle} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg" title={themeMode === 'system' ? (lang === 'zh' ? '跟随系统' : 'Follow System') : (themeMode === 'light' ? (lang === 'zh' ? '浅色模式' : 'Light Mode') : (lang === 'zh' ? '深色模式' : 'Dark Mode'))}>
+          {getThemeIcon()}
         </button>
         <div className="flex items-center gap-3 ml-4 pl-4 border-l border-slate-200 dark:border-slate-800">
           <p className="text-sm font-bold hidden sm:block">{t.lawyerName}</p>

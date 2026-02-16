@@ -18,7 +18,7 @@ const App: React.FC = () => {
   } = useAuth('zh');
 
   // Theme
-  const { theme, setTheme, toggleTheme } = useTheme();
+  const { themeMode, actualTheme, setThemeMode, toggleTheme } = useTheme();
 
   // Language
   const [lang, setLang] = useState<'zh' | 'en'>('zh');
@@ -42,7 +42,7 @@ const App: React.FC = () => {
     deleteSubTask,
     handleGenerateAiOverview,
     saveEditedTask,
-  } = useApp(lang, theme);
+  } = useApp(lang, actualTheme);
 
   const toggleColumn = (id: string) => {
     const next = new Set(collapsedColumns);
@@ -69,12 +69,12 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'stats':
-        return <StatsBoard data={data} theme={theme} lang={lang} />;
+        return <StatsBoard data={data} theme={actualTheme} lang={lang} />;
       case 'tasks':
         return (
           <GlobalTaskView
             data={data}
-            theme={theme}
+            theme={actualTheme}
             lang={lang}
             onToggleTask={toggleSubTask}
             onOpenCase={(caseObj) => setEditingTask(caseObj)}
@@ -84,7 +84,7 @@ const App: React.FC = () => {
         return (
           <BoardView
             data={data}
-            theme={theme}
+            theme={actualTheme}
             lang={lang}
             searchQuery={searchQuery}
             collapsedColumns={collapsedColumns}
@@ -104,7 +104,7 @@ const App: React.FC = () => {
         username={username}
         password={password}
         error={error}
-        theme={theme}
+        theme={actualTheme}
         lang={lang}
         onUsernameChange={setUsername}
         onPasswordChange={setPassword}
@@ -117,9 +117,9 @@ const App: React.FC = () => {
 
   // MAIN APP SCREEN
   return (
-    <div className={`flex h-screen overflow-hidden ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
+    <div className={`flex h-screen overflow-hidden ${actualTheme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
       <Sidebar
-        theme={theme}
+        theme={actualTheme}
         lang={lang}
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -128,7 +128,8 @@ const App: React.FC = () => {
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header
-          theme={theme}
+          theme={actualTheme}
+          themeMode={themeMode}
           lang={lang}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -147,7 +148,7 @@ const App: React.FC = () => {
       {editingTask && (
         <TaskModal
           task={editingTask}
-          theme={theme}
+          theme={actualTheme}
           lang={lang}
           isOverviewGenerating={isOverviewGenerating}
           onTaskChange={setEditingTask}
