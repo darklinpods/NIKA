@@ -2,6 +2,7 @@ import React from 'react';
 import { Gavel, Sparkles, Loader2, X, CheckCircle2, Circle, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
 import { Case, Priority, SubTask } from '../types';
 import { translations } from '../translations';
+import { formatDateOptional } from '../utils/dateUtils';
 
 interface TaskModalProps {
   task: Case;
@@ -209,7 +210,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             onClick={onAddSubTask}
             className="mt-6 w-full py-3 rounded-xl border-2 border-dashed font-bold text-sm transition-all hover:border-indigo-500 hover:text-indigo-500 dark:border-slate-700 dark:hover:border-indigo-500 dark:hover:text-indigo-500"
           >
-            + {t.addSubTask}
+            + {t.addTask}
           </button>
         </div>
       </div>

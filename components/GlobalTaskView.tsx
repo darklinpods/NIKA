@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { BoardData, Case, SubTask } from '../types';
 import { translations } from '../translations';
 import { CheckCircle2, Circle, Clock, AlertCircle, Calendar, Briefcase, ChevronRight, Zap } from 'lucide-react';
+import { formatDateOptional } from '../utils/dateUtils';
 
 interface GlobalTaskViewProps {
   data: BoardData;
@@ -123,7 +124,7 @@ const GlobalTaskView: React.FC<GlobalTaskViewProps> = ({ data, theme, lang, onTo
                       {task.dueDate && (
                         <div className={`flex items-center gap-1 text-[10px] font-bold ${(color === 'bg-rose-500' || approaching) && !task.isCompleted ? 'text-rose-500' : 'text-slate-500'}`}>
                           <Calendar size={12} />
-                          {new Date(task.dueDate).toLocaleDateString()}
+                          {formatDateOptional(task.dueDate)}
                         </div>
                       )}
                     </div>

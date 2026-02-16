@@ -6,6 +6,7 @@
  */
 
 import { BoardData, Case, SubTask } from './types';
+import { formatDate } from './utils/dateUtils';
 /**
  * asdfasd asdf
  */
@@ -81,7 +82,7 @@ const generateMockLawData = (): BoardData => {
       id: `sub-${id}-${idx}`,
       title: actionPool[Math.floor(Math.random() * actionPool.length)], // 从操作池随机选择步骤
       isCompleted: Math.random() > 0.6,  // 60%概率标记为已完成
-      dueDate: new Date(Date.now() + Math.random() * 1000000000).toISOString() // 随机生成截止日期
+      dueDate: formatDate(new Date(Date.now() + Math.random() * 1000000000).toISOString()) // 随机生成截止日期
     }));
 
     // 创建案件对象
@@ -92,7 +93,7 @@ const generateMockLawData = (): BoardData => {
       description: `针对${typeObj.name}案件的全面代理。当前核心：确保证据链闭环。`,
       priority: i % 10 === 0 ? 'high' : priority,  // 每10个案件强制为高优先级
       tags: [typeObj.name, '2024年案'],
-      createdAt: new Date(Date.now() - Math.random() * 10000000000).toISOString(), // 随机过去时间
+      createdAt: formatDate(new Date(Date.now() - Math.random() * 10000000000).toISOString()), // 随机过去时间
       subTasks,
       courtName: '上海市第一中级人民法院'
     };

@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { translations } from '../translations';
+
 
 export const useAuth = (lang: 'zh' | 'en') => {
   const t = translations[lang];
