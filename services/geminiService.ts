@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AIResponse } from "../types";
+import { handleApiError } from "../utils/errorHandler";
 
 // Always initialize GoogleGenAI inside functions to ensure fresh state and use the latest available API key
 
@@ -37,7 +38,11 @@ export const generateTasks = async (prompt: string, lang: 'en' | 'zh'): Promise<
 
   // Access the generated text content directly via the .text property
   const resultText = response.text || "";
-  return JSON.parse(resultText.trim());
+  try {
+    return JSON.parse(resultText.trim());
+  } catch (error) {
+    throw handleApiError(error);
+  }
 };
 
 export const suggestImprovement = async (taskTitle: string, taskDesc: string, lang: 'en' | 'zh'): Promise<string> => {
@@ -51,8 +56,12 @@ export const suggestImprovement = async (taskTitle: string, taskDesc: string, la
                Current Description: ${taskDesc}
                Output only the improved description text.`,
   });
-  // Access result content using the .text property
-  return response.text || taskDesc;
+  try {
+    // Access result content using the .text property
+    return response.text || taskDesc;
+  } catch (error) {
+    throw handleApiError(error);
+  }
 };
 
 export const summarizeTask = async (title: string, desc: string, lang: 'en' | 'zh'): Promise<string> => {
@@ -65,6 +74,10 @@ export const summarizeTask = async (title: string, desc: string, lang: 'en' | 'z
                Title: ${title}
                Details: ${desc}`,
   });
-  // Access result content using the .text property
-  return response.text || "";
+  try {
+    // Access result content using the .text property
+    return response.text || "";
+  } catch (error) {
+    throw handleApiError(error);
+  }
 };

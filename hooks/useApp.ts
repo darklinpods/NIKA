@@ -4,14 +4,20 @@ import { BoardData, Case, SubTask } from '../types';
 import { INITIAL_DATA } from '../constants';
 import { generateTasks, suggestImprovement, summarizeTask } from '../services/geminiService';
 import { translations } from '../translations';
+import { handleStorageError, logError } from '../utils/errorHandler';
 
 export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
   const t = translations[lang];
 
   // State
   const [data, setData] = useState<BoardData>(() => {
-    const saved = localStorage.getItem('boardData');
-    return saved ? JSON.parse(saved) : INITIAL_DATA;
+    try {
+      const saved = localStorage.getItem('boardData');
+      return saved ? JSON.parse(saved) : INITIAL_DATA;
+    } catch (error) {
+      handleStorageError(error, 'initializeData');
+      return INITIAL_DATA;
+    }
   });
   const [editingTask, setEditingTask] = useState<Case | null>(null);
   const [isOverviewGenerating, setIsOverviewGenerating] = useState(false);
@@ -19,7 +25,11 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
   // Save data to localStorage
   const saveData = useCallback((newData: BoardData) => {
     setData(newData);
-    localStorage.setItem('boardData', JSON.stringify(newData));
+    try {
+      localStorage.setItem('boardData', JSON.stringify(newData));
+    } catch (error) {
+      handleStorageError(error, 'saveData');
+    }
   }, []);
 
   // Drag and Drop
@@ -111,7 +121,7 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
       const summary = await summarizeTask(editingTask.title, editingTask.description, lang);
       setEditingTask({ ...editingTask, aiSummary: summary });
     } catch (err) {
-      console.error(err);
+      logError(err, 'handleGenerateAiOverview');
     } finally {
       setIsOverviewGenerating(false);
     }
