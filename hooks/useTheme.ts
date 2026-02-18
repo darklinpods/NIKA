@@ -26,7 +26,11 @@ export const useTheme = () => {
 
   // 监听系统主题变化
   useEffect(() => {
-    if (themeMode !== 'system') return;
+    if (themeMode !== 'system') {
+      // 非系统模式下，直接使用用户选择的主题
+      setActualTheme(themeMode);
+      return;
+    }
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = () => {
