@@ -6,10 +6,17 @@ import { generateTasks, suggestImprovement, summarizeTask } from '../services/ge
 import { translations } from '../translations';
 import { handleStorageError, logError } from '../utils/errorHandler';
 
+/**
+ * useApp 钩子是应用程序的主状态管理器。
+ * 它处理看板数据、任务编辑、拖拽逻辑以及与 AI 服务的交互。
+ * 
+ * @param lang 当前语言 ('zh' | 'en')
+ * @param theme 当前主题 ('light' | 'dark')
+ */
 export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
   const t = translations[lang];
 
-  // State
+  // 核心数据状态：看板数据（从 localStorage 初始化）
   const [data, setData] = useState<BoardData>(() => {
     try {
       const saved = localStorage.getItem('boardData');
@@ -19,10 +26,15 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
       return INITIAL_DATA;
     }
   });
+
+  // 当前正在编辑的任务（模态框使用）
   const [editingTask, setEditingTask] = useState<Case | null>(null);
+  // AI 摘要生成状态
   const [isOverviewGenerating, setIsOverviewGenerating] = useState(false);
 
-  // Save data to localStorage
+  /**
+   * 将看板数据同步到状态和本地存储。
+   */
   const saveData = useCallback((newData: BoardData) => {
     setData(newData);
     try {
@@ -32,7 +44,9 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     }
   }, []);
 
-  // Drag and Drop
+  /**
+   * 处理看板列中任务的拖拽结束逻辑。
+   */
   const onDragEnd = useCallback((result: DropResult) => {
     const { destination, source, draggableId } = result;
     if (!destination) return;
@@ -40,6 +54,7 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     const start = data.columns[source.droppableId];
     const finish = data.columns[destination.droppableId];
 
+    // 同一列内排序
     if (start === finish) {
       const newTaskIds = Array.from(start.taskIds);
       newTaskIds.splice(source.index, 1);
@@ -48,6 +63,7 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
       return;
     }
 
+    // 跨列移动任务
     const startTaskIds = Array.from(start.taskIds);
     startTaskIds.splice(source.index, 1);
     const finishTaskIds = Array.from(finish.taskIds);
@@ -63,7 +79,9 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     });
   }, [data, saveData]);
 
-  // SubTask operations
+  /**
+   * 切换子任务的完成状态。
+   */
   const toggleSubTask = useCallback((caseId: string, subTaskId: string) => {
     const currentCase = data.tasks[caseId];
     if (!currentCase) return;
@@ -77,6 +95,9 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     if (editingTask?.id === caseId) setEditingTask(updatedCase);
   }, [data, editingTask, saveData]);
 
+  /**
+   * 更新子任务标题。
+   */
   const updateSubTaskTitle = useCallback((subTaskId: string, newTitle: string) => {
     if (!editingTask) return;
 
@@ -86,6 +107,9 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     setEditingTask({ ...editingTask, subTasks: updatedSubTasks });
   }, [editingTask]);
 
+  /**
+   * 更新子任务截止日期。
+   */
   const updateSubTaskDate = useCallback((subTaskId: string, newDate: string) => {
     if (!editingTask) return;
 
@@ -95,6 +119,9 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     setEditingTask({ ...editingTask, subTasks: updatedSubTasks });
   }, [editingTask]);
 
+  /**
+   * 添加一个空的子任务。
+   */
   const addEmptySubTask = useCallback(() => {
     if (!editingTask) return;
 
@@ -106,6 +133,9 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     setEditingTask({ ...editingTask, subTasks: [...editingTask.subTasks, newSub] });
   }, [editingTask]);
 
+  /**
+   * 删除指定的子任务。
+   */
   const deleteSubTask = useCallback((subTaskId: string) => {
     if (!editingTask) return;
 
@@ -113,7 +143,9 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     setEditingTask({ ...editingTask, subTasks: updatedSubTasks });
   }, [editingTask]);
 
-  // Task operations
+  /**
+   * 调用 AI 服务生成案件摘要。
+   */
   const handleGenerateAiOverview = useCallback(async () => {
     if (!editingTask) return;
     setIsOverviewGenerating(true);
@@ -127,6 +159,9 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     }
   }, [editingTask, lang]);
 
+  /**
+   * 保存正在编辑的案件到主数据中并关闭模态框。
+   */
   const saveEditedTask = useCallback(() => {
     if (!editingTask) return;
     saveData({ ...data, tasks: { ...data.tasks, [editingTask.id]: editingTask } });
@@ -134,18 +169,18 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
   }, [editingTask, data, saveData]);
 
   return {
-    data,
-    editingTask,
-    isOverviewGenerating,
-    setEditingTask,
-    onDragEnd,
-    toggleSubTask,
-    updateSubTaskTitle,
-    updateSubTaskDate,
-    addEmptySubTask,
-    deleteSubTask,
-    handleGenerateAiOverview,
-    saveEditedTask,
-    saveData,
+    data,                     // 看板数据
+    editingTask,              // 当前编辑的案件
+    isOverviewGenerating,     // AI 生成状态
+    setEditingTask,           // 设置编辑案件
+    onDragEnd,                // 拖拽结束处理
+    toggleSubTask,            // 切换子任务状态
+    updateSubTaskTitle,       // 更新子任务标题
+    updateSubTaskDate,        // 更新子任务日期
+    addEmptySubTask,          // 添加子任务
+    deleteSubTask,            // 删除子任务
+    handleGenerateAiOverview, // 执行 AI 摘要生成
+    saveEditedTask,           // 保存案件修改
+    saveData,                 // 通用保存函数
   };
 };
