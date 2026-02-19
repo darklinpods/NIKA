@@ -19,6 +19,17 @@ export interface Case {
   subTasks: SubTask[];
   clientName: string;
   courtName?: string;
+  documents?: CaseDocument[];
+}
+
+export type DocumentCategory = 'input' | 'analysis' | 'strategy' | 'offical_doc' | 'evidence_list';
+
+export interface CaseDocument {
+  id: string;
+  title: string;
+  content: string; // Markdown content
+  category: DocumentCategory;
+  createdAt: string;
 }
 
 export interface Column {

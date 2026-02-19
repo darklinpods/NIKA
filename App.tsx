@@ -42,6 +42,8 @@ const App: React.FC = () => {
     deleteSubTask,
     handleGenerateAiOverview,
     saveEditedTask,
+    addCaseDocument,
+    deleteCaseDocument,
   } = useApp(lang, actualTheme);
 
   const toggleColumn = (id: string) => {
@@ -157,6 +159,8 @@ const App: React.FC = () => {
           onUpdateSubTaskDate={updateSubTaskDate}
           onDeleteSubTask={deleteSubTask}
           onAddSubTask={addEmptySubTask}
+          onAddDocument={addCaseDocument}
+          onDeleteDocument={deleteCaseDocument}
           onGenerateOverview={handleGenerateAiOverview}
           onSave={saveEditedTask}
           onClose={() => setEditingTask(null)}

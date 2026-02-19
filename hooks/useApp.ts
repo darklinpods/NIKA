@@ -136,11 +136,33 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
   /**
    * 删除指定的子任务。
    */
+  /**
+   * 删除指定的子任务。
+   */
   const deleteSubTask = useCallback((subTaskId: string) => {
     if (!editingTask) return;
 
     const updatedSubTasks = editingTask.subTasks.filter(st => st.id !== subTaskId);
     setEditingTask({ ...editingTask, subTasks: updatedSubTasks });
+  }, [editingTask]);
+
+
+  /**
+   * 添加案件文书
+   */
+  const addCaseDocument = useCallback((doc: any) => {
+    if (!editingTask) return;
+    const updatedDocs = [...(editingTask.documents || []), doc];
+    setEditingTask({ ...editingTask, documents: updatedDocs });
+  }, [editingTask]);
+
+  /**
+   * 删除案件文书
+   */
+  const deleteCaseDocument = useCallback((docId: string) => {
+    if (!editingTask) return;
+    const updatedDocs = (editingTask.documents || []).filter(d => d.id !== docId);
+    setEditingTask({ ...editingTask, documents: updatedDocs });
   }, [editingTask]);
 
   /**
@@ -182,5 +204,7 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     handleGenerateAiOverview, // 执行 AI 摘要生成
     saveEditedTask,           // 保存案件修改
     saveData,                 // 通用保存函数
+    addCaseDocument,
+    deleteCaseDocument,
   };
 };
