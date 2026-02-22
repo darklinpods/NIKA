@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Case } from '../types';
 import { TaskModalHeader } from './taskModal/TaskModalHeader';
 import { TaskModalInfoPanel } from './taskModal/TaskModalInfoPanel';
 import { TaskModalSubTasksPanel } from './taskModal/TaskModalSubTasksPanel';
 import { TaskModalDocumentsPanel } from './taskModal/TaskModalDocumentsPanel';
 import { TaskModalFooter } from './taskModal/TaskModalFooter';
+import { translations } from '../translations';
 
 /**
  * 任务模态框组件属性
@@ -61,17 +62,22 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   onSave,
   onClose,
 }) => {
+  const [activeTab, setActiveTab] = useState<'tasks' | 'documents'>('tasks');
+  const t = translations[lang];
+
   /**
-   * 任务模态框组件
-   * 用于显示和编辑任务详情的弹窗
+   * 任务详情页面组件 (以前的模态框)
+   * 用于显示和编辑任务详情的独立页面
    * 包含任务基本信息、子任务列表、文档列表和AI概况
    */
   return (
-    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[100] p-6 animate-in fade-in duration-200">
-      <div className={`w-full max-w-[95%] rounded-3xl shadow-2xl overflow-hidden border flex flex-col h-[90vh] animate-in zoom-in-95 duration-200 ${theme === 'dark' ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200'}`}>
-        <TaskModalHeader task={task} theme={theme} onClose={onClose} />
+    <div className={`flex flex-col h-full w-full animate-in fade-in duration-200 ${theme === 'dark' ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200'}`}>
+      <TaskModalHeader task={task} theme={theme} onClose={onClose} />
 
-        <div className="flex-1 flex overflow-hidden">
+      {/* --- Left / Right Split Layout --- */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Panel: Always visible Overview */}
+        <div className={`w-[50%] border-r flex flex-col min-h-0 overflow-hidden ${theme === 'dark' ? 'border-white/10' : 'border-slate-200'}`}>
           <TaskModalInfoPanel
             task={task}
             theme={theme}
@@ -80,34 +86,65 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             onGenerateOverview={onGenerateOverview}
             isOverviewGenerating={isOverviewGenerating}
           />
-
-          <TaskModalSubTasksPanel
-            task={task}
-            theme={theme}
-            lang={lang}
-            onToggleSubTask={onToggleSubTask}
-            onUpdateSubTaskTitle={onUpdateSubTaskTitle}
-            onUpdateSubTaskDate={onUpdateSubTaskDate}
-            onDeleteSubTask={onDeleteSubTask}
-            onAddSubTask={onAddSubTask}
-          />
-
-          <TaskModalDocumentsPanel
-            task={task}
-            theme={theme}
-            lang={lang}
-            onAddDocument={onAddDocument}
-            onDeleteDocument={onDeleteDocument}
-          />
         </div>
 
-        <TaskModalFooter
-          theme={theme}
-          lang={lang}
-          onSave={onSave}
-          onCancel={onClose}
-        />
+        {/* Right Panel: Tabs for Tasks and Documents */}
+        <div className="w-[50%] flex flex-col min-h-0 overflow-hidden bg-slate-50/30 dark:bg-slate-900/30">
+          {/* Tabs Navigation */}
+          <div className={`px-8 pt-4 border-b flex items-center gap-8 ${theme === 'dark' ? 'border-white/10' : 'border-slate-200'} bg-white dark:bg-slate-900`}>
+            <button
+              onClick={() => setActiveTab('tasks')}
+              className={`pb-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'tasks'
+                ? (theme === 'dark' ? 'text-indigo-400 border-indigo-400' : 'text-indigo-600 border-indigo-600')
+                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+            >
+              {(t as any).tasksTab || 'Tasks'}
+            </button>
+            <button
+              onClick={() => setActiveTab('documents')}
+              className={`pb-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'documents'
+                ? (theme === 'dark' ? 'text-indigo-400 border-indigo-400' : 'text-indigo-600 border-indigo-600')
+                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+            >
+              {(t as any).docsTab || 'Documents'}
+            </button>
+          </div>
+
+          <div className="flex-1 flex overflow-hidden">
+            {activeTab === 'tasks' && (
+              <TaskModalSubTasksPanel
+                task={task}
+                theme={theme}
+                lang={lang}
+                onToggleSubTask={onToggleSubTask}
+                onUpdateSubTaskTitle={onUpdateSubTaskTitle}
+                onUpdateSubTaskDate={onUpdateSubTaskDate}
+                onDeleteSubTask={onDeleteSubTask}
+                onAddSubTask={onAddSubTask}
+              />
+            )}
+
+            {activeTab === 'documents' && (
+              <TaskModalDocumentsPanel
+                task={task}
+                theme={theme}
+                lang={lang}
+                onAddDocument={onAddDocument}
+                onDeleteDocument={onDeleteDocument}
+              />
+            )}
+          </div>
+        </div>
       </div>
+
+      <TaskModalFooter
+        theme={theme}
+        lang={lang}
+        onSave={onSave}
+        onCancel={onClose}
+      />
     </div>
   );
 };

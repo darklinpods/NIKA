@@ -44,7 +44,6 @@ export const TaskModalDocumentsPanel: React.FC<TaskModalDocumentsPanelProps> = (
         const titles: Record<DocumentCategory, { zh: string; en: string }> = {
             analysis: { zh: '案件分析报告', en: 'Case Analysis Report' },
             strategy: { zh: '诉讼策略建议', en: 'Litigation Strategy' },
-            draft: { zh: '法律文书草案', en: 'Legal Draft' },
             evidence_list: { zh: '证据清单', en: 'Evidence List' },
             input: { zh: '输入', en: 'Input' },
             offical_doc: { zh: '正式文书', en: 'Official Document' }
@@ -65,9 +64,9 @@ export const TaskModalDocumentsPanel: React.FC<TaskModalDocumentsPanelProps> = (
     };
 
     return (
-        <div className={`flex flex-col h-full w-1/3 border-l ${theme === 'dark' ? 'border-white/10 bg-slate-900/50' : 'border-slate-200 bg-slate-50/50'}`}>
-            <div className={`p-4 border-b ${theme === 'dark' ? 'border-white/10' : 'border-slate-200'} flex justify-between items-center`}>
-                <h3 className={`font-semibold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
+        <div className="flex-1 p-8 flex flex-col h-full overflow-hidden">
+            <div className={`pb-6 border-b ${theme === 'dark' ? 'border-white/10' : 'border-slate-200'} flex justify-between items-center`}>
+                <h3 className={`text-base font-bold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
                     {lang === 'zh' ? '案件文书' : 'Case Documents'}
                 </h3>
                 <div className="flex gap-2">
@@ -95,14 +94,14 @@ export const TaskModalDocumentsPanel: React.FC<TaskModalDocumentsPanelProps> = (
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <div className="flex-1 overflow-y-auto py-6 space-y-4">
                 {task.documents?.map((doc) => (
                     <div
                         key={doc.id}
                         onClick={() => setSelectedDoc(doc)}
                         className={`p-3 rounded-xl border cursor-pointer transition-all ${selectedDoc?.id === doc.id
-                                ? (theme === 'dark' ? 'bg-blue-500/20 border-blue-500/50' : 'bg-blue-50 border-blue-200')
-                                : (theme === 'dark' ? 'bg-slate-800/50 border-white/5 hover:bg-slate-800' : 'bg-white border-slate-200 hover:border-blue-300')
+                            ? (theme === 'dark' ? 'bg-blue-500/20 border-blue-500/50' : 'bg-blue-50 border-blue-200')
+                            : (theme === 'dark' ? 'bg-slate-800/50 border-white/5 hover:bg-slate-800' : 'bg-white border-slate-200 hover:border-blue-300')
                             }`}
                     >
                         <div className="flex items-start justify-between">

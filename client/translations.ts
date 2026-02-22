@@ -71,6 +71,9 @@ export const translations = {
     loginBtn: "Sign In",
     loginError: "Invalid username or password.",
     currentStage: "Current Stage",
+    overviewTab: "Overview",
+    tasksTab: "Tasks",
+    docsTab: "Documents",
   },
   zh: {
     title: "律政先锋 - 办案系统",
@@ -143,5 +146,8 @@ export const translations = {
     loginBtn: "登 录",
     loginError: "用户名或密码错误，请重试。",
     currentStage: "当前办案阶段",
+    overviewTab: "案件概况",
+    tasksTab: "任务与打卡",
+    docsTab: "证据与文档",
   }
 };

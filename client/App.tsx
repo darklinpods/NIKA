@@ -58,6 +58,7 @@ const App: React.FC = () => {
       title: lang === 'zh' ? '新案件' : 'New Case',
       description: '',
       priority: 'medium',
+      status: 'todo',
       clientName: lang === 'zh' ? '新客户' : 'New Client',
       tags: [],
       subTasks: [],
@@ -129,43 +130,44 @@ const App: React.FC = () => {
       />
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <Header
-          theme={actualTheme}
-          themeMode={themeMode}
-          lang={lang}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onThemeToggle={toggleTheme}
-          onLangToggle={() => setLang(lang === 'zh' ? 'en' : 'zh')}
-        />
+        {editingTask ? (
+          <TaskModal
+            task={editingTask}
+            theme={actualTheme}
+            lang={lang}
+            isOverviewGenerating={isOverviewGenerating}
+            onTaskChange={setEditingTask}
+            onToggleSubTask={(subTaskId) => toggleSubTask(editingTask.id, subTaskId)}
+            onUpdateSubTaskTitle={updateSubTaskTitle}
+            onUpdateSubTaskDate={updateSubTaskDate}
+            onDeleteSubTask={deleteSubTask}
+            onAddSubTask={addEmptySubTask}
+            onAddDocument={addCaseDocument}
+            onDeleteDocument={deleteCaseDocument}
+            onGenerateOverview={handleGenerateAiOverview}
+            onSave={saveEditedTask}
+            onClose={() => setEditingTask(null)}
+          />
+        ) : (
+          <>
+            <Header
+              theme={actualTheme}
+              themeMode={themeMode}
+              lang={lang}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onThemeToggle={toggleTheme}
+              onLangToggle={() => setLang(lang === 'zh' ? 'en' : 'zh')}
+            />
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
-          <div className="max-w-[1600px] mx-auto">
-            {renderContent()}
-          </div>
-        </div>
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
+              <div className="max-w-[1600px] mx-auto">
+                {renderContent()}
+              </div>
+            </div>
+          </>
+        )}
       </main>
-
-      {/* DETAILED CASE MODAL */}
-      {editingTask && (
-        <TaskModal
-          task={editingTask}
-          theme={actualTheme}
-          lang={lang}
-          isOverviewGenerating={isOverviewGenerating}
-          onTaskChange={setEditingTask}
-          onToggleSubTask={(subTaskId) => toggleSubTask(editingTask.id, subTaskId)}
-          onUpdateSubTaskTitle={updateSubTaskTitle}
-          onUpdateSubTaskDate={updateSubTaskDate}
-          onDeleteSubTask={deleteSubTask}
-          onAddSubTask={addEmptySubTask}
-          onAddDocument={addCaseDocument}
-          onDeleteDocument={deleteCaseDocument}
-          onGenerateOverview={handleGenerateAiOverview}
-          onSave={saveEditedTask}
-          onClose={() => setEditingTask(null)}
-        />
-      )}
     </div>
   );
 };
