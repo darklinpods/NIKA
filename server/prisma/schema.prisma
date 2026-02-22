@@ -13,6 +13,7 @@ model Case {
   title       String
   description String
   priority    String
+  status      String   @default("todo") // 'todo', 'in-progress', 'done'
   tags        String   // stored as JSON string
   clientName  String
   courtName   String?

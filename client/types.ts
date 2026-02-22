@@ -14,6 +14,7 @@ export interface Case {
   description: string;
   aiSummary?: string;
   priority: Priority;
+  status: 'todo' | 'in-progress' | 'done';
   tags: string[];
   createdAt: string;
   subTasks: SubTask[];

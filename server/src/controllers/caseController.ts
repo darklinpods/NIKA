@@ -33,6 +33,10 @@ export const createCase = async (req: Request, res: Response) => {
                 clientName,
                 courtName,
             },
+            include: {
+                subTasks: true,
+                documents: true,
+            },
         });
         res.json({
             ...newCase,
@@ -47,13 +51,59 @@ export const updateCase = async (req: Request, res: Response) => {
     const { id } = req.params;
     const data = req.body;
 
-    // separate special fields like tags
-    const { tags, ...rest } = data;
+    // Separate relations and special fields
+    const { tags, subTasks, documents, id: bodyId, createdAt, updatedAt, ...rest } = data;
 
     try {
         const updateData: any = { ...rest };
+
+        // Handle Tags
         if (tags) {
             updateData.tags = JSON.stringify(tags);
+        }
+
+        // Handle SubTasks
+        if (subTasks && Array.isArray(subTasks)) {
+            updateData.subTasks = {
+                deleteMany: {
+                    id: { notIn: subTasks.map((st: any) => st.id).filter((id: string) => id) }
+                },
+                upsert: subTasks.map((st: any) => ({
+                    where: { id: st.id || 'new-id' }, // 'new-id' won't be found, triggering create
+                    update: {
+                        title: st.title,
+                        isCompleted: st.isCompleted,
+                        dueDate: st.dueDate ? new Date(st.dueDate) : null
+                    },
+                    create: {
+                        title: st.title,
+                        isCompleted: st.isCompleted || false,
+                        dueDate: st.dueDate ? new Date(st.dueDate) : null
+                    }
+                }))
+            };
+        }
+
+        // Handle Documents
+        if (documents && Array.isArray(documents)) {
+            updateData.documents = {
+                deleteMany: {
+                    id: { notIn: documents.map((d: any) => d.id).filter((id: string) => id) }
+                },
+                upsert: documents.map((doc: any) => ({
+                    where: { id: doc.id || 'new-id' },
+                    update: {
+                        title: doc.title,
+                        content: doc.content,
+                        category: doc.category
+                    },
+                    create: {
+                        title: doc.title,
+                        content: doc.content,
+                        category: doc.category
+                    }
+                }))
+            };
         }
 
         const updatedCase = await prisma.case.update({
@@ -61,11 +111,13 @@ export const updateCase = async (req: Request, res: Response) => {
             data: updateData,
             include: { subTasks: true, documents: true }
         });
+
         res.json({
             ...updatedCase,
             tags: JSON.parse(updatedCase.tags)
         });
     } catch (error) {
+        console.error("Update Case Error:", error);
         res.status(500).json({ error: 'Failed to update case' });
     }
 };
