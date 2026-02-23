@@ -7,8 +7,9 @@ async function main() {
     console.log('Start seeding...');
 
     // Optional: Clear existing data
-    // await prisma.subTask.deleteMany({});
-    // await prisma.case.deleteMany({});
+    await prisma.caseDocument.deleteMany({});
+    await prisma.subTask.deleteMany({});
+    await prisma.case.deleteMany({});
 
     const caseTypes = [
         { name: '交通事故', weight: 60 },

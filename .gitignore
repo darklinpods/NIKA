@@ -25,3 +25,6 @@ dist-ssr
 
 # Ignore sample document data
 samples_docs/
+.env
+server/.env
+client/.env

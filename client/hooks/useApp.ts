@@ -7,6 +7,7 @@ import { generateTasks, suggestImprovement, summarizeTask, generateCasePlan } fr
 import { fetchCases, createCase, updateCase, deleteCase } from '../services/api';
 import { translations } from '../translations';
 import { handleStorageError, logError } from '../utils/errorHandler';
+import { useConfirm } from '../providers/ConfirmProvider';
 
 // Helper to transform Case[] to BoardData
 const transformCasesToBoard = (cases: Case[]): BoardData => {
@@ -209,15 +210,28 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     setEditingTask(prev => prev ? ({ ...prev, subTasks: prev.subTasks.filter(st => st.id !== subTaskId) }) : null);
   }, [editingTask]);
 
+  const { confirm } = useConfirm();
+
   const handleDeleteCase = useCallback(async (caseId: string) => {
-    if (!window.confirm(lang === 'zh' ? '确定要删除此案件吗？' : 'Are you sure you want to delete this case?')) return;
+    const isConfirmed = await confirm({
+      title: lang === 'zh' ? '删除确认' : 'Confirm Delete',
+      message: lang === 'zh'
+        ? '确定要永久删除此案件及其所有相关数据吗？此操作无法撤销。'
+        : 'Are you sure you want to permanently delete this case and all related data? This action cannot be undone.',
+      confirmText: lang === 'zh' ? '删除' : 'Delete',
+      cancelText: lang === 'zh' ? '取消' : 'Cancel',
+      type: 'danger'
+    });
+
+    if (!isConfirmed) return;
+
     try {
       await deleteCase(caseId);
       loadData();
     } catch (err) {
       logError(err, 'handleDeleteCase');
     }
-  }, [loadData, lang]);
+  }, [loadData, lang, confirm]);
 
   const handleGeneratePlan = useCallback(async (caseId: string) => {
     const currentCase = data.tasks[caseId];
