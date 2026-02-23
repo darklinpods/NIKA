@@ -5,6 +5,7 @@ import { TaskModalInfoPanel } from './taskModal/TaskModalInfoPanel';
 import { TaskModalSubTasksPanel } from './taskModal/TaskModalSubTasksPanel';
 import { TaskModalDocumentsPanel } from './taskModal/TaskModalDocumentsPanel';
 import { TaskModalFooter } from './taskModal/TaskModalFooter';
+import { LoadingOverlay } from './LoadingOverlay';
 import { translations } from '../translations';
 
 /**
@@ -19,6 +20,8 @@ interface TaskModalProps {
   lang: 'zh' | 'en';
   /** 是否正在生成概况 */
   isOverviewGenerating: boolean;
+  /** 是否正在保存 */
+  isSaving: boolean;
   /** 任务变更回调 */
   onTaskChange: (task: Case) => void;
   /** 切换子任务完成状态 */
@@ -50,6 +53,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   theme,
   lang,
   isOverviewGenerating,
+  isSaving,
   onTaskChange,
   onToggleSubTask,
   onUpdateSubTaskTitle,
@@ -145,6 +149,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         onSave={onSave}
         onCancel={onClose}
       />
+
+      <LoadingOverlay isVisible={isSaving} message={lang === 'zh' ? '正在保存...' : 'Saving...'} theme={theme} />
     </div>
   );
 };

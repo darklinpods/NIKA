@@ -65,6 +65,7 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
   // Current editing task
   const [editingTask, setEditingTask] = useState<Case | null>(null);
   const [isOverviewGenerating, setIsOverviewGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Drag End Handler
   const onDragEnd = useCallback(async (result: DropResult) => {
@@ -129,6 +130,7 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     if (!editingTask) return;
 
     try {
+      setIsSaving(true);
       let savedCase: Case;
       const isNew = editingTask.id.startsWith('task-');
 
@@ -139,10 +141,12 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
         savedCase = await updateCase(editingTask.id, editingTask);
       }
 
-      loadData();
+      await loadData();
       setEditingTask(null);
     } catch (error) {
       logError(error, 'saveEditedTask');
+    } finally {
+      setIsSaving(false);
     }
   }, [editingTask, loadData]);
 
@@ -283,6 +287,7 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     data,
     editingTask,
     isOverviewGenerating,
+    isSaving,
     setEditingTask,
     onDragEnd,
     toggleSubTask,

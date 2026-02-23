@@ -33,6 +33,7 @@ const App: React.FC = () => {
     data,
     editingTask,
     isOverviewGenerating,
+    isSaving,
     setEditingTask,
     onDragEnd,
     toggleSubTask,
@@ -144,6 +145,7 @@ const App: React.FC = () => {
             theme={actualTheme}
             lang={lang}
             isOverviewGenerating={isOverviewGenerating}
+            isSaving={isSaving}
             onTaskChange={setEditingTask}
             onToggleSubTask={(subTaskId) => toggleSubTask(editingTask.id, subTaskId)}
             onUpdateSubTaskTitle={updateSubTaskTitle}

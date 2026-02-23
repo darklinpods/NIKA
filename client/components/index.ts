@@ -13,3 +13,4 @@ export { TaskModalInfoPanel } from './taskModal/TaskModalInfoPanel';
 export { TaskModalSubTasksPanel } from './taskModal/TaskModalSubTasksPanel';
 export { SubTaskItem } from './taskModal/SubTaskItem';
 export { TaskModalFooter } from './taskModal/TaskModalFooter';
+export { LoadingOverlay } from './LoadingOverlay';

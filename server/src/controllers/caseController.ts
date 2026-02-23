@@ -51,6 +51,8 @@ export const createCase = async (req: Request, res: Response) => {
 
 export const updateCase = async (req: Request, res: Response) => {
     const { id } = req.params;
+    const startTime = Date.now();
+    console.log(`[${new Date().toISOString()}] 收到更新请求，案件ID: ${id}`);
     const data = req.body;
 
     // Separate relations and special fields
@@ -147,6 +149,8 @@ export const updateCase = async (req: Request, res: Response) => {
                 include: { subTasks: true, documents: true }
             });
         }
+
+        console.log(`[${new Date().toISOString()}] 案件ID: ${id} 更新操作完成，耗时: ${Date.now() - startTime}ms`);
 
         res.json({
             ...updatedCase,
