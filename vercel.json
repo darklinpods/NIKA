@@ -6,8 +6,20 @@
             "destination": "/api/index.ts"
         },
         {
+            "source": "/assets/(.*)",
+            "destination": "/client/dist/assets/$1"
+        },
+        {
+            "source": "/favicon.ico",
+            "destination": "/client/dist/favicon.ico"
+        },
+        {
             "source": "/(.*)",
-            "destination": "/index.html"
+            "destination": "/client/dist/$1"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/client/dist/index.html"
         }
     ]
 }
