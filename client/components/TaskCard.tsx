@@ -17,9 +17,15 @@ interface TaskCardProps {
   onEdit: (task: Case) => void;
   theme: 'light' | 'dark';
   lang: 'en' | 'zh';
+  onDelete: (caseId: string) => void;
+  onGeneratePlan: (caseId: string) => void;
+  onUpdatePriority: (caseId: string, priority: string) => void;
+  onMoveStage: (caseId: string, direction: 'next' | 'prev') => void;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEdit, theme, lang }) => {
+const TaskCard: React.FC<TaskCardProps> = ({
+  task, index, onEdit, theme, lang, onDelete, onGeneratePlan, onUpdatePriority, onMoveStage
+}) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
@@ -61,6 +67,30 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEdit, theme, lang })
     setSummary(null);
   }, []);
 
+  const handleDelete = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete(task.id);
+    setIsMenuOpen(false);
+  }, [onDelete, task.id]);
+
+  const handleGeneratePlan = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onGeneratePlan(task.id);
+    setIsMenuOpen(false);
+  }, [onGeneratePlan, task.id]);
+
+  const handleUpdatePriority = useCallback((e: React.MouseEvent, priority: string) => {
+    e.stopPropagation();
+    onUpdatePriority(task.id, priority);
+    setIsMenuOpen(false);
+  }, [onUpdatePriority, task.id]);
+
+  const handleMoveStage = useCallback((e: React.MouseEvent, direction: 'next' | 'prev') => {
+    e.stopPropagation();
+    onMoveStage(task.id, direction);
+    setIsMenuOpen(false);
+  }, [onMoveStage, task.id]);
+
   return (
     <Draggable draggableId={task.id} index={index}>
       {(provided, snapshot) => (
@@ -69,13 +99,11 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEdit, theme, lang })
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           onClick={() => onEdit(task)}
-          className={`group relative border rounded-xl p-4 flex flex-col justify-between min-w-[240px] max-w-[240px] transition-all duration-300 cursor-pointer border-l-[4px] shrink-0 ${
-            getPriorityBorderColor(task.priority)
-          } ${
-            theme === 'dark'
+          className={`group relative border rounded-xl p-4 flex flex-col justify-between min-w-[240px] max-w-[240px] transition-all duration-300 cursor-pointer border-l-[4px] shrink-0 ${getPriorityBorderColor(task.priority)
+            } ${theme === 'dark'
               ? 'bg-slate-900 border-white/5 hover:border-indigo-500/50 hover:shadow-[0_10px_30px_-10px_rgba(99,102,241,0.25)]'
               : 'bg-white border-slate-200 hover:border-indigo-200 shadow-sm hover:shadow-md'
-          } ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-indigo-500/50 z-50 scale-105' : ''}`}
+            } ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-indigo-500/50 z-50 scale-105' : ''}`}
         >
           <div className="flex justify-between items-start mb-2">
             <div className="flex-1">
@@ -90,6 +118,11 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEdit, theme, lang })
                 theme={theme}
                 onAiSummary={handleAiSummary}
                 onCopyId={handleCopyId}
+                onDelete={handleDelete}
+                onGeneratePlan={handleGeneratePlan}
+                onUpdatePriority={handleUpdatePriority}
+                onMoveStage={handleMoveStage}
+                currentStatus={task.status}
                 t={t}
               />
             </div>

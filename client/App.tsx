@@ -44,6 +44,10 @@ const App: React.FC = () => {
     saveEditedTask,
     addCaseDocument,
     deleteCaseDocument,
+    handleDeleteCase,
+    handleGeneratePlan,
+    handleUpdatePriority,
+    handleMoveStage,
   } = useApp(lang, actualTheme);
 
   const toggleColumn = (id: string) => {
@@ -95,6 +99,10 @@ const App: React.FC = () => {
             onToggleColumn={toggleColumn}
             onEdit={setEditingTask}
             onAddTask={handleAddTask}
+            onDelete={handleDeleteCase}
+            onGeneratePlan={handleGeneratePlan}
+            onUpdatePriority={handleUpdatePriority}
+            onMoveStage={handleMoveStage}
           />
         );
     }

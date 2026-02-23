@@ -8,7 +8,7 @@ const getGenAIClient = () => {
     if (!apiKey) {
         throw new Error("Gemini API Key is missing.");
     }
-    return new GoogleGenAI({ apiKey });
+    return new GoogleGenAI({ apiKey, apiVersion: 'v1' });
 };
 
 export const generateTasks = async (req: Request, res: Response) => {
@@ -18,10 +18,13 @@ export const generateTasks = async (req: Request, res: Response) => {
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
 
         const response = await ai.models.generateContent({
-            model: "gemini-3-flash-preview",
-            contents: `Generate a list of 3-5 structured legal cases for the following request: "${prompt}". 
+            model: "gemini-1.5-flash",
+            contents: [{
+                role: "user", parts: [{
+                    text: `Generate a list of 3-5 structured legal cases for the following request: "${prompt}". 
                  The response MUST be in ${languageName}.
-                 Each case must have a title, description, priority (low, medium, or high), 1-2 relevant tags, and a list of 3-5 procedural sub-tasks (as strings).`,
+                 Each case must have a title, description, priority (low, medium, or high), 1-2 relevant tags, and a list of 3-5 procedural sub-tasks (as strings).` }]
+            }],
             config: {
                 responseMimeType: "application/json",
                 responseSchema: {
@@ -62,12 +65,15 @@ export const suggestImprovement = async (req: Request, res: Response) => {
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
 
         const response = await ai.models.generateContent({
-            model: "gemini-3-flash-preview",
-            contents: `Improve and expand this task description for clarity and professionalism. 
+            model: "gemini-1.5-flash",
+            contents: [{
+                role: "user", parts: [{
+                    text: `Improve and expand this task description for clarity and professionalism. 
                  The response MUST be in ${languageName}.
                  Task Title: ${taskTitle}
                  Current Description: ${taskDesc}
-                 Output only the improved description text.`,
+                 Output only the improved description text.` }]
+            }],
         });
 
         const result = response.text || taskDesc;
@@ -85,11 +91,15 @@ export const summarizeTask = async (req: Request, res: Response) => {
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
 
         const response = await ai.models.generateContent({
-            model: "gemini-3-flash-preview",
-            contents: `As an expert legal assistant, summarize this legal case in under 80 words. Focus on the core conflict and key next step.
+            model: "gemini-1.5-flash",
+            contents: [{
+                role: "user", parts: [{
+                    text: `As an expert legal assistant, summarize this legal case in under 80 words. Focus on the core conflict and key next step.
                  Language: ${languageName}
                  Title: ${title}
-                 Details: ${desc}`,
+                 Details: ${desc}`
+                }]
+            }],
         });
 
         const result = response.text || "";
@@ -147,8 +157,8 @@ export const generateCaseDocument = async (req: Request, res: Response) => {
         }
 
         const response = await ai.models.generateContent({
-            model: "gemini-3-flash-preview",
-            contents: prompt,
+            model: "gemini-1.5-flash",
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
         });
 
         const result = response.text || "";
@@ -156,5 +166,37 @@ export const generateCaseDocument = async (req: Request, res: Response) => {
     } catch (error: any) {
         console.error("AI Document Generation Error:", error);
         res.status(500).json({ error: error.message || "Failed to generate document", details: error.message, stack: error.stack });
+    }
+};
+
+export const generateCasePlan = async (req: Request, res: Response) => {
+    try {
+        const { title, desc, lang } = req.body;
+        const ai = getGenAIClient();
+        const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
+
+        const response = await ai.models.generateContent({
+            model: "gemini-1.5-flash",
+            contents: [{
+                role: "user", parts: [{
+                    text: `As a professional legal assistant, create a procedural plan for this case. 
+                 Generate 4-6 specific, actionable subtasks (e.g., "Collect medical records", "Draft notice to defendant").
+                 The response MUST be in ${languageName}.
+                 Return a JSON object with a "subTasks" array of strings.
+                 
+                 Case Title: ${title}
+                 Case Details: ${desc}`
+                }]
+            }],
+        });
+
+        const resultText = response.text || "";
+        // Simple cleanup for potential markdown
+        const cleaned = resultText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const data = JSON.parse(cleaned);
+        res.json(data);
+    } catch (error: any) {
+        console.error("AI Plan Generation Error:", error);
+        res.status(500).json({ error: error.message || "Failed to generate plan", details: error.message, stack: error.stack });
     }
 };

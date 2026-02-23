@@ -3,114 +3,67 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const caseTypes = [
-    {
-        type: '交通事故责任纠纷', templates: [
-            '在{location}发生两车剐蹭，对方{vehicle}全责但拒绝赔偿。',
-            '{location}路口发生追尾事故，导致我方车辆受损严重，随车人员轻微伤。',
-            '行人于{location}被{vehicle}撞伤，肇事司机逃逸后被抓获，现需索赔医药费。'
-        ]
-    },
-    {
-        type: '离婚纠纷', templates: [
-            '因感情不和协议离婚，涉及{location}房产分割及子女抚养权争取。',
-            '对方婚内出轨，现申请离婚并要求精神损害赔偿，以及{location}房产归我方所有。',
-            '双方分居多年，现诉讼离婚，主要争议点在于存款分割和探视权安排。'
-        ]
-    },
-    {
-        type: '买卖合同纠纷', templates: [
-            '向{company}采购的一批货物存在严重质量问题，造成生产线停工，要求退货赔偿。',
-            '{company}拖欠货款{amount}元长达半年，多次催收无果，准备起诉冻结对方账户。',
-            '签订采购合同后，{company}无故违约不发货，导致我方对下游客户违约，需追究违约责任。'
-        ]
-    },
-    {
-        type: '民间借贷纠纷', templates: [
-            '债务人借款{amount}元用于资金周转，约定利息但到期不还，且失联。',
-            '朋友借走{amount}元无力偿还，仅有转账记录无借条，需要法律援助追回欠款。',
-            '担保人被起诉承担连带责任，债务人名下有{location}房产可供执行。'
-        ]
-    },
-    {
-        type: '劳动争议', templates: [
-            '入职{company}两年未缴纳社保，现被辞退，要求补缴社保并支付经济补偿金。',
-            '{company}长期拖欠工资，加班费未按规定发放，申请劳动仲裁。',
-            '工伤认定后公司拒绝赔付，需根据工伤等级申请相应赔偿。'
-        ]
-    },
-    {
-        type: '刑事辩护', templates: [
-            '涉嫌危险驾驶罪，酒精含量超标，希望能争取缓刑。',
-            '因打架斗殴被拘留，涉嫌故意伤害罪，家属委托进行会见和辩护。',
-            '涉嫌职务侵占罪，数额较大，需要通过退赃退赔争取从轻处理。'
-        ]
-    }
-];
-
-const locations = ['朝阳区建国路', '海淀区中关村大街', '浦东新区世纪大道', '天河区体育西路', '南山区科技园', '福田区深南大道'];
-const vehicles = ['小轿车', '出租车', '电动车', '货车', '公交车'];
-const companies = ['科技发展有限公司', '商贸有限公司', '建筑工程公司', '物流运输公司', '信息技术公司'];
-const amounts = ['50万', '100万', '20万', '300万', '15万'];
-const clients = ['张三', '李四', '王五', '赵六', '陈七', '刘八', '孙九', '周十', '吴十一', '郑十二'];
-const priorities = ['low', 'medium', 'high'];
-const statuses = ['todo', 'in-progress', 'done'];
-const tagsList = ['紧急', '需阅卷', '等待开庭', '调解中', '取证阶段', '已结案', '待执行'];
-
-function fillTemplate(template: string): string {
-    return template
-        .replace('{location}', locations[Math.floor(Math.random() * locations.length)])
-        .replace('{vehicle}', vehicles[Math.floor(Math.random() * vehicles.length)])
-        .replace('{company}', companies[Math.floor(Math.random() * companies.length)])
-        .replace('{amount}', amounts[Math.floor(Math.random() * amounts.length)]);
-}
-
 async function main() {
-    console.log('Start seeding ...');
+    console.log('Start seeding...');
 
-    // Clear existing data
-    console.log('Clearing existing data...');
-    await prisma.subTask.deleteMany();
-    await prisma.caseDocument.deleteMany();
-    await prisma.case.deleteMany();
+    // Optional: Clear existing data
+    // await prisma.subTask.deleteMany({});
+    // await prisma.case.deleteMany({});
 
-    for (let i = 0; i < 50; i++) {
-        const typeObj = caseTypes[Math.floor(Math.random() * caseTypes.length)];
-        const template = typeObj.templates[Math.floor(Math.random() * typeObj.templates.length)];
-        const description = fillTemplate(template);
-        const client = clients[Math.floor(Math.random() * clients.length)];
+    const caseTypes = [
+        { name: '交通事故', weight: 60 },
+        { name: '工伤认定', weight: 15 },
+        { name: '人身损害', weight: 10 },
+        { name: '离婚纠纷', weight: 5 },
+        { name: '合同纠纷', weight: 5 },
+        { name: '民间借贷', weight: 5 },
+    ];
+
+    const priorities = ['low', 'medium', 'high'];
+    const statuses = ['todo', 'in-progress', 'done'];
+    const clientNames = ['张强', '李芳', '王伟', '赵敏', '孙杰', '周红', '吴鹏', '郑洁', '冯涛', '陈晨'];
+    const actionPool = ['初步咨询', '搜集证据', '调取监控', '伤残鉴定', '联系保险公司', '发送律师函', '起草起诉状', '法院立案', '预交费', '准备开庭', '质证环节', '庭审陈述'];
+
+    for (let i = 1; i <= 30; i++) {
+        const client = clientNames[Math.floor(Math.random() * clientNames.length)];
         const priority = priorities[Math.floor(Math.random() * priorities.length)];
-        const status = statuses[Math.floor(Math.random() * statuses.length)];
 
-        // Random tags (1-3)
-        const numTags = Math.floor(Math.random() * 3) + 1;
-        const caseTags: string[] = [];
-        for (let j = 0; j < numTags; j++) {
-            const tag = tagsList[Math.floor(Math.random() * tagsList.length)];
-            if (!caseTags.includes(tag)) caseTags.push(tag);
-        }
+        // Map 1-10 to todo, 11-25 to in-progress, 26-30 to done
+        const status = i <= 10 ? 'todo' : i <= 25 ? 'in-progress' : 'done';
 
-        const title = `${typeObj.type} - ${client}案`;
+        const typeIndex = i <= 18 ? 0 : i <= 23 ? 1 : i <= 26 ? 2 : i <= 27 ? 3 : i <= 28 ? 4 : 5;
+        const typeObj = caseTypes[typeIndex];
 
-        await prisma.case.create({
+        const createdCase = await prisma.case.create({
             data: {
-                title,
-                description,
-                priority,
-                status,
-                tags: JSON.stringify(caseTags),
+                title: `${typeObj.name} - ${client}案`,
+                description: `针对${typeObj.name}案件的全面代理。当前核心：确保证据链闭环。由于该案件涉及金额较大且属于典型案例，请务必细致处理所有法律程序。`,
+                priority: i % 5 === 0 ? 'high' : priority,
+                status: status,
+                tags: JSON.stringify([typeObj.name, '2025年案']),
                 clientName: client,
-                courtName: Math.random() > 0.5 ? '市中级人民法院' : '区人民法院',
-                subTasks: {
-                    create: [
-                        { title: '初步案情分析', isCompleted: Math.random() > 0.5 },
-                        { title: '整理证据材料', isCompleted: Math.random() > 0.5 },
-                        { title: '起草法律文书', isCompleted: false },
-                    ]
-                }
+                courtName: '上海市第一中级人民法院',
+                createdAt: new Date(Date.now() - Math.random() * 10000000000),
             }
         });
+
+        // Generate 3-5 subtasks per case
+        const subTaskCount = 3 + Math.floor(Math.random() * 3);
+        const subTasksData = [];
+        for (let j = 0; j < subTaskCount; j++) {
+            subTasksData.push({
+                title: actionPool[Math.floor(Math.random() * actionPool.length)],
+                isCompleted: status === 'done' ? true : Math.random() > 0.6,
+                dueDate: new Date(Date.now() + Math.random() * 1000000000),
+                caseId: createdCase.id
+            });
+        }
+
+        await prisma.subTask.createMany({
+            data: subTasksData
+        });
     }
+
     console.log('Seeding finished.');
 }
 

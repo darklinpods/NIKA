@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { DropResult } from '@hello-pangea/dnd';
 import { BoardData, Case, SubTask, Column } from '../types';
 import { INITIAL_DATA } from '../constants';
-import { generateTasks, suggestImprovement, summarizeTask } from '../services/geminiService';
+import { generateTasks, suggestImprovement, summarizeTask, generateCasePlan } from '../services/geminiService';
 import { fetchCases, createCase, updateCase, deleteCase } from '../services/api';
 import { translations } from '../translations';
 import { handleStorageError, logError } from '../utils/errorHandler';
@@ -205,6 +205,34 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     setEditingTask(prev => prev ? ({ ...prev, subTasks: prev.subTasks.filter(st => st.id !== subTaskId) }) : null);
   }, [editingTask]);
 
+  const handleDeleteCase = useCallback(async (caseId: string) => {
+    if (!window.confirm(lang === 'zh' ? '确定要删除此案件吗？' : 'Are you sure you want to delete this case?')) return;
+    try {
+      await deleteCase(caseId);
+      loadData();
+    } catch (err) {
+      logError(err, 'handleDeleteCase');
+    }
+  }, [loadData, lang]);
+
+  const handleGeneratePlan = useCallback(async (caseId: string) => {
+    const currentCase = data.tasks[caseId];
+    if (!currentCase) return;
+    try {
+      const result = await generateCasePlan(currentCase.title, currentCase.description, lang);
+      const newSubTasks: SubTask[] = result.subTasks.map(title => ({
+        id: `sub-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        title,
+        isCompleted: false
+      }));
+      const updatedCase = { ...currentCase, subTasks: [...currentCase.subTasks, ...newSubTasks] };
+      await updateCase(caseId, { subTasks: updatedCase.subTasks });
+      loadData();
+    } catch (err) {
+      logError(err, 'handleGeneratePlan');
+    }
+  }, [data.tasks, lang, loadData]);
+
   const handleGenerateAiOverview = useCallback(async () => {
     if (!editingTask) return;
     setIsOverviewGenerating(true);
@@ -217,6 +245,39 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
       setIsOverviewGenerating(false);
     }
   }, [editingTask, lang]);
+
+  const handleUpdatePriority = useCallback(async (caseId: string, priority: string) => {
+    try {
+      await updateCase(caseId, { priority } as any);
+      loadData();
+    } catch (err) {
+      logError(err, 'handleUpdatePriority');
+    }
+  }, [loadData]);
+
+  const handleMoveStage = useCallback(async (caseId: string, direction: 'next' | 'prev') => {
+    const currentCase = data.tasks[caseId];
+    if (!currentCase) return;
+
+    const stages = ['todo', 'in-progress', 'done'];
+    const currentIndex = stages.indexOf(currentCase.status);
+    let newIndex = currentIndex;
+
+    if (direction === 'next' && currentIndex < stages.length - 1) {
+      newIndex = currentIndex + 1;
+    } else if (direction === 'prev' && currentIndex > 0) {
+      newIndex = currentIndex - 1;
+    }
+
+    if (newIndex !== currentIndex) {
+      try {
+        await updateCase(caseId, { status: stages[newIndex] } as any);
+        loadData();
+      } catch (err) {
+        logError(err, 'handleMoveStage');
+      }
+    }
+  }, [data.tasks, loadData]);
 
   return {
     data,
@@ -234,5 +295,9 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     saveData: () => { },
     addCaseDocument,
     deleteCaseDocument,
+    handleDeleteCase,
+    handleGeneratePlan,
+    handleUpdatePriority,
+    handleMoveStage,
   };
 };

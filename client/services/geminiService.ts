@@ -67,3 +67,16 @@ export const generateCaseDocument = async (
   const data = await handleAIResponse(response, 'Failed to generate document');
   return data.document;
 };
+
+export const generateCasePlan = async (
+  title: string,
+  desc: string,
+  lang: 'en' | 'zh'
+): Promise<{ subTasks: string[] }> => {
+  const response = await fetch(`${API_Base}/generate-case-plan`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, desc, lang }),
+  });
+  return handleAIResponse(response, 'Failed to generate case plan');
+};

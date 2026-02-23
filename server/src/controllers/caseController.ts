@@ -66,53 +66,87 @@ export const updateCase = async (req: Request, res: Response) => {
 
         // Handle SubTasks
         if (subTasks && Array.isArray(subTasks)) {
+            const existingSubTasks = subTasks.filter((st: any) => st.id && !st.id.toString().startsWith('sub-') && !st.id.toString().startsWith('new-'));
+            const newSubTasks = subTasks.filter((st: any) => !st.id || st.id.toString().startsWith('sub-') || st.id.toString().startsWith('new-'));
+
             updateData.subTasks = {
                 deleteMany: {
-                    id: { notIn: subTasks.map((st: any) => st.id).filter((id: string) => id) }
+                    id: { notIn: existingSubTasks.map(st => st.id) }
                 },
-                upsert: subTasks.map((st: any) => ({
-                    where: { id: st.id || 'new-id' }, // 'new-id' won't be found, triggering create
-                    update: {
+                update: existingSubTasks.map(st => ({
+                    where: { id: st.id },
+                    data: {
                         title: st.title,
                         isCompleted: st.isCompleted,
                         dueDate: st.dueDate ? new Date(st.dueDate) : null
-                    },
-                    create: {
-                        title: st.title,
-                        isCompleted: st.isCompleted || false,
-                        dueDate: st.dueDate ? new Date(st.dueDate) : null
                     }
+                })),
+                create: newSubTasks.map(st => ({
+                    title: st.title,
+                    isCompleted: st.isCompleted || false,
+                    dueDate: st.dueDate ? new Date(st.dueDate) : null
                 }))
             };
         }
 
         // Handle Documents
         if (documents && Array.isArray(documents)) {
+            const existingDocuments = documents.filter((doc: any) => doc.id && !doc.id.toString().startsWith('doc-') && !doc.id.toString().startsWith('new-'));
+            const newDocuments = documents.filter((doc: any) => !doc.id || doc.id.toString().startsWith('doc-') || doc.id.toString().startsWith('new-'));
+
             updateData.documents = {
                 deleteMany: {
-                    id: { notIn: documents.map((d: any) => d.id).filter((id: string) => id) }
+                    id: { notIn: existingDocuments.map(doc => doc.id) }
                 },
-                upsert: documents.map((doc: any) => ({
-                    where: { id: doc.id || 'new-id' },
-                    update: {
-                        title: doc.title,
-                        content: doc.content,
-                        category: doc.category
-                    },
-                    create: {
+                update: existingDocuments.map(doc => ({
+                    where: { id: doc.id },
+                    data: {
                         title: doc.title,
                         content: doc.content,
                         category: doc.category
                     }
+                })),
+                create: newDocuments.map(doc => ({
+                    title: doc.title,
+                    content: doc.content,
+                    category: doc.category
                 }))
             };
         }
 
-        const updatedCase = await prisma.case.update({
-            where: { id },
-            data: updateData,
-            include: { subTasks: true, documents: true }
-        });
+        const existingCase = await prisma.case.findUnique({ where: { id } });
+        let updatedCase;
+
+        if (!existingCase) {
+            updatedCase = await prisma.case.create({
+                data: {
+                    ...rest,
+                    id, // Preserve frontend generated ID like case-4
+                    tags: JSON.stringify(tags || []),
+                    subTasks: subTasks ? {
+                        create: subTasks.map((st: any) => ({
+                            title: st.title,
+                            isCompleted: st.isCompleted || false,
+                            dueDate: st.dueDate ? new Date(st.dueDate) : null
+                        }))
+                    } : undefined,
+                    documents: documents ? {
+                        create: documents.map((doc: any) => ({
+                            title: doc.title,
+                            content: doc.content,
+                            category: doc.category
+                        }))
+                    } : undefined
+                },
+                include: { subTasks: true, documents: true }
+            });
+        } else {
+            updatedCase = await prisma.case.update({
+                where: { id },
+                data: updateData,
+                include: { subTasks: true, documents: true }
+            });
+        }
 
         res.json({
             ...updatedCase,

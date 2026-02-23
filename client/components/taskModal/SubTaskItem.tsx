@@ -91,7 +91,7 @@ export const SubTaskItem: React.FC<SubTaskItemProps> = ({
           <CalendarIcon size={12} />
           <input
             type="date"
-            value={subTask.dueDate || ''}
+            value={subTask.dueDate ? subTask.dueDate.split('T')[0] : ''}
             onChange={(e) => onDateChange(e.target.value)}
             className={`bg-transparent outline-none ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}
           />

@@ -15,6 +15,10 @@ interface BoardColumnProps {
   collapsedColumns: Set<string>;
   onToggleColumn: (id: string) => void;
   onEdit: (task: Case) => void;
+  onDelete: (caseId: string) => void;
+  onGeneratePlan: (caseId: string) => void;
+  onUpdatePriority: (caseId: string, priority: string) => void;
+  onMoveStage: (caseId: string, direction: 'next' | 'prev') => void;
 }
 
 const BoardColumn: React.FC<BoardColumnProps> = ({
@@ -27,6 +31,10 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
   collapsedColumns,
   onToggleColumn,
   onEdit,
+  onDelete,
+  onGeneratePlan,
+  onUpdatePriority,
+  onMoveStage,
 }) => {
   const t = translations[lang];
   const isCollapsed = collapsedColumns.has(columnId);
@@ -51,7 +59,18 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
           {(provided) => (
             <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-wrap gap-5 min-h-[160px]">
               {tasks.map((task, index) => (
-                <TaskCard key={task.id} task={task} index={index} onEdit={onEdit} theme={theme} lang={lang} />
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  index={index}
+                  onEdit={onEdit}
+                  theme={theme}
+                  lang={lang}
+                  onDelete={onDelete}
+                  onGeneratePlan={onGeneratePlan}
+                  onUpdatePriority={onUpdatePriority}
+                  onMoveStage={onMoveStage}
+                />
               ))}
               {provided.placeholder}
             </div>
@@ -72,6 +91,10 @@ interface BoardViewProps {
   onToggleColumn: (id: string) => void;
   onEdit: (task: Case) => void;
   onAddTask: () => void;
+  onDelete: (caseId: string) => void;
+  onGeneratePlan: (caseId: string) => void;
+  onUpdatePriority: (caseId: string, priority: string) => void;
+  onMoveStage: (caseId: string, direction: 'next' | 'prev') => void;
 }
 
 export const BoardView: React.FC<BoardViewProps> = ({
@@ -84,6 +107,10 @@ export const BoardView: React.FC<BoardViewProps> = ({
   onToggleColumn,
   onEdit,
   onAddTask,
+  onDelete,
+  onGeneratePlan,
+  onUpdatePriority,
+  onMoveStage,
 }) => {
   const t = translations[lang];
 
@@ -115,6 +142,10 @@ export const BoardView: React.FC<BoardViewProps> = ({
                 collapsedColumns={collapsedColumns}
                 onToggleColumn={onToggleColumn}
                 onEdit={onEdit}
+                onDelete={onDelete}
+                onGeneratePlan={onGeneratePlan}
+                onUpdatePriority={onUpdatePriority}
+                onMoveStage={onMoveStage}
               />
             );
           })}
