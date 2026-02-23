@@ -50,8 +50,8 @@ export const TaskModalInfoPanel: React.FC<TaskModalInfoPanelProps> = ({
         </label>
         <input
           className={`w-full bg-transparent border-b font-bold text-base py-1 outline-none transition-colors ${theme === 'dark'
-            ? 'border-white/10 text-slate-100 focus:border-indigo-500'
-            : 'border-slate-200 focus:border-indigo-500'
+            ? 'border-white/10 text-slate-100 focus:border-blue-500'
+            : 'border-slate-200 focus:border-blue-500'
             }`}
           value={task.title}
           onChange={(e) => onTaskChange({ ...task, title: e.target.value })}
@@ -112,7 +112,7 @@ export const TaskModalInfoPanel: React.FC<TaskModalInfoPanelProps> = ({
           <button
             onClick={() => setIsEditingDesc(!isEditingDesc)}
             className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${isEditingDesc
-              ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-md'
+              ? 'bg-blue-500 text-white hover:bg-blue-600 shadow-md'
               : (theme === 'dark' ? 'text-slate-300 hover:bg-white/10' : 'text-slate-600 hover:bg-slate-200')
               }`}
           >
@@ -127,8 +127,8 @@ export const TaskModalInfoPanel: React.FC<TaskModalInfoPanelProps> = ({
         {isEditingDesc ? (
           <textarea
             className={`flex-1 w-full p-5 rounded-2xl text-sm leading-relaxed border outline-none resize-none transition-all shadow-inner ${theme === 'dark'
-              ? 'bg-slate-900 border-indigo-500/50 text-slate-200'
-              : 'bg-white border-indigo-300 text-slate-800'
+              ? 'bg-slate-900 border-blue-500/50 text-slate-200'
+              : 'bg-white border-blue-300 text-slate-800'
               }`}
             value={task.description}
             onChange={(e) => onTaskChange({ ...task, description: e.target.value })}
@@ -150,8 +150,8 @@ export const TaskModalInfoPanel: React.FC<TaskModalInfoPanelProps> = ({
                   ul: ({ node, ...props }) => <ul className="list-disc pl-6 mb-4 text-sm space-y-1" {...props} />,
                   ol: ({ node, ...props }) => <ol className="list-decimal pl-6 mb-4 text-sm space-y-1" {...props} />,
                   li: ({ node, ...props }) => <li className="" {...props} />,
-                  strong: ({ node, ...props }) => <strong className="font-bold text-indigo-600 dark:text-indigo-400" {...props} />,
-                  blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-indigo-500 pl-4 italic my-4 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 py-2 rounded-r" {...props} />,
+                  strong: ({ node, ...props }) => <strong className="font-bold text-blue-600 dark:text-blue-400" {...props} />,
+                  blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-blue-500 pl-4 italic my-4 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 py-2 rounded-r" {...props} />,
                   a: ({ node, ...props }) => <a className="text-blue-500 hover:underline" {...props} />
                 }}
               >
@@ -177,8 +177,8 @@ export const TaskModalInfoPanel: React.FC<TaskModalInfoPanelProps> = ({
             disabled={isOverviewGenerating}
             className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${isOverviewGenerating
               ? 'opacity-50 cursor-not-allowed'
-              : 'hover:bg-indigo-500/20'
-              } ${theme === 'dark' ? 'text-indigo-400' : 'text-indigo-600'}`}
+              : 'hover:bg-blue-500/20'
+              } ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}
           >
             {isOverviewGenerating ? (
               <>

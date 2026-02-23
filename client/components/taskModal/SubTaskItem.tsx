@@ -47,7 +47,7 @@ export const SubTaskItem: React.FC<SubTaskItemProps> = ({
       {/* Checkbox */}
       <button
         onClick={onToggle}
-        className={`shrink-0 transition-all ${subTask.isCompleted ? 'text-indigo-500' : 'text-slate-400 hover:text-indigo-500'
+        className={`shrink-0 transition-all ${subTask.isCompleted ? 'text-blue-500' : 'text-slate-400 hover:text-blue-500'
           }`}
       >
         {subTask.isCompleted ? <CheckCircle2 size={18} /> : <Circle size={18} />}

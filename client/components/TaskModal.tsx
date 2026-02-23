@@ -75,7 +75,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
    * 包含任务基本信息、子任务列表、文档列表和AI概况
    */
   return (
-    <div className={`flex flex-col h-full w-full animate-in fade-in duration-200 ${theme === 'dark' ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200'}`}>
+    <div className={`flex flex-col h-full w-full ${theme === 'dark' ? 'bg-slate-900' : 'bg-white'}`}>
       <TaskModalHeader task={task} theme={theme} onClose={onClose} />
 
       {/* --- Left / Right Split Layout --- */}
@@ -93,13 +93,13 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         </div>
 
         {/* Right Panel: Tabs for Tasks and Documents */}
-        <div className="w-[50%] flex flex-col min-h-0 overflow-hidden bg-slate-50/30 dark:bg-slate-900/30">
+        <div className={`w-[50%] flex flex-col min-h-0 overflow-hidden ${theme === 'dark' ? 'bg-slate-900/50' : 'bg-white'}`}>
           {/* Tabs Navigation */}
-          <div className={`px-8 pt-4 border-b flex items-center gap-8 ${theme === 'dark' ? 'border-white/10' : 'border-slate-200'} bg-white dark:bg-slate-900`}>
+          <div className={`px-8 pt-4 border-b flex items-center gap-8 ${theme === 'dark' ? 'border-white/10 bg-slate-900' : 'border-slate-200 bg-white'}`}>
             <button
               onClick={() => setActiveTab('tasks')}
               className={`pb-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'tasks'
-                ? (theme === 'dark' ? 'text-indigo-400 border-indigo-400' : 'text-indigo-600 border-indigo-600')
+                ? (theme === 'dark' ? 'text-blue-400 border-blue-400' : 'text-blue-600 border-blue-600')
                 : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                 }`}
             >
@@ -108,7 +108,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             <button
               onClick={() => setActiveTab('documents')}
               className={`pb-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'documents'
-                ? (theme === 'dark' ? 'text-indigo-400 border-indigo-400' : 'text-indigo-600 border-indigo-600')
+                ? (theme === 'dark' ? 'text-blue-400 border-blue-400' : 'text-blue-600 border-blue-600')
                 : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                 }`}
             >

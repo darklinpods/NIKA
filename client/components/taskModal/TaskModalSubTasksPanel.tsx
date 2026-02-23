@@ -71,7 +71,7 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-indigo-500/10 rounded-lg text-indigo-500">
+          <div className="p-1.5 bg-blue-500/10 rounded-lg text-blue-500">
             <Sparkles size={18} />
           </div>
           <h3 className="text-base font-bold">{t.subTasks}</h3>
@@ -79,8 +79,8 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
         <button
           onClick={onAddSubTask}
           className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${theme === 'dark'
-            ? 'bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20'
-            : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+            ? 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
+            : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
             }`}
         >
           <Plus size={14} />
@@ -101,7 +101,7 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
         <div className={`h-2 rounded-full overflow-hidden ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-200'
           }`}>
           <div
-            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
+            className="h-full bg-gradient-to-r from-blue-600 to-cyan-500 transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
