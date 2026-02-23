@@ -1,7 +1,7 @@
 
 import { Case, Priority } from '../types';
 
-const API_Base = 'http://localhost:3001/api';
+const API_Base = '/api';
 
 export const fetchCases = async (): Promise<Case[]> => {
     const response = await fetch(`${API_Base}/cases`);

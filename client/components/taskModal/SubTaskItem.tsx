@@ -21,6 +21,8 @@ interface SubTaskItemProps {
   onDateChange: (date: string) => void;
   /** 删除子任务 */
   onDelete: () => void;
+  /** 回车键按下 */
+  onEnterPress?: () => void;
 }
 
 export const SubTaskItem: React.FC<SubTaskItemProps> = ({
@@ -31,6 +33,7 @@ export const SubTaskItem: React.FC<SubTaskItemProps> = ({
   onTitleChange,
   onDateChange,
   onDelete,
+  onEnterPress,
 }) => {
   const approaching = isApproaching(subTask.dueDate);
 
@@ -44,9 +47,8 @@ export const SubTaskItem: React.FC<SubTaskItemProps> = ({
       {/* Checkbox */}
       <button
         onClick={onToggle}
-        className={`shrink-0 transition-all ${
-          subTask.isCompleted ? 'text-indigo-500' : 'text-slate-400 hover:text-indigo-500'
-        }`}
+        className={`shrink-0 transition-all ${subTask.isCompleted ? 'text-indigo-500' : 'text-slate-400 hover:text-indigo-500'
+          }`}
       >
         {subTask.isCompleted ? <CheckCircle2 size={18} /> : <Circle size={18} />}
       </button>
@@ -57,22 +59,35 @@ export const SubTaskItem: React.FC<SubTaskItemProps> = ({
           type="text"
           value={subTask.title}
           onChange={(e) => onTitleChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              if (subTask.title.trim() !== '') {
+                onEnterPress?.();
+              } else {
+                e.currentTarget.blur();
+              }
+            }
+          }}
+          onBlur={() => {
+            if (subTask.title.trim() === '') {
+              onDelete();
+            }
+          }}
           placeholder={lang === 'zh' ? '输入任务名称...' : 'Task name...'}
-          className={`w-full bg-transparent outline-none text-sm ${
-            subTask.isCompleted 
-              ? 'line-through text-slate-400' 
-              : theme === 'dark' ? 'text-slate-200' : 'text-slate-700'
-          }`}
+          className={`w-full bg-transparent outline-none text-sm ${subTask.isCompleted
+            ? 'line-through text-slate-400'
+            : theme === 'dark' ? 'text-slate-200' : 'text-slate-700'
+            }`}
         />
       </div>
 
       {/* Date Input */}
       <div className="flex items-center gap-3 shrink-0">
-        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold border ${
-          approaching
-            ? 'bg-rose-500/10 border-rose-500/20 text-rose-500'
-            : (theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-500')
-        }`}>
+        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold border ${approaching
+          ? 'bg-rose-500/10 border-rose-500/20 text-rose-500'
+          : (theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-500')
+          }`}>
           <CalendarIcon size={12} />
           <input
             type="date"

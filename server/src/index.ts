@@ -21,6 +21,11 @@ app.get('/', (req, res) => {
 app.use('/api/cases', caseRoutes);
 app.use('/api/ai', geminiRoutes);
 
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-});
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(port, () => {
+        console.log(`Server is running on port ${port}`);
+    });
+}
+
+export default app;

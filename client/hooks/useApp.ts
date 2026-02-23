@@ -76,21 +76,35 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
 
     if (start === finish && source.index === destination.index) return;
 
-    // Optimistic Update
-    const startTaskIds = Array.from(start.taskIds);
-    startTaskIds.splice(source.index, 1);
-    const finishTaskIds = Array.from(finish.taskIds);
-    finishTaskIds.splice(destination.index, 0, draggableId);
+    if (start === finish) {
+      const newTaskIds = Array.from(start.taskIds);
+      newTaskIds.splice(source.index, 1);
+      newTaskIds.splice(destination.index, 0, draggableId);
 
-    const newData = {
-      ...data,
-      columns: {
-        ...data.columns,
-        [start.id]: { ...start, taskIds: startTaskIds },
-        [finish.id]: { ...finish, taskIds: finishTaskIds },
-      },
-    };
-    setData(newData);
+      const newData = {
+        ...data,
+        columns: {
+          ...data.columns,
+          [start.id]: { ...start, taskIds: newTaskIds },
+        },
+      };
+      setData(newData);
+    } else {
+      const startTaskIds = Array.from(start.taskIds);
+      startTaskIds.splice(source.index, 1);
+      const finishTaskIds = Array.from(finish.taskIds);
+      finishTaskIds.splice(destination.index, 0, draggableId);
+
+      const newData = {
+        ...data,
+        columns: {
+          ...data.columns,
+          [start.id]: { ...start, taskIds: startTaskIds },
+          [finish.id]: { ...finish, taskIds: finishTaskIds },
+        },
+      };
+      setData(newData);
+    }
 
     // API Update if column changed
     if (start !== finish) {

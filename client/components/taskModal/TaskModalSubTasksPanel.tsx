@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Sparkles, Plus } from 'lucide-react';
 import { Case, SubTask } from '../../types';
 import { translations } from '../../translations';
@@ -43,6 +43,24 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
    * 显示和管理任务的所有子任务
    * 包含进度条和子任务列表
    */
+  const subTasksLength = task.subTasks.length;
+  const prevLengthRef = useRef(subTasksLength);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (subTasksLength > prevLengthRef.current) {
+      setTimeout(() => {
+        if (containerRef.current) {
+          const inputs = containerRef.current.querySelectorAll<HTMLInputElement>('input[type="text"]');
+          if (inputs.length > 0) {
+            inputs[inputs.length - 1].focus();
+          }
+        }
+      }, 50);
+    }
+    prevLengthRef.current = subTasksLength;
+  }, [subTasksLength]);
+
   // Calculate progress
   const completedCount = task.subTasks.filter(st => st.isCompleted).length;
   const totalCount = task.subTasks.length;
@@ -60,11 +78,10 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
         </div>
         <button
           onClick={onAddSubTask}
-          className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
-            theme === 'dark' 
-              ? 'bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20' 
-              : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
-          }`}
+          className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${theme === 'dark'
+            ? 'bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20'
+            : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+            }`}
         >
           <Plus size={14} />
           {t.addTaskItem}
@@ -81,9 +98,8 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
             {progress}%
           </span>
         </div>
-        <div className={`h-2 rounded-full overflow-hidden ${
-          theme === 'dark' ? 'bg-slate-800' : 'bg-slate-200'
-        }`}>
+        <div className={`h-2 rounded-full overflow-hidden ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-200'
+          }`}>
           <div
             className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
             style={{ width: `${progress}%` }}
@@ -92,7 +108,7 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
       </div>
 
       {/* SubTasks List */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 overflow-y-auto custom-scrollbar" ref={containerRef}>
         {task.subTasks.length === 0 ? (
           <div className="text-center py-12">
             <p className={`text-sm ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
@@ -111,6 +127,7 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
                 onTitleChange={(title) => onUpdateSubTaskTitle(subTask.id, title)}
                 onDateChange={(date) => onUpdateSubTaskDate(subTask.id, date)}
                 onDelete={() => onDeleteSubTask(subTask.id)}
+                onEnterPress={() => onAddSubTask()}
               />
             ))}
           </div>
@@ -120,8 +137,8 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
       {/* Footer */}
       <div className="mt-6 pt-6 border-t border-white/5">
         <p className={`text-sm text-slate-500 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
-          {lang === 'zh' 
-            ? '点击任务名称或日期即可修改，红色标签表示即刻到期' 
+          {lang === 'zh'
+            ? '点击任务名称或日期即可修改，红色标签表示即刻到期'
             : 'Click task name or date to edit. Red label indicates due soon'}
         </p>
       </div>
