@@ -1,64 +1,20 @@
 import React, { useState } from 'react';
 import { LoginScreen, Sidebar, Header, TaskModal, BoardView, StatsBoard, GlobalTaskView } from './components';
-import { useApp, useTheme, useAuth } from './hooks';
-import { INITIAL_DATA } from './constants';
-import { Case } from './types';
+import { useTheme, useAuth } from './hooks';
+import { AppProvider, useAppContext } from './providers/AppProvider';
 
-const App: React.FC = () => {
-  // Authentication
-  const {
-    isAuthenticated,
-    username,
-    password,
-    error,
-    setUsername,
-    setPassword,
-    handleLogin,
-    handleLogout,
-  } = useAuth('zh');
-
-  // Theme
-  const { themeMode, actualTheme, setThemeMode, toggleTheme } = useTheme();
-
-  // Language
-  const [lang, setLang] = useState<'zh' | 'en'>('zh');
-
-  // App State
-  const [activeTab, setActiveTab] = useState<'board' | 'stats' | 'tasks'>('board');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set());
-
-  // App Hooks
-  const {
-    data,
-    editingTask,
-    isOverviewGenerating,
-    isSaving,
-    setEditingTask,
-    onDragEnd,
-    toggleSubTask,
-    updateSubTaskTitle,
-    updateSubTaskDate,
-    addEmptySubTask,
-    deleteSubTask,
-    handleGenerateAiOverview,
-    saveEditedTask,
-    addCaseDocument,
-    deleteCaseDocument,
-    handleDeleteCase,
-    handleGeneratePlan,
-    handleUpdatePriority,
-    handleMoveStage,
-  } = useApp(lang, actualTheme);
-
-  const toggleColumn = (id: string) => {
-    const next = new Set(collapsedColumns);
-    if (next.has(id)) next.delete(id); else next.add(id);
-    setCollapsedColumns(next);
-  };
+const MainApp: React.FC<{
+  lang: 'zh' | 'en';
+  theme: 'light' | 'dark';
+  activeTab: 'board' | 'stats' | 'tasks';
+  searchQuery: string;
+  collapsedColumns: Set<string>;
+  onToggleColumn: (id: string) => void;
+}> = ({ lang, theme, activeTab, searchQuery, collapsedColumns, onToggleColumn }) => {
+  const { data, editingTask, isOverviewGenerating, isSaving, setEditingTask, toggleSubTask, updateSubTaskTitle, updateSubTaskDate, deleteSubTask, addEmptySubTask, addCaseDocument, deleteCaseDocument, handleGenerateAiOverview, saveEditedTask } = useAppContext();
 
   const handleAddTask = () => {
-    const newTask: Case = {
+    setEditingTask({
       id: `task-${Date.now()}`,
       title: lang === 'zh' ? '新案件' : 'New Case',
       description: '',
@@ -69,47 +25,72 @@ const App: React.FC = () => {
       subTasks: [],
       aiSummary: '',
       createdAt: new Date().toISOString(),
-    };
-    setEditingTask(newTask);
+    });
   };
-
 
   const renderContent = () => {
     switch (activeTab) {
       case 'stats':
-        return <StatsBoard data={data} theme={actualTheme} lang={lang} />;
+        return <StatsBoard theme={theme} lang={lang} />;
       case 'tasks':
-        return (
-          <GlobalTaskView
-            data={data}
-            theme={actualTheme}
-            lang={lang}
-            onToggleTask={toggleSubTask}
-            onOpenCase={(caseObj) => setEditingTask(caseObj)}
-          />
-        );
+        return <GlobalTaskView theme={theme} lang={lang} />;
       default:
         return (
           <BoardView
-            data={data}
-            theme={actualTheme}
+            theme={theme}
             lang={lang}
             searchQuery={searchQuery}
             collapsedColumns={collapsedColumns}
-            onDragEnd={onDragEnd}
-            onToggleColumn={toggleColumn}
-            onEdit={setEditingTask}
+            onToggleColumn={onToggleColumn}
             onAddTask={handleAddTask}
-            onDelete={handleDeleteCase}
-            onGeneratePlan={handleGeneratePlan}
-            onUpdatePriority={handleUpdatePriority}
-            onMoveStage={handleMoveStage}
           />
         );
     }
   };
 
-  // LOGIN SCREEN
+  return (
+    <>
+      {editingTask ? (
+        <TaskModal
+          task={editingTask}
+          theme={theme}
+          lang={lang}
+          isOverviewGenerating={isOverviewGenerating}
+          isSaving={isSaving}
+          onTaskChange={setEditingTask}
+          onToggleSubTask={(subTaskId) => toggleSubTask(editingTask.id, subTaskId)}
+          onUpdateSubTaskTitle={updateSubTaskTitle}
+          onUpdateSubTaskDate={updateSubTaskDate}
+          onDeleteSubTask={deleteSubTask}
+          onAddSubTask={addEmptySubTask}
+          onAddDocument={addCaseDocument}
+          onDeleteDocument={deleteCaseDocument}
+          onGenerateOverview={handleGenerateAiOverview}
+          onSave={saveEditedTask}
+          onClose={() => setEditingTask(null)}
+        />
+      ) : (
+        renderContent()
+      )}
+    </>
+  );
+};
+
+const App: React.FC = () => {
+  const { isAuthenticated, username, password, error, setUsername, setPassword, handleLogin, handleLogout } = useAuth('zh');
+  const { themeMode, actualTheme, toggleTheme } = useTheme();
+  const [lang, setLang] = useState<'zh' | 'en'>('zh');
+
+  const [activeTab, setActiveTab] = useState<'board' | 'stats' | 'tasks'>('board');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set());
+
+  const toggleColumn = (id: string) => {
+    const next = new Set(collapsedColumns);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setCollapsedColumns(next);
+  };
+
   if (!isAuthenticated) {
     return (
       <LoginScreen
@@ -127,7 +108,6 @@ const App: React.FC = () => {
     );
   }
 
-  // MAIN APP SCREEN
   return (
     <div className={`flex h-screen overflow-hidden ${actualTheme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
       <Sidebar
@@ -137,46 +117,30 @@ const App: React.FC = () => {
         onTabChange={setActiveTab}
         onLogout={handleLogout}
       />
-
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {editingTask ? (
-          <TaskModal
-            task={editingTask}
-            theme={actualTheme}
-            lang={lang}
-            isOverviewGenerating={isOverviewGenerating}
-            isSaving={isSaving}
-            onTaskChange={setEditingTask}
-            onToggleSubTask={(subTaskId) => toggleSubTask(editingTask.id, subTaskId)}
-            onUpdateSubTaskTitle={updateSubTaskTitle}
-            onUpdateSubTaskDate={updateSubTaskDate}
-            onDeleteSubTask={deleteSubTask}
-            onAddSubTask={addEmptySubTask}
-            onAddDocument={addCaseDocument}
-            onDeleteDocument={deleteCaseDocument}
-            onGenerateOverview={handleGenerateAiOverview}
-            onSave={saveEditedTask}
-            onClose={() => setEditingTask(null)}
-          />
-        ) : (
-          <>
-            <Header
-              theme={actualTheme}
-              themeMode={themeMode}
-              lang={lang}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              onThemeToggle={toggleTheme}
-              onLangToggle={() => setLang(lang === 'zh' ? 'en' : 'zh')}
-            />
-
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
-              <div className="max-w-[1600px] mx-auto">
-                {renderContent()}
-              </div>
-            </div>
-          </>
-        )}
+        <Header
+          theme={actualTheme}
+          themeMode={themeMode}
+          lang={lang}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onThemeToggle={toggleTheme}
+          onLangToggle={() => setLang(lang === 'zh' ? 'en' : 'zh')}
+        />
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
+          <div className="max-w-[1600px] mx-auto">
+            <AppProvider lang={lang} theme={actualTheme}>
+              <MainApp
+                lang={lang}
+                theme={actualTheme}
+                activeTab={activeTab}
+                searchQuery={searchQuery}
+                collapsedColumns={collapsedColumns}
+                onToggleColumn={toggleColumn}
+              />
+            </AppProvider>
+          </div>
+        </div>
       </main>
     </div>
   );

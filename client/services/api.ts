@@ -1,56 +1,77 @@
-
 import { Case, Priority } from '../types';
 
 const API_Base = '/api';
 
-const handleResponse = async (response: Response, errorMessage: string) => {
-    if (!response.ok) {
-        let errorData;
-        try {
-            errorData = await response.json();
-        } catch (e) {
-            errorData = { message: 'Raw error response' };
+/**
+ * 客户端 API 请求统一包装器
+ * 用于封装原生的 fetch 请求，并提供全局统一的错误处理、自动 JSON 序列化、以及 HTTP 动词方法的语义化调用
+ */
+class ApiClient {
+    private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+        const url = `${API_Base}${endpoint}`;
+        const headers = new Headers(options.headers || {});
+
+        // 默认自动添加 JSON Header（除非是表单上传场景）
+        if (!(options.body instanceof FormData)) {
+            headers.set('Content-Type', 'application/json');
         }
-        console.group(`🔴 API Error: ${errorMessage}`);
-        console.error('Status:', response.status);
-        console.error('URL:', response.url);
-        console.error('Error Details:', errorData);
-        console.groupEnd();
 
-        const message = errorData.details || errorData.error || errorMessage;
-        throw new Error(message);
+        const config: RequestInit = {
+            ...options,
+            headers,
+        };
+
+        const response = await fetch(url, config);
+
+        // 如果请求响应状态表明不成功，则统一在此处抛出并拦截格式化日志
+        if (!response.ok) {
+            let errorData;
+            try {
+                errorData = await response.json();
+            } catch (e) {
+                errorData = { message: 'Raw error response' };
+            }
+            console.group(`🔴 API Error: ${options.method || 'GET'} ${url}`);
+            console.error('Status:', response.status);
+            console.error('Error Details:', errorData);
+            console.groupEnd();
+
+            const message = errorData.details || errorData.error || `Failed to fetch from ${endpoint}`;
+            throw new Error(message);
+        }
+
+        // 处理无内容的成功响应
+        if (response.status === 204) {
+            return {} as T;
+        }
+
+        // 解析并返回 JSON
+        return response.json();
     }
-    return response.json();
-};
 
-export const fetchCases = async (): Promise<Case[]> => {
-    const response = await fetch(`${API_Base}/cases`);
-    return handleResponse(response, 'Failed to fetch cases');
-};
-
-export const createCase = async (caseData: Partial<Case>): Promise<Case> => {
-    const response = await fetch(`${API_Base}/cases`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(caseData),
-    });
-    return handleResponse(response, 'Failed to create case');
-};
-
-export const updateCase = async (id: string, caseData: Partial<Case>): Promise<Case> => {
-    const response = await fetch(`${API_Base}/cases/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(caseData),
-    });
-    return handleResponse(response, 'Failed to update case');
-};
-
-export const deleteCase = async (id: string): Promise<void> => {
-    const response = await fetch(`${API_Base}/cases/${id}`, {
-        method: 'DELETE',
-    });
-    if (!response.ok) {
-        await handleResponse(response, 'Failed to delete case');
+    // 提供基础的四个语义化 HTTP 方法
+    public get<T>(endpoint: string, options?: RequestInit) {
+        return this.request<T>(endpoint, { ...options, method: 'GET' });
     }
-};
+
+    public post<T>(endpoint: string, body: any, options?: RequestInit) {
+        return this.request<T>(endpoint, { ...options, method: 'POST', body: JSON.stringify(body) });
+    }
+
+    public put<T>(endpoint: string, body: any, options?: RequestInit) {
+        return this.request<T>(endpoint, { ...options, method: 'PUT', body: JSON.stringify(body) });
+    }
+
+    public delete<T>(endpoint: string, options?: RequestInit) {
+        return this.request<T>(endpoint, { ...options, method: 'DELETE' });
+    }
+}
+
+// 导出统一的单例实例
+export const api = new ApiClient();
+
+// 对外暴露针对业务实体的强类型调用函数
+export const fetchCases = (): Promise<Case[]> => api.get<Case[]>('/cases');
+export const createCase = (caseData: Partial<Case>): Promise<Case> => api.post<Case>('/cases', caseData);
+export const updateCase = (id: string, caseData: Partial<Case>): Promise<Case> => api.put<Case>(`/cases/${id}`, caseData);
+export const deleteCase = (id: string): Promise<void> => api.delete<void>(`/cases/${id}`);

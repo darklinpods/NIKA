@@ -1,19 +1,19 @@
-
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 // Fixed import: changed 'Task' to 'Case' to match types.ts
-import { BoardData, Case } from '../types';
+import { Case } from '../types';
 import { translations } from '../translations';
+import { useAppContext } from '../providers/AppProvider';
 
 interface StatsBoardProps {
-  data: BoardData;
   theme: 'light' | 'dark';
   lang: 'en' | 'zh';
 }
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444'];
 
-const StatsBoard: React.FC<StatsBoardProps> = ({ data, theme, lang }) => {
+const StatsBoard: React.FC<StatsBoardProps> = ({ theme, lang }) => {
+  const { data } = useAppContext();
   const t = translations[lang];
   const chartData = data.columnOrder.map((colId) => ({
     name: t[data.columns[colId].id.replace('column-', 'backlog')] || data.columns[colId].title,
@@ -26,9 +26,9 @@ const StatsBoard: React.FC<StatsBoardProps> = ({ data, theme, lang }) => {
     return acc;
   }, {} as Record<string, number>);
 
-  const priorityData = Object.entries(priorityStats).map(([name, value]) => ({ 
-    name: t[name as keyof typeof t] || name, 
-    value 
+  const priorityData = Object.entries(priorityStats).map(([name, value]) => ({
+    name: t[name as keyof typeof t] || name,
+    value
   }));
 
   const cardBg = theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100';
@@ -47,13 +47,13 @@ const StatsBoard: React.FC<StatsBoardProps> = ({ data, theme, lang }) => {
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
                 ))}
               </Pie>
-              <Tooltip 
-                contentStyle={{ 
+              <Tooltip
+                contentStyle={{
                   backgroundColor: theme === 'dark' ? '#1e293b' : '#fff',
                   border: 'none',
                   borderRadius: '12px',
                   color: theme === 'dark' ? '#f1f5f9' : '#1e293b'
-                }} 
+                }}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -75,15 +75,15 @@ const StatsBoard: React.FC<StatsBoardProps> = ({ data, theme, lang }) => {
             <BarChart data={priorityData}>
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: theme === 'dark' ? '#94a3b8' : '#64748b' }} />
               <YAxis hide />
-              <Tooltip 
-                cursor={{ fill: theme === 'dark' ? '#1e293b' : '#f8fafc' }} 
-                contentStyle={{ 
+              <Tooltip
+                cursor={{ fill: theme === 'dark' ? '#1e293b' : '#f8fafc' }}
+                contentStyle={{
                   backgroundColor: theme === 'dark' ? '#1e293b' : '#fff',
                   border: 'none',
                   borderRadius: '8px',
                   boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                   color: theme === 'dark' ? '#f1f5f9' : '#1e293b'
-                }} 
+                }}
               />
               <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                 {priorityData.map((entry, index) => {

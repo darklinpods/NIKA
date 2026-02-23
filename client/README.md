@@ -1,20 +1,25 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# 看板式律师案件管理系统 (前端 Client)
 
-# Run and deploy your AI Studio app
+这是 Law Case Manager 的前端 React 应用程序。
 
-This contains everything you need to run your app locally.
+有关整个项目的详细介绍、技术栈细节、以及启动和部署指南，**请参阅项目根目录下的 [README.md](../README.md)** 文件。
 
-View your app in AI Studio: https://ai.studio/apps/drive/1jBCqm-JsPAFiaQ_SSYfn2mme8GsOGhVX
+## 前端专属开发命令
 
-## Run Locally
+确保你在 `client` 目录下，或者使用 npm workspaces 指定项目：
 
-**Prerequisites:**  Node.js
+```bash
+# 启动前端开发服务器
+npm run dev
 
+# 生产环境构建打包
+npm run build
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+# 预览生产构建成果
+npm run preview
+```
+
+## 快速导航
+- 想要查看状态管理的逻辑，请跳转到 `src/hooks/` 和 `src/providers/`。
+- 想要更改 UI 样式或卡片结构，请跳转到 `src/components/`。
+- 想要修改 API 的请求根地址或错误拦截，请跳转到 `src/services/api.ts`。

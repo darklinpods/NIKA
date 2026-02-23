@@ -1,9 +1,9 @@
-
 import React, { useMemo } from 'react';
-import { BoardData, Case, SubTask } from '../types';
+import { Case, SubTask } from '../types';
 import { translations } from '../translations';
 import { CheckCircle2, Circle, Clock, AlertCircle, Calendar, Briefcase, ChevronRight, Zap } from 'lucide-react';
 import { formatDateOptional, isApproaching, isOverdue } from '../utils/dateUtils';
+import { useAppContext } from '../providers/AppProvider';
 
 interface TaskWithParent {
   task: SubTask;
@@ -11,15 +11,13 @@ interface TaskWithParent {
 }
 
 interface GlobalTaskViewProps {
-  data: BoardData;
   theme: 'light' | 'dark';
   lang: 'en' | 'zh';
-  onToggleTask: (caseId: string, subTaskId: string) => void;
-  onOpenCase: (caseObj: Case) => void;
 }
 
 
-const GlobalTaskView: React.FC<GlobalTaskViewProps> = ({ data, theme, lang, onToggleTask, onOpenCase }) => {
+const GlobalTaskView: React.FC<GlobalTaskViewProps> = ({ theme, lang }) => {
+  const { data, toggleSubTask, setEditingTask } = useAppContext();
   const t = translations[lang];
   const now = new Date();
   const todayStart = new Date(now.setHours(0, 0, 0, 0));
@@ -79,17 +77,16 @@ const GlobalTaskView: React.FC<GlobalTaskViewProps> = ({ data, theme, lang, onTo
           {tasks.map(({ task, parent }) => {
             const approaching = isApproaching(task.dueDate);
             return (
-              <div 
+              <div
                 key={task.id}
-                className={`group flex items-center justify-between p-4 rounded-2xl border transition-all ${
-                  theme === 'dark' 
-                    ? `bg-slate-900/50 border-white/5 hover:border-indigo-500/30 hover:bg-slate-900 ${approaching ? 'border-rose-500/40 ring-1 ring-rose-500/10 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : ''}` 
-                    : `bg-white border-slate-100 hover:border-indigo-200 hover:shadow-md ${approaching ? 'border-rose-200 bg-rose-50/30' : ''}`
-                }`}
+                className={`group flex items-center justify-between p-4 rounded-2xl border transition-all ${theme === 'dark'
+                  ? `bg-slate-900/50 border-white/5 hover:border-indigo-500/30 hover:bg-slate-900 ${approaching ? 'border-rose-500/40 ring-1 ring-rose-500/10 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : ''}`
+                  : `bg-white border-slate-100 hover:border-indigo-200 hover:shadow-md ${approaching ? 'border-rose-200 bg-rose-50/30' : ''}`
+                  }`}
               >
                 <div className="flex items-center gap-4 flex-1">
-                  <button 
-                    onClick={() => onToggleTask(parent.id, task.id)}
+                  <button
+                    onClick={() => toggleSubTask(parent.id, task.id)}
                     className="transition-transform active:scale-90"
                   >
                     {task.isCompleted ? (
@@ -105,13 +102,13 @@ const GlobalTaskView: React.FC<GlobalTaskViewProps> = ({ data, theme, lang, onTo
                       </p>
                       {approaching && !task.isCompleted && (
                         <span className="flex items-center gap-1 text-[9px] font-black text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full uppercase">
-                           <Zap size={10} /> {t.approaching}
+                          <Zap size={10} /> {t.approaching}
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-1">
-                      <button 
-                        onClick={() => onOpenCase(parent)}
+                      <button
+                        onClick={() => setEditingTask(parent)}
                         className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-500 hover:underline"
                       >
                         <Briefcase size={12} />
@@ -126,8 +123,8 @@ const GlobalTaskView: React.FC<GlobalTaskViewProps> = ({ data, theme, lang, onTo
                     </div>
                   </div>
                 </div>
-                <button 
-                  onClick={() => onOpenCase(parent)}
+                <button
+                  onClick={() => setEditingTask(parent)}
                   className="opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-indigo-500 transition-all"
                 >
                   <ChevronRight size={18} />
@@ -151,7 +148,7 @@ const GlobalTaskView: React.FC<GlobalTaskViewProps> = ({ data, theme, lang, onTo
       {renderSection(t.today, groupedTasks.today, <Clock size={14} />, "bg-amber-500")}
       {renderSection(t.upcoming, groupedTasks.upcoming, <Calendar size={14} />, "bg-indigo-500")}
       {renderSection(t.completed, groupedTasks.completed, <CheckCircle2 size={14} />, "bg-emerald-500")}
-      
+
       {Object.values(groupedTasks).every((arr: any) => arr.length === 0) && (
         <div className="text-center py-20 opacity-50">
           <Briefcase size={48} className="mx-auto mb-4 text-slate-300" />

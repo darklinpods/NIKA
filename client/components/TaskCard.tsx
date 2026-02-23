@@ -10,22 +10,21 @@ import { ProgressBar } from './taskCard/ProgressBar';
 import { TaskFooter } from './taskCard/TaskFooter';
 import { TaskMenu } from './taskCard/TaskMenu';
 import { SummaryPanel } from './taskCard/SummaryPanel';
+import { useAppContext } from '../providers/AppProvider';
 
 interface TaskCardProps {
   task: Case;
   index: number;
-  onEdit: (task: Case) => void;
   theme: 'light' | 'dark';
   lang: 'en' | 'zh';
-  onDelete: (caseId: string) => void;
-  onGeneratePlan: (caseId: string) => void;
-  onUpdatePriority: (caseId: string, priority: string) => void;
-  onMoveStage: (caseId: string, direction: 'next' | 'prev') => void;
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({
-  task, index, onEdit, theme, lang, onDelete, onGeneratePlan, onUpdatePriority, onMoveStage
+  task, index, theme, lang
 }) => {
+  const {
+    setEditingTask, handleDeleteCase, handleGeneratePlan, handleUpdatePriority, handleMoveStage
+  } = useAppContext();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
@@ -69,27 +68,27 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
   const handleDelete = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    onDelete(task.id);
+    handleDeleteCase(task.id);
     setIsMenuOpen(false);
-  }, [onDelete, task.id]);
+  }, [handleDeleteCase, task.id]);
 
-  const handleGeneratePlan = useCallback((e: React.MouseEvent) => {
+  const handleGenPlan = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    onGeneratePlan(task.id);
+    handleGeneratePlan(task.id);
     setIsMenuOpen(false);
-  }, [onGeneratePlan, task.id]);
+  }, [handleGeneratePlan, task.id]);
 
-  const handleUpdatePriority = useCallback((e: React.MouseEvent, priority: string) => {
+  const handleUpdatePrio = useCallback((e: React.MouseEvent, priority: string) => {
     e.stopPropagation();
-    onUpdatePriority(task.id, priority);
+    handleUpdatePriority(task.id, priority);
     setIsMenuOpen(false);
-  }, [onUpdatePriority, task.id]);
+  }, [handleUpdatePriority, task.id]);
 
-  const handleMoveStage = useCallback((e: React.MouseEvent, direction: 'next' | 'prev') => {
+  const handleMove = useCallback((e: React.MouseEvent, direction: 'next' | 'prev') => {
     e.stopPropagation();
-    onMoveStage(task.id, direction);
+    handleMoveStage(task.id, direction);
     setIsMenuOpen(false);
-  }, [onMoveStage, task.id]);
+  }, [handleMoveStage, task.id]);
 
   return (
     <Draggable draggableId={task.id} index={index}>
@@ -98,7 +97,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          onClick={() => onEdit(task)}
+          onClick={() => setEditingTask(task)}
           className={`group relative border rounded-xl p-4 flex flex-col justify-between min-w-[240px] max-w-[240px] transition-all duration-300 cursor-pointer border-l-[4px] shrink-0 ${getPriorityBorderColor(task.priority)
             } ${theme === 'dark'
               ? 'bg-slate-900 border-white/5 hover:border-indigo-500/50 hover:shadow-[0_10px_30px_-10px_rgba(99,102,241,0.25)]'
@@ -119,9 +118,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 onAiSummary={handleAiSummary}
                 onCopyId={handleCopyId}
                 onDelete={handleDelete}
-                onGeneratePlan={handleGeneratePlan}
-                onUpdatePriority={handleUpdatePriority}
-                onMoveStage={handleMoveStage}
+                onGeneratePlan={handleGenPlan}
+                onUpdatePriority={handleUpdatePrio}
+                onMoveStage={handleMove}
                 currentStatus={task.status}
                 t={t}
               />
