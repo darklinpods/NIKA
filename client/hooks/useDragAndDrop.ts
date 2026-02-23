@@ -1,12 +1,19 @@
 import { useCallback } from 'react';
 import { DropResult } from '@hello-pangea/dnd';
 import { BoardData } from '../types';
-import { updateCase } from '../services/api';
+import { reorderCases } from '../services/api';
 import { logError } from '../utils/errorHandler';
+
+// 列ID到状态枚举的映射
+const colToStatus: { [key: string]: string } = {
+    'col-1': 'todo',
+    'col-2': 'in-progress',
+    'col-3': 'done'
+};
 
 /**
  * 拖拽交互处理的专属 Hook
- * 负责处理前端展示级别的乐观更新逻辑，并同步看板卡片在不同阶段间的变更到后端API
+ * 负责处理前端展示级别的乐观更新逻辑，通过批量重排 API 同步看板顺序到后端
  */
 export const useDragAndDrop = (
     data: BoardData,
@@ -24,58 +31,71 @@ export const useDragAndDrop = (
         // 拖回原位，不做任何操作
         if (start === finish && source.index === destination.index) return;
 
+        let newFinishTaskIds: string[];
+        let newStartTaskIds: string[] | null = null;
+
         // 【情景 1：在同一个列内部改变顺序】
         if (start === finish) {
-            const newTaskIds = Array.from(start.taskIds);
-            newTaskIds.splice(source.index, 1);
-            newTaskIds.splice(destination.index, 0, draggableId);
+            newFinishTaskIds = Array.from(start.taskIds);
+            newFinishTaskIds.splice(source.index, 1);
+            newFinishTaskIds.splice(destination.index, 0, draggableId);
 
             const newData = {
                 ...data,
                 columns: {
                     ...data.columns,
-                    [start.id]: { ...start, taskIds: newTaskIds },
+                    [start.id]: { ...start, taskIds: newFinishTaskIds },
                 },
             };
             setData(newData); // 乐观更新视图状态
         }
         // 【情景 2：跨列拖动 (改变了案件处于的阶段)】
         else {
-            const startTaskIds = Array.from(start.taskIds);
-            startTaskIds.splice(source.index, 1);
+            newStartTaskIds = Array.from(start.taskIds);
+            newStartTaskIds.splice(source.index, 1);
 
-            const finishTaskIds = Array.from(finish.taskIds);
-            finishTaskIds.splice(destination.index, 0, draggableId);
+            newFinishTaskIds = Array.from(finish.taskIds);
+            newFinishTaskIds.splice(destination.index, 0, draggableId);
 
             const newData = {
                 ...data,
                 columns: {
                     ...data.columns,
-                    [start.id]: { ...start, taskIds: startTaskIds },
-                    [finish.id]: { ...finish, taskIds: finishTaskIds },
+                    [start.id]: { ...start, taskIds: newStartTaskIds },
+                    [finish.id]: { ...finish, taskIds: newFinishTaskIds },
                 },
             };
             setData(newData); // 乐观更新视图状态
         }
 
-        // 如果案件移动到了不同的列，需要同步状态到后端数据库
-        if (start !== finish) {
-            // 列ID到状态枚举的映射
-            const colToStatus: { [key: string]: string } = {
-                'col-1': 'todo',
-                'col-2': 'in-progress',
-                'col-3': 'done'
-            };
-            const newStatus = colToStatus[finish.id];
+        // 构造同步到后端的更新负载
+        try {
+            const updates: { id: string, order: number, status: string }[] = [];
 
-            if (newStatus) {
-                try {
-                    // 异步调用 API 更新案件状态
-                    await updateCase(draggableId, { status: newStatus } as any);
-                } catch (e) {
-                    logError(e, 'onDragEnd update status');
-                }
+            // 为目标列的所有任务重新分配 order
+            newFinishTaskIds.forEach((id, index) => {
+                updates.push({
+                    id,
+                    order: index,
+                    status: colToStatus[finish.id]
+                });
+            });
+
+            // 如果涉及两列，源列的顺序也需要由于空缺进行收紧（可选，但更健康）
+            if (newStartTaskIds) {
+                newStartTaskIds.forEach((id, index) => {
+                    updates.push({
+                        id,
+                        order: index,
+                        status: colToStatus[start.id]
+                    });
+                });
             }
+
+            // 批量提交更新到服务器
+            await reorderCases(updates);
+        } catch (e) {
+            logError(e, 'onDragEnd reorder sync');
         }
     }, [data, setData]);
 

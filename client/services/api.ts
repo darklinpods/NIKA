@@ -74,4 +74,5 @@ export const api = new ApiClient();
 export const fetchCases = (): Promise<Case[]> => api.get<Case[]>('/cases');
 export const createCase = (caseData: Partial<Case>): Promise<Case> => api.post<Case>('/cases', caseData);
 export const updateCase = (id: string, caseData: Partial<Case>): Promise<Case> => api.put<Case>(`/cases/${id}`, caseData);
+export const reorderCases = (updates: { id: string, order: number, status: string }[]): Promise<any> => api.put<any>('/reorder', updates);
 export const deleteCase = (id: string): Promise<void> => api.delete<void>(`/cases/${id}`);

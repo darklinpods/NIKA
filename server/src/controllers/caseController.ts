@@ -56,3 +56,18 @@ export const deleteCase = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Failed to delete case', details: error.message, stack: error.stack });
     }
 };
+
+// 批量重排案件的处理函数
+export const reorderCases = async (req: Request, res: Response) => {
+    try {
+        const updates = req.body;
+        if (!Array.isArray(updates)) {
+            return res.status(400).json({ error: 'Invalid updates format, expected array' });
+        }
+        await caseService.reorderCases(updates);
+        res.json({ success: true });
+    } catch (error: any) {
+        console.error("Reorder Cases Error:", error);
+        res.status(500).json({ error: 'Failed to reorder cases', details: error.message });
+    }
+};

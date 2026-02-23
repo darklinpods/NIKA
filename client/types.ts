@@ -17,6 +17,7 @@ export interface Case {
   status: 'todo' | 'in-progress' | 'done';
   tags: string[];
   createdAt: string;
+  order: number;
   subTasks: SubTask[];
   clientName: string;
   courtName?: string;

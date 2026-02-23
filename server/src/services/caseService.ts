@@ -6,13 +6,17 @@ import prisma from '../prisma';
  * 提供纯粹的与数据库直接相关的增查改删方法，同时处理与关系表 (SubTasks, Documents) 的联机操作。
  */
 export const caseService = {
-    // 获取全部案件数据（并携带附带的嵌套数组结果）
+    // 获取全部案件数据（并按照 order 字段升序排列）
     async getAllCases() {
         const cases = await prisma.case.findMany({
             include: {
                 subTasks: true,
                 documents: true,
             },
+            orderBy: [
+                { order: 'asc' },
+                { createdAt: 'asc' }
+            ]
         });
         // 确保数组结构的正确反序列化，从数据库长字符串转换还原成前端期望的类型格式
         return cases.map(c => ({
@@ -21,14 +25,29 @@ export const caseService = {
         }));
     },
 
+    // 获取特定状态下当前最大的 order 值
+    async getMaxOrder(status: string): Promise<number> {
+        const result = await prisma.case.aggregate({
+            where: { status },
+            _max: { order: true }
+        });
+        return result._max.order ?? -1;
+    },
+
     // 创建新案件记录
     async createCase(data: any) {
-        const { title, description, priority, tags, clientName, courtName } = data;
+        const { title, description, priority, tags, clientName, courtName, status = 'todo' } = data;
+
+        // 默认将新案件放到对应状态列的最后
+        const maxOrder = await this.getMaxOrder(status);
+
         const newCase = await prisma.case.create({
             data: {
                 title,
                 description,
                 priority,
+                status,
+                order: maxOrder + 1,
                 tags: JSON.stringify(tags || []),
                 clientName,
                 courtName,
@@ -49,14 +68,21 @@ export const caseService = {
         // 先剥离出基础字段和可能存在修改并牵扯其他表的字段内容
         const { tags, subTasks, documents, id: bodyId, createdAt, updatedAt, ...rest } = data;
 
+        const existingCase = await prisma.case.findUnique({ where: { id } });
+
         const updateData: any = { ...rest };
 
         if (tags) {
             updateData.tags = JSON.stringify(tags);
         }
 
+        // 如果状态发生了改变，且请求中没有明确指定新的 order，则默认移动到新列的末尾
+        if (existingCase && rest.status && rest.status !== existingCase.status && rest.order === undefined) {
+            const maxOrder = await this.getMaxOrder(rest.status);
+            updateData.order = maxOrder + 1;
+        }
+
         // 精细化的 SubTasks 同步处理
-        // 由于前端传过来的是全新全量状态，后端需进行 DIFF：保留依然存在的记录、增加新创建记录、移除被删除的新鲜记录
         if (subTasks && Array.isArray(subTasks)) {
             const existingSubTasks = subTasks.filter((st: any) => st.id && !st.id.toString().startsWith('sub-') && !st.id.toString().startsWith('new-'));
             const newSubTasks = subTasks.filter((st: any) => !st.id || st.id.toString().startsWith('sub-') || st.id.toString().startsWith('new-'));
@@ -106,15 +132,18 @@ export const caseService = {
             };
         }
 
-        const existingCase = await prisma.case.findUnique({ where: { id } });
         let updatedCase;
 
         if (!existingCase) {
-            // 注意：针对可能出现前端带过来自定义的ID时，提供创建支持（如导入或者离线合并等非标准操作的兼容易用代码）
+            const status = rest.status || 'todo';
+            const maxOrder = await this.getMaxOrder(status);
+
             updatedCase = await prisma.case.create({
                 data: {
                     ...rest,
                     id,
+                    status,
+                    order: rest.order !== undefined ? rest.order : maxOrder + 1,
                     tags: JSON.stringify(tags || []),
                     subTasks: subTasks ? {
                         create: subTasks.map((st: any) => ({
@@ -147,7 +176,19 @@ export const caseService = {
         };
     },
 
-    // 安全移除整个案件实体记录（因 Prisma 层已开启外键删除级联 cascading delete，连带子项将一并正确清理）
+    // 批量重排案件
+    async reorderCases(updates: { id: string, order: number, status: string }[]) {
+        return await prisma.$transaction(
+            updates.map(u =>
+                prisma.case.update({
+                    where: { id: u.id },
+                    data: { order: u.order, status: u.status }
+                })
+            )
+        );
+    },
+
+    // 安全移除整个案件实体记录
     async deleteCase(id: string) {
         await prisma.case.delete({ where: { id } });
         return { message: 'Case deleted' };
