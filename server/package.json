@@ -6,6 +6,7 @@
         "start": "node dist/index.js",
         "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
         "build": "tsc",
+        "postinstall": "prisma generate",
         "seed:docs": "ts-node src/scripts/seed_from_docx.ts"
     },
     "dependencies": {
