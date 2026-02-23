@@ -14,7 +14,14 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', database: !!process.env.DATABASE_URL, env: process.env.NODE_ENV });
+    res.json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        database: !!process.env.DATABASE_URL,
+        env: process.env.NODE_ENV,
+        databaseUrlLength: process.env.DATABASE_URL?.length || 0,
+        geminiKeyLength: process.env.GEMINI_API_KEY?.length || 0
+    });
 });
 
 const apiRouter = express.Router();
@@ -24,6 +31,17 @@ apiRouter.use('/ai', geminiRoutes);
 // Handle both with and without /api prefix for robustness on Vercel
 app.use('/api', apiRouter);
 app.use('/', apiRouter);
+
+// Global error handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error("Global Error Handler:", err);
+    res.status(500).json({
+        error: 'Global Server Error',
+        details: err.message,
+        stack: err.stack,
+        path: req.path
+    });
+});
 
 // For local development
 if (process.env.NODE_ENV !== 'production') {

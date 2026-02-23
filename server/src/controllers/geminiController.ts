@@ -51,7 +51,7 @@ export const generateTasks = async (req: Request, res: Response) => {
         res.json(data);
     } catch (error: any) {
         console.error("AI Generation Error:", error);
-        res.status(500).json({ error: error.message || "Failed to generate tasks" });
+        res.status(500).json({ error: error.message || "Failed to generate tasks", details: error.message, stack: error.stack });
     }
 };
 
@@ -74,7 +74,7 @@ export const suggestImprovement = async (req: Request, res: Response) => {
         res.json({ suggestion: result });
     } catch (error: any) {
         console.error("AI Suggestion Error:", error);
-        res.status(500).json({ error: error.message || "Failed to suggest improvement" });
+        res.status(500).json({ error: error.message || "Failed to suggest improvement", details: error.message, stack: error.stack });
     }
 };
 
@@ -96,7 +96,7 @@ export const summarizeTask = async (req: Request, res: Response) => {
         res.json({ summary: result });
     } catch (error: any) {
         console.error("AI Summary Error:", error);
-        res.status(500).json({ error: error.message || "Failed to summarize task" });
+        res.status(500).json({ error: error.message || "Failed to summarize task", details: error.message, stack: error.stack });
     }
 };
 
@@ -155,6 +155,6 @@ export const generateCaseDocument = async (req: Request, res: Response) => {
         res.json({ document: result });
     } catch (error: any) {
         console.error("AI Document Generation Error:", error);
-        res.status(500).json({ error: error.message || "Failed to generate document" });
+        res.status(500).json({ error: error.message || "Failed to generate document", details: error.message, stack: error.stack });
     }
 };

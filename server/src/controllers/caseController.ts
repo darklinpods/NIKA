@@ -16,8 +16,9 @@ export const getCases = async (req: Request, res: Response) => {
             tags: c.tags ? JSON.parse(c.tags) : [],
         }));
         res.json(formattedCases);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch cases' });
+    } catch (error: any) {
+        console.error("Fetch Cases Error:", error);
+        res.status(500).json({ error: 'Failed to fetch cases', details: error.message, stack: error.stack });
     }
 };
 
@@ -42,8 +43,9 @@ export const createCase = async (req: Request, res: Response) => {
             ...newCase,
             tags: JSON.parse(newCase.tags)
         });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to create case' });
+    } catch (error: any) {
+        console.error("Create Case Error:", error);
+        res.status(500).json({ error: 'Failed to create case', details: error.message, stack: error.stack });
     }
 };
 
@@ -116,9 +118,9 @@ export const updateCase = async (req: Request, res: Response) => {
             ...updatedCase,
             tags: JSON.parse(updatedCase.tags)
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Update Case Error:", error);
-        res.status(500).json({ error: 'Failed to update case' });
+        res.status(500).json({ error: 'Failed to update case', details: error.message, stack: error.stack });
     }
 };
 
@@ -127,7 +129,8 @@ export const deleteCase = async (req: Request, res: Response) => {
     try {
         await prisma.case.delete({ where: { id } });
         res.json({ message: 'Case deleted' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to delete case' });
+    } catch (error: any) {
+        console.error("Delete Case Error:", error);
+        res.status(500).json({ error: 'Failed to delete case', details: error.message, stack: error.stack });
     }
 };
