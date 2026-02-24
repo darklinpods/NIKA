@@ -4,6 +4,7 @@ import { TaskModalHeader } from './taskModal/TaskModalHeader';
 import { TaskModalInfoPanel } from './taskModal/TaskModalInfoPanel';
 import { TaskModalSubTasksPanel } from './taskModal/TaskModalSubTasksPanel';
 import { TaskModalDocumentsPanel } from './taskModal/TaskModalDocumentsPanel';
+import { CaseChatPanel } from './taskModal/CaseChatPanel';
 import { TaskModalFooter } from './taskModal/TaskModalFooter';
 import { LoadingOverlay } from './LoadingOverlay';
 import { translations } from '../translations';
@@ -66,7 +67,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   onSave,
   onClose,
 }) => {
-  const [activeTab, setActiveTab] = useState<'tasks' | 'documents'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'documents' | 'ai_chat'>('tasks');
   const t = translations[lang];
 
   /**
@@ -92,7 +93,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           />
         </div>
 
-        {/* Right Panel: Tabs for Tasks and Documents */}
+        {/* Right Panel: Tabs for Tasks, Documents and AI Chat */}
         <div className={`w-[50%] flex flex-col min-h-0 overflow-hidden ${theme === 'dark' ? 'bg-slate-900/50' : 'bg-white'}`}>
           {/* Tabs Navigation */}
           <div className={`px-8 pt-4 border-b flex items-center gap-8 ${theme === 'dark' ? 'border-white/10 bg-slate-900' : 'border-slate-200 bg-white'}`}>
@@ -113,6 +114,16 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 }`}
             >
               {(t as any).docsTab || 'Documents'}
+            </button>
+            <button
+              onClick={() => setActiveTab('ai_chat')}
+              className={`pb-3 text-sm font-bold transition-all border-b-2 flex items-center gap-1.5 ${activeTab === 'ai_chat'
+                ? (theme === 'dark' ? 'text-blue-400 border-blue-400' : 'text-blue-600 border-blue-600')
+                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+            >
+              <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+              {lang === 'zh' ? 'AI 助手' : 'AI Copilot'}
             </button>
           </div>
 
@@ -137,6 +148,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 lang={lang}
                 onAddDocument={onAddDocument}
                 onDeleteDocument={onDeleteDocument}
+              />
+            )}
+
+            {activeTab === 'ai_chat' && (
+              <CaseChatPanel
+                caseId={task.id}
+                theme={theme}
+                lang={lang}
               />
             )}
           </div>

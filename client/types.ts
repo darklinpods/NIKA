@@ -8,6 +8,14 @@ export interface SubTask {
   dueDate?: string;
 }
 
+export interface Party {
+  name: string;
+  role?: string;
+  idNumber?: string;
+  address?: string;
+  contact?: string;
+}
+
 export interface Case {
   id: string;
   title: string;
@@ -20,11 +28,12 @@ export interface Case {
   order: number;
   subTasks: SubTask[];
   clientName: string;
+  parties?: Party[];
   courtName?: string;
   documents?: CaseDocument[];
 }
 
-export type DocumentCategory = 'input' | 'analysis' | 'strategy' | 'offical_doc' | 'evidence_list';
+export type DocumentCategory = 'input' | 'analysis' | 'strategy' | 'offical_doc' | 'evidence_list' | 'Evidence';
 
 export interface CaseDocument {
   id: string;

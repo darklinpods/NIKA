@@ -3,16 +3,9 @@ import { Request, Response } from 'express';
 // @ts-ignore
 import multer from 'multer';
 import { caseService } from '../services/caseService';
-import { GoogleGenAI } from '@google/genai';
+import { aiService } from '../services/aiService';
 import mammoth from 'mammoth';
 import PDFParser from 'pdf2json';
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
-/**
- * 案件管理的请求控制器 (Controller Layer)
- * 负责接收 Express 传递的 HTTP 请求、提取响应体信息参数、交由业务逻辑层处理并负责标准结构的 JSON / 状态码返回组合。
- */
 
 // 获取案件列表的处理函数
 export const getCases = async (req: Request, res: Response) => {
@@ -24,6 +17,7 @@ export const getCases = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Failed to fetch cases', details: error.message, stack: error.stack });
     }
 };
+
 
 // 新建单一案件的处理函数
 export const createCase = async (req: Request, res: Response) => {
@@ -143,9 +137,11 @@ ${textToAnalyze}
 ----------------
         `;
 
-        const response = await ai.models.generateContent({
+        const response = await aiService.generateContent({
             model: 'gemini-2.5-flash',
-            contents: prompt,
+            contents: mimeType === 'application/pdf'
+                ? [{ role: 'user', parts: [{ text: prompt }, { inlineData: { data: fileBuffer.toString('base64'), mimeType: 'application/pdf' } }] }]
+                : prompt,
             config: {
                 // @ts-ignore
                 responseMimeType: "application/json",
@@ -159,6 +155,7 @@ ${textToAnalyze}
 
         console.log(`[Smart Import] AI Response raw: ${rawResult.substring(0, 100)}...`);
 
+
         // 因为 config 中已经要求了 JSON 返回，但为防万一还是做一层简单清理
         const cleanJsonStr = rawResult.replace(/^[^{]*{/, '{').replace(/}[^}]*$/, '}');
         const caseData = JSON.parse(cleanJsonStr);
@@ -171,5 +168,141 @@ ${textToAnalyze}
     } catch (error: any) {
         console.error("Smart Import Case Error:", error);
         res.status(500).json({ error: 'Failed to smart import case', details: error.message });
+    }
+};
+
+// 上传并解析现有案件的证据文档 (保存 RAG 来源文档 & 提取当事人详情)
+export const uploadEvidence = async (req: Request, res: Response) => {
+    try {
+        const { id: caseId } = req.params;
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        const fileBuffer = req.file.buffer;
+        const mimeType = req.file.mimetype;
+        const filename = req.file.originalname.toLowerCase();
+
+        let extractedText = '';
+
+        console.log(`[Evidence Import] Processing file: ${req.file.originalname} (${mimeType}) for case: ${caseId}`);
+
+        // 解析文档文本
+        if (mimeType === 'application/pdf' || filename.endsWith('.pdf')) {
+            extractedText = await new Promise((resolve, reject) => {
+                const pdfParser = new PDFParser(null, true);
+                pdfParser.on("pdfParser_dataError", (errData: any) => reject(new Error(errData.parserError)));
+                pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
+                    resolve((pdfParser as any).getRawTextContent());
+                });
+                pdfParser.parseBuffer(fileBuffer);
+            });
+        } else if (
+            mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+            filename.endsWith('.docx')
+        ) {
+            const mammothData = await mammoth.extractRawText({ buffer: fileBuffer });
+            extractedText = mammothData.value;
+        } else if (mimeType === 'text/plain' || filename.endsWith('.txt')) {
+            extractedText = fileBuffer.toString('utf-8');
+        } else {
+            return res.status(400).json({ error: 'Unsupported file type. Please upload a PDF, DOCX, or TXT file.' });
+        }
+
+        if (!extractedText || extractedText.trim().length === 0) {
+            return res.status(400).json({ error: 'Failed to extract text from the document.' });
+        }
+
+        // 保存原文本作为 CaseDocument 供后续 RAG 使用
+        await caseService.addDocument(caseId, {
+            title: req.file.originalname,
+            content: extractedText,
+            category: "Evidence"
+        });
+
+        // 取前 15000 字符用于提取当事人。通常当事人信息都在文首。
+        const textToAnalyze = extractedText.substring(0, 15000);
+
+        const prompt = `
+请作为专业的法律助理，从以下法律案卷文稿中仔细提取所有涉及的当事人（包括原告、被告、第三人、上诉人、被上诉人等，或者是协议的甲方乙方）的详细信息。
+如果没有提取到任何特定信息，可以在该字段留空。必须返回一个严格的 JSON 对象。
+
+JSON 格式要求如下：
+{
+  "extractedParties": [
+    {
+      "name": "当事人姓名或公司名称",
+      "role": "案件角色（如：原告、被告、甲方、乙方、委托人等）",
+      "idNumber": "身份证号或统一社会信用代码等证件号码（如果有的话）",
+      "address": "住所地、联系地址（如果有的话）",
+      "contact": "联系电话或法定代表人信息（如果有的话）"
+    }
+  ]
+}
+
+待提取的案卷文稿文本如下：
+----------------
+${textToAnalyze}
+----------------
+        `;
+
+        const response = await aiService.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                // @ts-ignore
+                responseMimeType: "application/json",
+            }
+        });
+
+        const rawResult = response.text;
+        if (!rawResult) {
+            throw new Error("AI returned empty response");
+        }
+
+        const cleanJsonStr = rawResult.replace(/^[^{]*{/, '{').replace(/}[^}]*$/, '}');
+        const extractedData = JSON.parse(cleanJsonStr);
+
+        // 获取当前 Case，以便合并 parties
+        const currentCase = await caseService.getCaseById(caseId);
+        if (!currentCase) {
+            return res.status(404).json({ error: 'Case not found' });
+        }
+
+        let existingParties: any[] = [];
+        if ((currentCase as any).parties) {
+            try {
+                existingParties = JSON.parse((currentCase as any).parties);
+            } catch (e) {
+                console.error("Failed to parse existing parties", e);
+            }
+        }
+
+        const newParties = extractedData.extractedParties || [];
+        // 简单合并逻辑：基于姓名去重（如果有更复杂的场景可能需要进一步处理）
+        const combinedParties = [...existingParties];
+        for (const np of newParties) {
+            const exists = combinedParties.find(p => p.name === np.name);
+            if (!exists) {
+                combinedParties.push(np);
+            }
+            // (Optional) If it exists, we could merge fields if they were missing before
+        }
+
+        // 更新数据库
+        const updatedCase = await caseService.updateCase(caseId, {
+            ...currentCase,
+            parties: JSON.stringify(combinedParties)
+        } as any);
+
+        res.json({
+            success: true,
+            data: updatedCase,
+            importedParties: newParties
+        });
+
+    } catch (error: any) {
+        console.error("Upload Evidence Error:", error);
+        res.status(500).json({ error: 'Failed to upload and parse evidence', details: error.message });
     }
 };

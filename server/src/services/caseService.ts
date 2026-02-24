@@ -25,6 +25,32 @@ export const caseService = {
         }));
     },
 
+    // 获取单个案件
+    async getCaseById(id: string) {
+        const c = await prisma.case.findUnique({
+            where: { id },
+            include: {
+                subTasks: true,
+                documents: true,
+            }
+        });
+        if (!c) return null;
+        return {
+            ...c,
+            tags: c.tags ? JSON.parse(c.tags) : [],
+        };
+    },
+
+    // 直接为指定案件追加上传的文档
+    async addDocument(caseId: string, data: { title: string, content: string, category: string }) {
+        return await prisma.caseDocument.create({
+            data: {
+                ...data,
+                caseId
+            }
+        });
+    },
+
     // 获取特定状态下当前最大的 order 值
     async getMaxOrder(status: string): Promise<number> {
         const result = await prisma.case.aggregate({

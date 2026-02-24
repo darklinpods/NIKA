@@ -81,3 +81,9 @@ export const updateCase = (id: string, caseData: Partial<Case>): Promise<Case> =
 export const reorderCases = (updates: { id: string, order: number, status: string }[]): Promise<any> => api.put<any>('/reorder', updates);
 export const deleteCase = (id: string): Promise<void> => api.delete<void>(`/cases/${id}`);
 export const smartImportCase = (formData: FormData): Promise<{ success: boolean; data: Partial<Case> }> => api.post<{ success: boolean; data: Partial<Case> }>('/cases/smart-import', formData);
+export const uploadCaseEvidence = (id: string, formData: FormData): Promise<{ success: boolean; data: Case; importedParties: any[] }> => api.post<{ success: boolean; data: Case; importedParties: any[] }>(`/cases/${id}/evidence`, formData);
+
+// Chat API
+export const fetchChatHistory = (caseId: string): Promise<{ success: boolean; data: any[] }> => api.get<{ success: boolean; data: any[] }>(`/cases/${caseId}/chat`);
+export const sendChatMessage = (caseId: string, content: string, lang: string): Promise<{ success: boolean; userMessage: any; aiMessage: any }> =>
+    api.post<{ success: boolean; userMessage: any; aiMessage: any }>(`/cases/${caseId}/chat`, { content, lang });

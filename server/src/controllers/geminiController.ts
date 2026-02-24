@@ -1,23 +1,13 @@
-
 import { Request, Response } from 'express';
-import { GoogleGenAI, Type } from "@google/genai";
-
-// Initialize AI client
-const getGenAIClient = () => {
-    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
-    if (!apiKey) {
-        throw new Error("Gemini API Key is missing.");
-    }
-    return new GoogleGenAI({ apiKey, apiVersion: 'v1' });
-};
+import { Type } from "@google/genai";
+import { aiService } from '../services/aiService';
 
 export const generateTasks = async (req: Request, res: Response) => {
     try {
         const { prompt, lang } = req.body;
-        const ai = getGenAIClient();
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
 
-        const response = await ai.models.generateContent({
+        const response = await aiService.generateContent({
             model: "gemini-2.5-flash",
             contents: [{
                 role: "user", parts: [{
@@ -61,10 +51,9 @@ export const generateTasks = async (req: Request, res: Response) => {
 export const suggestImprovement = async (req: Request, res: Response) => {
     try {
         const { taskTitle, taskDesc, lang } = req.body;
-        const ai = getGenAIClient();
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
 
-        const response = await ai.models.generateContent({
+        const response = await aiService.generateContent({
             model: "gemini-2.5-flash",
             contents: [{
                 role: "user", parts: [{
@@ -87,10 +76,9 @@ export const suggestImprovement = async (req: Request, res: Response) => {
 export const summarizeTask = async (req: Request, res: Response) => {
     try {
         const { title, desc, lang } = req.body;
-        const ai = getGenAIClient();
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
 
-        const response = await ai.models.generateContent({
+        const response = await aiService.generateContent({
             model: "gemini-2.5-flash",
             contents: [{
                 role: "user", parts: [{
@@ -112,9 +100,27 @@ export const summarizeTask = async (req: Request, res: Response) => {
 
 export const generateCaseDocument = async (req: Request, res: Response) => {
     try {
-        const { docType, caseTitle, caseDesc, lang } = req.body;
-        const ai = getGenAIClient();
+        const { docType, caseTitle, caseDesc, lang, caseId } = req.body;
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
+
+        let ragContext = "";
+
+        if (caseId) {
+            const { caseService } = require('../services/caseService');
+            const targetCase = await caseService.getCaseById(caseId);
+
+            if (targetCase) {
+                if (targetCase.parties) {
+                    ragContext += `\n[当事人详细信息 Parties Information]:\n${targetCase.parties}\n`;
+                }
+                if (targetCase.documents && targetCase.documents.length > 0) {
+                    ragContext += `\n[案件证据与关联文档 Evidence & Documents]:\n`;
+                    targetCase.documents.forEach((doc: any, index: number) => {
+                        ragContext += `--- Document ${index + 1}: ${doc.title} ---\n${doc.content}\n`;
+                    });
+                }
+            }
+        }
 
         let prompt = "";
         switch (docType) {
@@ -126,6 +132,7 @@ export const generateCaseDocument = async (req: Request, res: Response) => {
         
         Case Title: ${caseTitle}
         Case Details: ${caseDesc}
+        ${ragContext ? `\nReference Knowledge Base for Context:\n${ragContext}` : ''}
         Language: ${languageName}`;
                 break;
             case 'strategy':
@@ -135,15 +142,18 @@ export const generateCaseDocument = async (req: Request, res: Response) => {
   
         Case Title: ${caseTitle}
         Case Details: ${caseDesc}
+        ${ragContext ? `\nReference Knowledge Base for Context:\n${ragContext}` : ''}
         Language: ${languageName}`;
                 break;
             case 'offical_doc':
                 prompt = `Act as a legal assistant. Draft a formal legal document structure (e.g., a Petition or Legal Opinion) for the following case.
         Include placeholders for specific facts but provide the standard legal boilerplate and structure.
+        ${ragContext ? 'STRICTLY base the facts, party details, and claims on the Reference Knowledge Base provided below.' : ''}
         Format the output in Markdown.
   
         Case Title: ${caseTitle}
         Case Details: ${caseDesc}
+        ${ragContext ? `\nReference Knowledge Base for Context:\n${ragContext}` : ''}
         Language: ${languageName}`;
                 break;
             case 'evidence_list':
@@ -152,11 +162,12 @@ export const generateCaseDocument = async (req: Request, res: Response) => {
     
           Case Title: ${caseTitle}
           Case Details: ${caseDesc}
+          ${ragContext ? `\nReference Knowledge Base for Context:\n${ragContext}` : ''}
           Language: ${languageName}`;
                 break;
         }
 
-        const response = await ai.models.generateContent({
+        const response = await aiService.generateContent({
             model: "gemini-2.5-flash",
             contents: [{ role: "user", parts: [{ text: prompt }] }],
         });
@@ -172,10 +183,9 @@ export const generateCaseDocument = async (req: Request, res: Response) => {
 export const generateCasePlan = async (req: Request, res: Response) => {
     try {
         const { title, desc, lang } = req.body;
-        const ai = getGenAIClient();
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
 
-        const response = await ai.models.generateContent({
+        const response = await aiService.generateContent({
             model: "gemini-2.5-flash",
             contents: [{
                 role: "user", parts: [{
@@ -191,7 +201,6 @@ export const generateCasePlan = async (req: Request, res: Response) => {
         });
 
         const resultText = response.text || "";
-        // Simple cleanup for potential markdown
         const cleaned = resultText.replace(/```json/g, '').replace(/```/g, '').trim();
         const data = JSON.parse(cleaned);
         res.json(data);

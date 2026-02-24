@@ -16,6 +16,7 @@ model Case {
   status      String   @default("todo") // 'todo', 'in-progress', 'done'
   tags        String   // stored as JSON string
   clientName  String
+  parties     String?  // stored as JSON string containing detailed party information
   courtName   String?
   aiSummary   String?
   order       Int      @default(0)
@@ -24,6 +25,7 @@ model Case {
   
   subTasks    SubTask[]
   documents   CaseDocument[]
+  chatMessages CaseChatMessage[]
 }
 
 model SubTask {
@@ -43,4 +45,13 @@ model CaseDocument {
   createdAt   DateTime @default(now())
   caseId      String
   case        Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+}
+
+model CaseChatMessage {
+  id        String   @id @default(uuid())
+  role      String   // 'user' or 'assistant'
+  content   String
+  createdAt DateTime @default(now())
+  caseId    String
+  case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
 }
