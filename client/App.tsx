@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { LoginScreen, Sidebar, Header, TaskModal, BoardView, StatsBoard, GlobalTaskView } from './components';
 import { useTheme, useAuth, ThemeMode } from './hooks';
 import { AppProvider, useAppContext } from './providers/AppProvider';
+import { Case } from './types';
 
 const App: React.FC = () => {
   const { isAuthenticated, username, password, error, setUsername, setPassword, handleLogin, handleLogout } = useAuth('zh');
@@ -58,15 +59,15 @@ const AppLayout: React.FC<{
     setCollapsedColumns(next);
   };
 
-  const handleAddTask = () => {
+  const handleAddTask = (initialData: Partial<Case> = {}) => {
     setEditingTask({
       id: `task-${Date.now()}`,
-      title: lang === 'zh' ? '新案件' : 'New Case',
-      description: '',
-      priority: 'medium',
+      title: initialData.title || (lang === 'zh' ? '新案件' : 'New Case'),
+      description: initialData.description || '',
+      priority: initialData.priority || 'medium',
       status: 'todo',
-      clientName: lang === 'zh' ? '新客户' : 'New Client',
-      tags: [],
+      clientName: initialData.clientName || (lang === 'zh' ? '新客户' : 'New Client'),
+      tags: initialData.tags || [],
       subTasks: [],
       order: 0,
       createdAt: new Date().toISOString(),

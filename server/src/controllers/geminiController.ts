@@ -18,7 +18,7 @@ export const generateTasks = async (req: Request, res: Response) => {
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
 
         const response = await ai.models.generateContent({
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash",
             contents: [{
                 role: "user", parts: [{
                     text: `Generate a list of 3-5 structured legal cases for the following request: "${prompt}". 
@@ -65,7 +65,7 @@ export const suggestImprovement = async (req: Request, res: Response) => {
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
 
         const response = await ai.models.generateContent({
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash",
             contents: [{
                 role: "user", parts: [{
                     text: `Improve and expand this task description for clarity and professionalism. 
@@ -91,7 +91,7 @@ export const summarizeTask = async (req: Request, res: Response) => {
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
 
         const response = await ai.models.generateContent({
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash",
             contents: [{
                 role: "user", parts: [{
                     text: `As an expert legal assistant, summarize this legal case in under 80 words. Focus on the core conflict and key next step.
@@ -157,7 +157,7 @@ export const generateCaseDocument = async (req: Request, res: Response) => {
         }
 
         const response = await ai.models.generateContent({
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash",
             contents: [{ role: "user", parts: [{ text: prompt }] }],
         });
 
@@ -176,7 +176,7 @@ export const generateCasePlan = async (req: Request, res: Response) => {
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
 
         const response = await ai.models.generateContent({
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash",
             contents: [{
                 role: "user", parts: [{
                     text: `As a professional legal assistant, create a procedural plan for this case. 

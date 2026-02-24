@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
-import { Plus, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, ChevronDown, ChevronRight, Zap, Loader2 } from 'lucide-react';
 import { Column } from '../types';
 import { translations } from '../translations';
 import TaskCard from './TaskCard';
 import { useAppContext } from '../providers/AppProvider';
+import { smartImportCase } from '../services/api';
 
 interface BoardColumnProps {
   columnId: string;
@@ -72,7 +73,7 @@ interface BoardViewProps {
   searchQuery: string;
   collapsedColumns: Set<string>;
   onToggleColumn: (id: string) => void;
-  onAddTask: () => void;
+  onAddTask: (initialData?: any) => void;
 }
 
 export const BoardView: React.FC<BoardViewProps> = ({
@@ -86,16 +87,70 @@ export const BoardView: React.FC<BoardViewProps> = ({
   const { data, onDragEnd } = useAppContext();
   const t = translations[lang];
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isImporting, setIsImporting] = useState(false);
+
+  const handleSmartImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsImporting(true);
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await smartImportCase(formData);
+
+      if (response.success && response.data) {
+        // 打开新建案件面板并预填数据
+        onAddTask(response.data);
+      }
+    } catch (error) {
+      console.error("Smart Import Failed:", error);
+      alert(lang === 'zh' ? '智能导入失败，请稍后重试。' : 'Smart Import failed. Please try again later.');
+    } finally {
+      setIsImporting(false);
+      // 清空 input，以便可以重复选择同一个文件
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   return (
     <>
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept=".pdf,.doc,.docx"
+        className="hidden"
+      />
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">{t.sprintBoard}</h2>
           <p className="text-slate-500 text-sm">{t.managingTasks.replace('{count}', Object.keys(data.tasks).length.toString())}</p>
         </div>
-        <button onClick={onAddTask} className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700">
-          <Plus size={20} />{t.addTask}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleSmartImportClick}
+            disabled={isImporting}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all border shadow-sm ${theme === 'dark'
+              ? 'bg-slate-800 border-slate-700 text-cyan-400 hover:bg-slate-700'
+              : 'bg-white border-slate-200 text-cyan-600 hover:bg-slate-50 hover:border-cyan-200'
+              } ${isImporting ? 'opacity-70 cursor-not-allowed' : ''}`}
+          >
+            {isImporting ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
+            {isImporting ? (lang === 'zh' ? 'AI解析中...' : 'Parsing...') : (lang === 'zh' ? '智能导入' : 'Smart Import')}
+          </button>
+          <button onClick={() => onAddTask()} className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition-all">
+            <Plus size={20} />{t.addTask}
+          </button>
+        </div>
       </div>
 
       <DragDropContext onDragEnd={onDragEnd}>

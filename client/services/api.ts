@@ -55,7 +55,11 @@ class ApiClient {
     }
 
     public post<T>(endpoint: string, body: any, options?: RequestInit) {
-        return this.request<T>(endpoint, { ...options, method: 'POST', body: JSON.stringify(body) });
+        return this.request<T>(endpoint, {
+            ...options,
+            method: 'POST',
+            body: body instanceof FormData ? body : JSON.stringify(body)
+        });
     }
 
     public put<T>(endpoint: string, body: any, options?: RequestInit) {
@@ -76,3 +80,4 @@ export const createCase = (caseData: Partial<Case>): Promise<Case> => api.post<C
 export const updateCase = (id: string, caseData: Partial<Case>): Promise<Case> => api.put<Case>(`/cases/${id}`, caseData);
 export const reorderCases = (updates: { id: string, order: number, status: string }[]): Promise<any> => api.put<any>('/reorder', updates);
 export const deleteCase = (id: string): Promise<void> => api.delete<void>(`/cases/${id}`);
+export const smartImportCase = (formData: FormData): Promise<{ success: boolean; data: Partial<Case> }> => api.post<{ success: boolean; data: Partial<Case> }>('/cases/smart-import', formData);
