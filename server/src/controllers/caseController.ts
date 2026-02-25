@@ -141,17 +141,14 @@ ${textToAnalyze}
             model: 'gemini-2.5-flash',
             contents: mimeType === 'application/pdf'
                 ? [{ role: 'user', parts: [{ text: prompt }, { inlineData: { data: fileBuffer.toString('base64'), mimeType: 'application/pdf' } }] }]
-                : prompt,
-            config: {
-                // @ts-ignore
-                responseMimeType: "application/json",
-            }
+                : prompt
         });
 
-        const rawResult = response.text;
+        let rawResult = response.text;
         if (!rawResult) {
             throw new Error("AI returned empty response");
         }
+        rawResult = rawResult.replace(/```json/g, '').replace(/```/g, '').trim();
 
         console.log(`[Smart Import] AI Response raw: ${rawResult.substring(0, 100)}...`);
 
@@ -248,17 +245,15 @@ ${textToAnalyze}
 
         const response = await aiService.generateContent({
             model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                // @ts-ignore
-                responseMimeType: "application/json",
-            }
+            contents: prompt
         });
 
-        const rawResult = response.text;
+        let rawResult = response.text;
         if (!rawResult) {
             throw new Error("AI returned empty response");
         }
+
+        rawResult = rawResult.replace(/```json/g, '').replace(/```/g, '').trim();
 
         const cleanJsonStr = rawResult.replace(/^[^{]*{/, '{').replace(/}[^}]*$/, '}');
         const extractedData = JSON.parse(cleanJsonStr);

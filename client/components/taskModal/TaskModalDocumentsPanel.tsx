@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Case, CaseDocument, DocumentCategory } from '../../types';
 import { generateCaseDocument } from '../../services/geminiService';
-import { FileText, Plus, Trash2, Loader2, Download } from 'lucide-react';
+import { api } from '../../services/api';
+import { FileText, Plus, Trash2, Loader2, Download, FileSignature } from 'lucide-react';
 
 interface TaskModalDocumentsPanelProps {
     task: Case;
@@ -19,6 +20,7 @@ export const TaskModalDocumentsPanel: React.FC<TaskModalDocumentsPanelProps> = (
     onDeleteDocument,
 }) => {
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isSmartGenerating, setIsSmartGenerating] = useState(false);
     const [selectedDoc, setSelectedDoc] = useState<CaseDocument | null>(null);
 
     const handleGenerateValues = async (category: DocumentCategory) => {
@@ -37,6 +39,54 @@ export const TaskModalDocumentsPanel: React.FC<TaskModalDocumentsPanelProps> = (
             console.error('Failed to generate document:', error);
         } finally {
             setIsGenerating(false);
+        }
+    };
+
+    const handleSmartDocxGenerate = async () => {
+        setIsSmartGenerating(true);
+        try {
+            // 1. Get Requirements
+            const reqResponse = await api.get<{ fields: string[] }>('/templates/traffic_accident_complaint.txt/requirements');
+            const requiredFields = reqResponse.fields;
+
+            // 2. Extract Data using AI
+            const caseContext = `Title: ${task.title}\nDescription: ${task.description}\nParties: ${task.parties || ''}`;
+            const extResponse = await api.post<{ extractedData: Record<string, any> }>('/templates/extract-data', {
+                caseDetails: caseContext,
+                requiredFields
+            });
+
+            const extractedData = extResponse.extractedData || {};
+
+            // In a real flow, we would pop up a Modal here to let the user confirm/edit 
+            // the extractedData before proceeding. For now, we auto-fill missing fields 
+            // with brackets and boldly proceed.
+            const finalData: Record<string, any> = {};
+            requiredFields.forEach(field => {
+                finalData[field] = extractedData[field] || `[待确认 ${field}]`;
+            });
+
+            // 3. Generate Doc
+            const genResponse = await api.post<{ filePath: string, message: string }>('/templates/generate', {
+                templateName: 'traffic_accident_complaint.txt',
+                data: finalData
+            });
+
+            // Add a dummy entry to the Document List just to show it worked
+            const newDoc: CaseDocument = {
+                id: `docx-${Date.now()}`,
+                title: lang === 'zh' ? '要素式起诉状 (Docx)' : 'Complaint (Docx)',
+                content: `Document successfully generated on Server at:\n${genResponse.filePath}\n\n(In full version, this will download the actual .docx file)`,
+                category: 'offical_doc',
+                createdAt: new Date().toISOString(),
+            };
+            onAddDocument(newDoc);
+
+        } catch (error) {
+            console.error('Failed smart docx generation:', error);
+            alert(lang === 'zh' ? '生成失败，请查看控制台日志' : 'Generation failed. Check console.');
+        } finally {
+            setIsSmartGenerating(false);
         }
     };
 
@@ -69,28 +119,33 @@ export const TaskModalDocumentsPanel: React.FC<TaskModalDocumentsPanelProps> = (
                 <h3 className={`text-base font-bold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
                     {lang === 'zh' ? '案件文书' : 'Case Documents'}
                 </h3>
-                <div className="flex gap-2">
-                    {/* Generate Buttons Dropdown or Group */}
-                    <div className="flex gap-1">
-                        <button
-                            onClick={() => handleGenerateValues('analysis')}
-                            disabled={isGenerating}
-                            className={`p-1.5 rounded-lg transition-colors text-xs flex items-center gap-1 ${theme === 'dark' ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}`}
-                            title={lang === 'zh' ? "生成案件分析" : "Generate Analysis"}
-                        >
-                            {isGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
-                            {lang === 'zh' ? "分析" : "Analysis"}
-                        </button>
-                        <button
-                            onClick={() => handleGenerateValues('strategy')}
-                            disabled={isGenerating}
-                            className={`p-1.5 rounded-lg transition-colors text-xs flex items-center gap-1 ${theme === 'dark' ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30' : 'bg-purple-100 text-purple-700 hover:bg-purple-200'}`}
-                            title={lang === 'zh' ? "生成诉讼策略" : "Generate Strategy"}
-                        >
-                            {isGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
-                            {lang === 'zh' ? "策略" : "Strategy"}
-                        </button>
-                    </div>
+                <div className="flex gap-2 flex-wrap justify-end">
+                    <button
+                        onClick={() => handleGenerateValues('analysis')}
+                        disabled={isGenerating || isSmartGenerating}
+                        className={`p-1.5 rounded-lg transition-colors text-xs flex items-center gap-1 ${theme === 'dark' ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}`}
+                    >
+                        {isGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                        {lang === 'zh' ? "分析" : "Analysis"}
+                    </button>
+                    <button
+                        onClick={() => handleGenerateValues('strategy')}
+                        disabled={isGenerating || isSmartGenerating}
+                        className={`p-1.5 rounded-lg transition-colors text-xs flex items-center gap-1 ${theme === 'dark' ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30' : 'bg-purple-100 text-purple-700 hover:bg-purple-200'}`}
+                    >
+                        {isGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                        {lang === 'zh' ? "策略" : "Strategy"}
+                    </button>
+                    {/* NEW SMART DOCX BUTTON */}
+                    <button
+                        onClick={handleSmartDocxGenerate}
+                        disabled={isGenerating || isSmartGenerating}
+                        className={`p-1.5 rounded-lg transition-colors text-xs flex items-center gap-1 ${theme === 'dark' ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'}`}
+                        title={lang === 'zh' ? "基于文书模板引导生成并打包下载" : "Guided template generation"}
+                    >
+                        {isSmartGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSignature className="w-3 h-3" />}
+                        {lang === 'zh' ? "模板文书生成" : "Template Gen"}
+                    </button>
                 </div>
             </div>
 

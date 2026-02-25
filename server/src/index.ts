@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import caseRoutes from './routes/caseRoutes';
 import geminiRoutes from './routes/geminiRoutes';
+import templateRoutes from './routes/templateRoutes';
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ app.get('/api/health', (req, res) => {
 const apiRouter = express.Router();
 apiRouter.use('/cases', caseRoutes);
 apiRouter.use('/ai', geminiRoutes);
+apiRouter.use('/templates', templateRoutes);
 
 // Handle both with and without /api prefix for robustness on Vercel
 app.use('/api', apiRouter);
