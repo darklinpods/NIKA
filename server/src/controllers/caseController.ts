@@ -7,6 +7,16 @@ import { aiService } from '../services/aiService';
 import mammoth from 'mammoth';
 import PDFParser from 'pdf2json';
 
+// Multer 默认将 filename 按 Latin-1 解码，对于 UTF-8 编码的中文文件名会产生乱码。
+// 此辅助函数将 Latin-1 字符串重新编码为 UTF-8。
+function fixFilename(name: string): string {
+    try {
+        return Buffer.from(name, 'latin1').toString('utf8');
+    } catch {
+        return name;
+    }
+}
+
 // 获取案件列表的处理函数
 export const getCases = async (req: Request, res: Response) => {
     try {
@@ -82,11 +92,12 @@ export const smartImportCase = async (req: Request, res: Response) => {
 
         const fileBuffer = req.file.buffer;
         const mimeType = req.file.mimetype;
-        const filename = req.file.originalname.toLowerCase();
+        const originalName = fixFilename(req.file.originalname);
+        const filename = originalName.toLowerCase();
 
         let extractedText = '';
 
-        console.log(`[Smart Import] Processing file: ${req.file.originalname} (${mimeType})`);
+        console.log(`[Smart Import] Processing file: ${originalName} (${mimeType})`);
 
         // 解析文档文本
         if (mimeType === 'application/pdf' || filename.endsWith('.pdf')) {
@@ -178,22 +189,67 @@ export const uploadEvidence = async (req: Request, res: Response) => {
 
         const fileBuffer = req.file.buffer;
         const mimeType = req.file.mimetype;
-        const filename = req.file.originalname.toLowerCase();
+        const originalName = fixFilename(req.file.originalname);
+        const filename = originalName.toLowerCase();
 
         let extractedText = '';
 
-        console.log(`[Evidence Import] Processing file: ${req.file.originalname} (${mimeType}) for case: ${caseId}`);
+        console.log(`[Evidence Import] Processing file: ${originalName} (${mimeType}) for case: ${caseId}`);
+
+        // 验证案件是否已存在于数据库。如果前端在用户保存之前就上传了证据（使用临时ID如 task-xxx），
+        // 则需要先自动创建该案件记录，以避免外键约束违规 (P2003)。
+        const existingCase = await caseService.getCaseById(caseId);
+        if (!existingCase) {
+            console.log(`[Evidence Import] Case ${caseId} not found in DB. Auto-creating...`);
+            await caseService.updateCase(caseId, {
+                title: '待完善案件（证据先行导入）',
+                status: 'todo',
+                priority: 'medium',
+            });
+        }
 
         // 解析文档文本
         if (mimeType === 'application/pdf' || filename.endsWith('.pdf')) {
-            extractedText = await new Promise((resolve, reject) => {
+            // 第一步：尝试使用 pdf2json 提取数字化 PDF 的文本
+            const rawPdfText: string = await new Promise((resolve, reject) => {
                 const pdfParser = new PDFParser(null, true);
                 pdfParser.on("pdfParser_dataError", (errData: any) => reject(new Error(errData.parserError)));
-                pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
+                pdfParser.on("pdfParser_dataReady", () => {
                     resolve((pdfParser as any).getRawTextContent());
                 });
                 pdfParser.parseBuffer(fileBuffer);
             });
+
+            // 检测是否为扫描件：去除 Page Break 标记后检查剩余内容长度
+            const cleanText = rawPdfText.replace(/[-]+Page \(\d+\) Break[-]+/g, '').trim();
+
+            if (cleanText.length > 50) {
+                // 数字化 PDF，直接使用提取的文本
+                extractedText = rawPdfText;
+                console.log(`[Evidence Import] Digital PDF detected. Extracted ${extractedText.length} chars via pdf2json.`);
+            } else {
+                // 扫描件 PDF，使用 Gemini 多模态 OCR 识别
+                console.log(`[Evidence Import] Scanned PDF detected (only ${cleanText.length} chars from pdf2json). Using Gemini multimodal OCR...`);
+
+                try {
+                    const ocrResponse = await aiService.generateContent({
+                        model: 'gemini-2.5-flash',
+                        contents: [{
+                            role: 'user',
+                            parts: [
+                                { text: '请将这份 PDF 文档中的所有文字内容完整地、逐字逐句地提取出来。保持原始排版格式（如标题、段落、表格等）。只输出文档原文，不要添加任何总结、分析或额外的说明。如果文档包含表格，请用文字形式呈现表格内容。' },
+                                { inlineData: { data: fileBuffer.toString('base64'), mimeType: 'application/pdf' } }
+                            ]
+                        }]
+                    });
+
+                    extractedText = ocrResponse.text || '';
+                    console.log(`[Evidence Import] Gemini OCR extracted ${extractedText.length} chars.`);
+                } catch (ocrError: any) {
+                    console.error(`[Evidence Import] Gemini OCR failed:`, ocrError.message);
+                    return res.status(500).json({ error: '扫描件 PDF OCR 识别失败，请稍后重试', details: ocrError.message });
+                }
+            }
         } else if (
             mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
             filename.endsWith('.docx')
@@ -212,7 +268,7 @@ export const uploadEvidence = async (req: Request, res: Response) => {
 
         // 保存原文本作为 CaseDocument 供后续 RAG 使用
         await caseService.addDocument(caseId, {
-            title: req.file.originalname,
+            title: originalName,
             content: extractedText,
             category: "Evidence"
         });

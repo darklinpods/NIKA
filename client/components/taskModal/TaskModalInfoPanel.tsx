@@ -161,25 +161,31 @@ export const TaskModalInfoPanel: React.FC<TaskModalInfoPanelProps> = ({
           </div>
         </div>
 
-        {task.parties && task.parties.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3">
-            {task.parties.map((party, idx) => (
-              <div key={idx} className={`p-3 rounded-xl border text-xs flex flex-col gap-1 ${theme === 'dark' ? 'bg-slate-900 border-white/5 text-slate-300' : 'bg-white border-slate-200 text-slate-700'}`}>
-                <div className="font-bold flex items-center justify-between">
-                  <span>{party.name}</span>
-                  {party.role && <span className="bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 px-2 py-0.5 rounded-full text-[9px]">{party.role}</span>}
+        {(() => {
+          let partiesArray: any[] = [];
+          try {
+            partiesArray = typeof task.parties === 'string' ? JSON.parse(task.parties) : (Array.isArray(task.parties) ? task.parties : []);
+          } catch { partiesArray = []; }
+          return partiesArray.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3">
+              {partiesArray.map((party, idx) => (
+                <div key={idx} className={`p-3 rounded-xl border text-xs flex flex-col gap-1 ${theme === 'dark' ? 'bg-slate-900 border-white/5 text-slate-300' : 'bg-white border-slate-200 text-slate-700'}`}>
+                  <div className="font-bold flex items-center justify-between">
+                    <span>{party.name}</span>
+                    {party.role && <span className="bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 px-2 py-0.5 rounded-full text-[9px]">{party.role}</span>}
+                  </div>
+                  {party.idNumber && <div className="text-slate-500 dark:text-slate-400">{lang === 'zh' ? '证件号' : 'ID'}: {party.idNumber}</div>}
+                  {party.contact && <div className="text-slate-500 dark:text-slate-400">{lang === 'zh' ? '联系方式' : 'Contact'}: {party.contact}</div>}
+                  {party.address && <div className="text-slate-500 dark:text-slate-400 truncate" title={party.address}>{lang === 'zh' ? '地址' : 'Address'}: {party.address}</div>}
                 </div>
-                {party.idNumber && <div className="text-slate-500 dark:text-slate-400">{lang === 'zh' ? '证件号' : 'ID'}: {party.idNumber}</div>}
-                {party.contact && <div className="text-slate-500 dark:text-slate-400">{lang === 'zh' ? '联系方式' : 'Contact'}: {party.contact}</div>}
-                {party.address && <div className="text-slate-500 dark:text-slate-400 truncate" title={party.address}>{lang === 'zh' ? '地址' : 'Address'}: {party.address}</div>}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-xs text-slate-400 italic">
-            {lang === 'zh' ? '暂无结构化的当事人信息，可上传证据以自动提取。' : 'No structured parties data. Upload evidence to extract automatically.'}
-          </div>
-        )}
+              ))}
+            </div>
+          ) : (
+            <div className="text-xs text-slate-400 italic">
+              {lang === 'zh' ? '暂无结构化的当事人信息，可上传证据以自动提取。' : 'No structured parties data. Upload evidence to extract automatically.'}
+            </div>
+          )
+        })()}
       </div>
 
       {/* Description */}

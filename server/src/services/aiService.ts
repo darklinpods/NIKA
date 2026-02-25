@@ -6,13 +6,14 @@ class AIService {
     private maxRetries: number = 3;
 
     constructor() {
+        this.initialize();
+    }
+
+    private initialize() {
         const rawKeys = process.env.GEMINI_API_KEY || "";
-        // 支持逗号分隔的多个 Key，并进行清理
         this.keys = rawKeys.split(',').map(k => k.trim()).filter(k => k.length > 0);
 
-        if (this.keys.length === 0) {
-            console.error("[AIService] No API keys found in GEMINI_API_KEY environment variable.");
-        } else {
+        if (this.keys.length > 0) {
             console.log(`[AIService] Initialized with ${this.keys.length} API keys.`);
         }
     }
@@ -21,7 +22,10 @@ class AIService {
      * 获取当前可用的 AI 客户端 (简单轮询)
      */
     private getClient() {
-        if (this.keys.length === 0) throw new Error("No API keys configured.");
+        if (this.keys.length === 0) {
+            this.initialize(); // Try re-initializing in case env was loaded late
+        }
+        if (this.keys.length === 0) throw new Error("No API keys configured. Please check GEMINI_API_KEY in .env");
         const key = this.keys[this.currentIndex];
         return new GoogleGenAI({ apiKey: key, apiVersion: 'v1' });
     }

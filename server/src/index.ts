@@ -1,12 +1,11 @@
+import dotenv from 'dotenv';
+dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import caseRoutes from './routes/caseRoutes';
 import geminiRoutes from './routes/geminiRoutes';
 import templateRoutes from './routes/templateRoutes';
-
-dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3001;
