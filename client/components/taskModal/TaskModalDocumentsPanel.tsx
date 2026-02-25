@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Case, CaseDocument, DocumentCategory } from '../../types';
 import { generateCaseDocument } from '../../services/geminiService';
 import { api } from '../../services/api';
-import { FileText, Plus, Trash2, Loader2, Download, FileSignature } from 'lucide-react';
+import { FileText, Plus, Trash2, Loader2, Download, FileSignature, Calculator } from 'lucide-react';
+import { ClaimListGenerator } from '../claimList/ClaimListGenerator';
 
 interface TaskModalDocumentsPanelProps {
     task: Case;
@@ -22,6 +23,7 @@ export const TaskModalDocumentsPanel: React.FC<TaskModalDocumentsPanelProps> = (
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSmartGenerating, setIsSmartGenerating] = useState(false);
     const [selectedDoc, setSelectedDoc] = useState<CaseDocument | null>(null);
+    const [showClaimGenerator, setShowClaimGenerator] = useState(false);
 
     const handleGenerateValues = async (category: DocumentCategory) => {
         setIsGenerating(true);
@@ -146,6 +148,15 @@ export const TaskModalDocumentsPanel: React.FC<TaskModalDocumentsPanelProps> = (
                         {isSmartGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSignature className="w-3 h-3" />}
                         {lang === 'zh' ? "模板文书生成" : "Template Gen"}
                     </button>
+                    {/* NEW SKILL BUTTON */}
+                    <button
+                        onClick={() => setShowClaimGenerator(true)}
+                        className={`p-1.5 rounded-lg transition-colors text-xs flex items-center gap-1 ${theme === 'dark' ? 'bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'}`}
+                        title={lang === 'zh' ? "交互式交通事故诉状与赔偿清单计算器" : "Skill: Claim Calculator"}
+                    >
+                        <Calculator className="w-3 h-3" />
+                        {lang === 'zh' ? "交通事故诉状生成 (Skill)" : "Skill (Traffic Accident)"}
+                    </button>
                 </div>
             </div>
 
@@ -212,6 +223,15 @@ export const TaskModalDocumentsPanel: React.FC<TaskModalDocumentsPanelProps> = (
                         </div>
                     </div>
                 </div>
+            )}
+
+            {showClaimGenerator && (
+                <ClaimListGenerator
+                    task={task}
+                    theme={theme}
+                    lang={lang}
+                    onClose={() => setShowClaimGenerator(false)}
+                />
             )}
         </div>
     );

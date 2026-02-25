@@ -22,3 +22,8 @@ router.get('/:id/chat', getChatHistory);
 router.post('/:id/chat', sendMessage);
 
 export default router;
+
+// Skills
+import { extractTrafficAccident, generateTrafficAccidentDocx } from '../controllers/skillController';
+router.post('/:id/skills/traffic_accident/extract', extractTrafficAccident);
+router.post('/:id/skills/traffic_accident/generate', generateTrafficAccidentDocx);
