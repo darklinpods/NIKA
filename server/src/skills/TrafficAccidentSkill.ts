@@ -58,17 +58,16 @@ ${params.documentsContent}
 请直接输出符合上述结构的 JSON 对象。`;
 
         const response = await aiService.generateContent({
-            model: "gemini-2.5-pro", // 这里可以使用更聪明的模型，因为做参数提取需要精确推理
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            config: {
-                responseMimeType: "application/json"
-            }
+            model: "gemini-2.5-flash",
+            contents: [{ role: 'user', parts: [{ text: prompt }] }]
         });
 
-        const text = response.text || "{}";
+        let text = response.text || "{}";
+        text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const cleanJsonStr = text.replace(/^[^{]*{/, '{').replace(/}[^}]*$/, '}');
         let parsed;
         try {
-            parsed = JSON.parse(text);
+            parsed = JSON.parse(cleanJsonStr);
         } catch (e) {
             console.error("TrafficAccidentSkill JSON Parse Error:", e, "Raw:", text);
             parsed = {};

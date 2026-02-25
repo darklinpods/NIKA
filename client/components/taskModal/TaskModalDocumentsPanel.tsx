@@ -25,7 +25,7 @@ export const TaskModalDocumentsPanel: React.FC<TaskModalDocumentsPanelProps> = (
     const [selectedDoc, setSelectedDoc] = useState<CaseDocument | null>(null);
     const [showClaimGenerator, setShowClaimGenerator] = useState(false);
 
-    const handleGenerateValues = async (category: DocumentCategory) => {
+    const handleGenerateValues = async (category: 'analysis' | 'strategy' | 'offical_doc' | 'evidence_list') => {
         setIsGenerating(true);
         try {
             const content = await generateCaseDocument(category, task.title, task.description, lang);
@@ -98,7 +98,8 @@ export const TaskModalDocumentsPanel: React.FC<TaskModalDocumentsPanelProps> = (
             strategy: { zh: '诉讼策略建议', en: 'Litigation Strategy' },
             evidence_list: { zh: '证据清单', en: 'Evidence List' },
             input: { zh: '输入', en: 'Input' },
-            offical_doc: { zh: '正式文书', en: 'Official Document' }
+            offical_doc: { zh: '正式文书', en: 'Official Document' },
+            Evidence: { zh: '原文证据', en: 'Original Evidence' }
         };
         return titles[category]?.[lang] || 'New Document';
     };
