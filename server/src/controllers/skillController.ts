@@ -118,13 +118,6 @@ export const generateTrafficAccidentDocx = async (req: Request, res: Response) =
             compression: 'DEFLATE',
         });
 
-        // 5. 将填充后的 claimData 文本（Markdown 形式）同步保存到数据库（可选，但方便后续查看）
-        const savedText = JSON.stringify(variables, null, 2);
-        await prisma.case.update({
-            where: { id },
-            data: { claimData: savedText }
-        });
-
         // 6. 返回文件流
         const timestamp = Date.now();
         const plaintiffName = variables.plaintiffName || '诉状';
