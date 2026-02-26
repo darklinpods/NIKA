@@ -149,15 +149,17 @@ export const TaskModalDocumentsPanel: React.FC<TaskModalDocumentsPanelProps> = (
                         {isSmartGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSignature className="w-3 h-3" />}
                         {lang === 'zh' ? "模板文书生成" : "Template Gen"}
                     </button>
-                    {/* NEW SKILL BUTTON */}
-                    <button
-                        onClick={() => setShowClaimGenerator(true)}
-                        className={`p-1.5 rounded-lg transition-colors text-xs flex items-center gap-1 ${theme === 'dark' ? 'bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'}`}
-                        title={lang === 'zh' ? "交互式交通事故诉状与赔偿清单计算器" : "Skill: Claim Calculator"}
-                    >
-                        <Calculator className="w-3 h-3" />
-                        {lang === 'zh' ? "交通事故诉状生成 (Skill)" : "Skill (Traffic Accident)"}
-                    </button>
+                    {/* SKILL BUTTON — only for traffic accident cases */}
+                    {task.caseType === 'traffic_accident' && (
+                        <button
+                            onClick={() => setShowClaimGenerator(true)}
+                            className={`p-1.5 rounded-lg transition-colors text-xs flex items-center gap-1 ${theme === 'dark' ? 'bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'}`}
+                            title={lang === 'zh' ? "交通事故诉状生成 Skill" : "Skill: Traffic Accident Complaint"}
+                        >
+                            <Calculator className="w-3 h-3" />
+                            {lang === 'zh' ? "交通事故诉状生成 (Skill)" : "Skill (Traffic Accident)"}
+                        </button>
+                    )}
                 </div>
             </div>
 

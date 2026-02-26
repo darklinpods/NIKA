@@ -4,8 +4,8 @@ import { translations } from '../../translations';
 import { getPriorityLabel } from '../../constants/priorities';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Edit2, Check, UploadCloud, Users, Loader } from 'lucide-react';
-import { uploadCaseEvidence } from '../../services/api';
+import { Edit2, Check, UploadCloud, Users, Loader, Scan } from 'lucide-react';
+import { uploadCaseEvidence, api } from '../../services/api';
 
 /**
  * 任务模态框信息面板组件属性
@@ -36,6 +36,22 @@ export const TaskModalInfoPanel: React.FC<TaskModalInfoPanelProps> = ({
   const t = translations[lang];
   const [isEditingDesc, setIsEditingDesc] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isExtractingParties, setIsExtractingParties] = useState(false);
+
+  const handleExtractPartiesFromEvidence = async () => {
+    try {
+      setIsExtractingParties(true);
+      const res = await api.post<{ success: boolean; parties: any[]; caseData: any }>(`/cases/${task.id}/extract-parties`, {});
+      if (res.success && res.caseData) {
+        onTaskChange({ ...task, parties: res.caseData.parties });
+      }
+    } catch (error) {
+      console.error('Failed to extract parties:', error);
+      alert(lang === 'zh' ? '提取当事人失败，请重试' : 'Failed to extract parties, please retry.');
+    } finally {
+      setIsExtractingParties(false);
+    }
+  };
 
   const handleUploadEvidence = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -138,27 +154,56 @@ export const TaskModalInfoPanel: React.FC<TaskModalInfoPanelProps> = ({
             <Users size={12} />
             {lang === 'zh' ? '当事人详情' : 'Parties Details'}
           </label>
-          <div className="relative">
-            <input
-              type="file"
-              accept=".pdf,.doc,.docx"
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              onChange={handleUploadEvidence}
-              disabled={isUploading}
-            />
+          <div className="flex items-center gap-2">
+            {/* Button 1: Extract from existing evidence in DB */}
             <button
-              disabled={isUploading}
-              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${isUploading
-                ? 'opacity-50 cursor-not-allowed text-slate-400'
-                : 'text-blue-600 hover:bg-blue-500/10 dark:text-blue-400'
+              onClick={handleExtractPartiesFromEvidence}
+              disabled={isExtractingParties || isUploading}
+              title={lang === 'zh' ? '从已上传的案卷中重新提取当事人' : 'Re-scan uploaded evidence'}
+              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${isExtractingParties ? 'opacity-50 cursor-not-allowed text-slate-400' : 'text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400'
                 }`}
             >
-              {isUploading ? <Loader size={14} className="animate-spin" /> : <UploadCloud size={14} />}
-              {isUploading
-                ? (lang === 'zh' ? '正在提取...' : 'Extracting...')
-                : (lang === 'zh' ? '导入证据/文件 (自动提取当事人并作为知识库)' : 'Import Evidence')}
+              {isExtractingParties ? <Loader size={14} className="animate-spin" /> : <Scan size={14} />}
+              {lang === 'zh' ? '从现有案卷提取' : 'Re-scan Evidence'}
             </button>
+
+            {/* Button 2: Upload a new file */}
+            <div className="relative">
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                onChange={handleUploadEvidence}
+                disabled={isUploading || isExtractingParties}
+              />
+              <button
+                disabled={isUploading || isExtractingParties}
+                className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${isUploading ? 'opacity-50 cursor-not-allowed text-slate-400' : 'text-blue-600 hover:bg-blue-500/10 dark:text-blue-400'
+                  }`}
+              >
+                {isUploading ? <Loader size={14} className="animate-spin" /> : <UploadCloud size={14} />}
+                {lang === 'zh' ? '导入证据文件' : 'Import Evidence'}
+              </button>
+            </div>
           </div>
+        </div>
+
+        {/* Case Type */}
+        <div className="mb-4">
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">
+            {lang === 'zh' ? '案件类型 / 案由' : 'Case Type'}
+          </label>
+          <select
+            className={`w-full bg-transparent border-b text-sm font-medium py-1 outline-none ${theme === 'dark' ? 'border-white/10 text-slate-100' : 'border-slate-200'}`}
+            value={task.caseType || 'general'}
+            onChange={(e) => onTaskChange({ ...task, caseType: e.target.value })}
+          >
+            <option value="general">{lang === 'zh' ? '普通案件' : 'General'}</option>
+            <option value="traffic_accident">{lang === 'zh' ? '机动车交通事故责任纠纷' : 'Motor Vehicle Traffic Accident'}</option>
+            <option value="contract_dispute">{lang === 'zh' ? '合同纠纷' : 'Contract Dispute'}</option>
+            <option value="labor_dispute">{lang === 'zh' ? '劳动争议' : 'Labor Dispute'}</option>
+            <option value="loan_dispute">{lang === 'zh' ? '民间借贷纠纷' : 'Loan Dispute'}</option>
+          </select>
         </div>
 
         {(() => {

@@ -66,6 +66,7 @@ const AppLayout: React.FC<{
       description: initialData.description || '',
       priority: initialData.priority || 'medium',
       status: 'todo',
+      caseType: initialData.caseType || 'general',
       clientName: initialData.clientName || (lang === 'zh' ? '新客户' : 'New Client'),
       tags: initialData.tags || [],
       subTasks: [],
