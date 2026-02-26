@@ -107,6 +107,75 @@ xml = xml.replace(/<w:t>姓名：<\/w:t>/g, () => {
 });
 
 // =========================================================
+// 10b. 其余当事人字段（每类出现3次：原告/被告1/被告2），按顺序注入
+//     策略：在 label 结束的 </w:t></w:r> 前追加占位符 run
+// =========================================================
+
+// 辅助函数：按顺序替换，第 N 次出现用第 N 个变量名替换
+function replaceInOrder(xml, searchLabel, varNames) {
+    let count = 0;
+    // 找到 <w:t>label</w:t> 或 <w:t>\nlabel</w:t>（可能有换行）
+    const re = new RegExp(`(<w:t[^>]*>[\\s]*${searchLabel.replace(/[()（）\/]/g, '\\$&')}[\\s]*<\\/w:t>)(<\\/w:r>)`, 'g');
+    return xml.replace(re, (match, tTag, closeRun) => {
+        const varName = varNames[count] || '';
+        count++;
+        if (!varName) return match;
+        // 在 label 的 </w:t></w:r> 后追加一个新 run 含占位符
+        return tTag + closeRun + `<w:r><w:rPr><w:rFonts w:ascii="微软雅黑" w:eastAsia="微软雅黑" w:hAnsi="微软雅黑"/><w:sz w:val="21"/><w:szCs w:val="21"/></w:rPr><w:t xml:space="preserve">{${varName}}</w:t></w:r>`;
+    });
+}
+
+// 性别（模板里是 "性别：男□  女☑" 等复选框，直接整行替换）
+// 这里我们在性别标题 run 后直接追加文字占位符（简化处理）
+let genderCount = 0;
+xml = xml.replace(/<w:t>性别：男[^<]*<\/w:t>/g, () => {
+    genderCount++;
+    if (genderCount === 1) return `<w:t xml:space="preserve">性别：{plaintiffGender}</w:t>`;
+    if (genderCount === 2) return `<w:t xml:space="preserve">性别：{defendant1Gender}</w:t>`;
+    if (genderCount === 3) return `<w:t xml:space="preserve">性别：{defendant2Gender}</w:t>`;
+    return '<w:t>性别：男</w:t>';
+});
+
+// 民族
+let ethnicCount = 0;
+xml = xml.replace(/<w:t>民族：<\/w:t>/g, () => {
+    ethnicCount++;
+    if (ethnicCount === 1) return '<w:t>民族：{plaintiffEthnicity}</w:t>';
+    if (ethnicCount === 2) return '<w:t>民族：{defendant1Ethnicity}</w:t>';
+    if (ethnicCount === 3) return '<w:t>民族：{defendant2Ethnicity}</w:t>';
+    return '<w:t>民族：</w:t>';
+});
+// 兜底："汉族" 固定文字（如果原文 label+内容在一个 run 里）
+xml = xml.replace(/<w:t>民族：<\/w:t><\/w:r><w:r[^>]*><w:rPr>[^<]*(?:<[^>]*>[^<]*<\/[^>]*>)*<\/w:rPr><w:t>汉族<\/w:t>/g,
+    (m) => m); // 保持不变（因为已经在上方通过 label 替换加了变量）
+
+// 联系电话（顺序：原告/被告1/被告2）
+xml = replaceInOrder(xml, '联系电话：', ['plaintiffPhone', 'defendant1Phone', 'defendant2Phone']);
+
+// 住所地（户籍所在地）
+xml = replaceInOrder(xml, '住所地（户籍所在地）：', ['plaintiffAddress', 'defendant1Address', 'defendant2Address']);
+
+// 经常居住地（含冒号可能在下一个 run）
+// 原告的 "经常居住地" 后面有个 run 含 "："，被告的直接是 "经常居住地："
+let residentCount = 0;
+xml = xml.replace(/经常居住地：/g, () => {
+    residentCount++;
+    if (residentCount === 1) return `经常居住地：{plaintiffResident}`;
+    if (residentCount === 2) return `经常居住地：{defendant1Resident}`;
+    if (residentCount === 3) return `经常居住地：{defendant2Resident}`;
+    return '经常居住地：';
+});
+// 处理 label 和冒号在不同 run 的情况（原告）
+xml = xml.replace(/<w:t>\n经常居住地<\/w:t><\/w:r>[\s\S]*?<w:t>：<\/w:t><\/w:r>/,
+    (m) => m.replace('<w:t>：</w:t></w:r>',
+        '<w:t xml:space="preserve">：{plaintiffResident}</w:t></w:r>'));
+
+// 保险公司相关字段
+xml = replaceInOrder(xml, '住所地（主要办事机构所在地）：', ['insurer1Address']);
+xml = replaceInOrder(xml, '法定代表人/主要负责人：', ['insurer1LegalRep']);
+xml = replaceInOrder(xml, '统一社会信用代码：', ['insurer1CreditCode']);
+
+// =========================================================
 // 11. 保险公司名称
 // =========================================================
 xml = xml.replace(/<w:t>名称：<\/w:t>/, '<w:t>名称：{insurer1Name}</w:t>');
