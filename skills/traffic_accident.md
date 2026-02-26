@@ -301,3 +301,7 @@ template: skills/templates/traffic_accident_with_vars.docx
 | `{{paidByInsurer}}` | 保险公司已垫付 | 18,000 |
 | `{{netPayable}}` | 扣除后尚应赔偿 | 291,022.94 |
 | `{{plaintiffSignName}}` | 具状人落款 | 陶雪珍 |
+| `{{accidentFacts}}` | 事实和理由-1.交通事故发生情况（长文本，AI生成） | 2025年3月30日16时10分，靖建成驾驶… |
+| `{{liabilityDetermination}}` | 事实和理由-2.交通事故责任认定（长文本，AI生成） | 该事故经…认定：靖建成承担全部责任… |
+| `{{insuranceStatus}}` | 事实和理由-3.机动车投保情况（长文本，AI生成） | 被告靖建成驾驶的鄂ARL191…购买了交强险… |
+| `{{otherFacts}}` | 事实和理由-4.其他情况及法律依据（长文本，AI生成） | 原告陶雪珍受伤后，住院41天，花去医疗费… |
