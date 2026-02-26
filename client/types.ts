@@ -23,6 +23,7 @@ export interface Case {
   aiSummary?: string;
   claimData?: string;
   caseType: string;
+  caseFactSheet?: string;   // JSON string with structured case facts
   priority: Priority;
   status: 'todo' | 'in-progress' | 'done';
   tags: string[];
