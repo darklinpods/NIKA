@@ -19,6 +19,7 @@ model Case {
   parties     String?  // stored as JSON string containing detailed party information
   courtName   String?
   aiSummary   String?
+  claimData   String?  // 持久化保存用户编辑的索赔清单文本 (Markdown)
   order       Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../../services/api';
+import { api, updateCase } from '../../services/api';
 import { Case } from '../../types';
-import { Loader2, Download, Table, X } from 'lucide-react';
+import { Loader2, Download, X, Save, RefreshCw, Edit3, LayoutTemplate } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 interface ClaimListGeneratorProps {
     task: Case;
@@ -13,276 +14,167 @@ interface ClaimListGeneratorProps {
 export const ClaimListGenerator: React.FC<ClaimListGeneratorProps> = ({ task, theme, lang, onClose }) => {
     const [loading, setLoading] = useState(false);
     const [generating, setGenerating] = useState(false);
+    const [saving, setSaving] = useState(false);
 
-    // UI Editable state for all fields
-    const [formData, setFormData] = useState({
-        // 从案件或用户输入
-        plaintiffName: task.title.split('诉')[0] || '', // 简单分离原告名称
-        defendantName: task.title.split('诉')[1]?.split('纠纷')[0] || '',
-
-        // 基准参数
-        urbanDisposableIncome: 49164,
-        nutritionFeePerDay: 50,
-        hospitalFoodPerDay: 50,
-        nursingFeePerDay: 143.92,
-        misusedWorkFeePerDay: 181,
-        deathCompensationBase: 49164,
-
-        // 提取的天数/发票金额
-        hospitalDays: 0,
-        nutritionDays: 0,
-        nursingDays: 0,
-        misusedWorkDays: 0,
-        disabilityRate: 0,
-        disabilityYears: 20,
-        medicalFeeActual: 0,
-        trafficFeeRecommended: 1000,
-        appraisalFee: 0,
-        paidByOthers: 0,
-
-        // 计算总额用的公式文本和最终数值
-        // 这些将在 render 中实时算，但我们也要传递给后端模板
-        accidentFacts: '',
-        liability: ''
-    });
+    // Markdown Text Content
+    const [markdownText, setMarkdownText] = useState(task.claimData || '');
+    const [isEditing, setIsEditing] = useState(task.claimData ? false : true);
 
     const isDark = theme === 'dark';
 
     useEffect(() => {
-        // Load default params from AI extract
-        const fetchParams = async () => {
-            setLoading(true);
-            try {
-                const res = await api.post<any>(`/cases/${task.id}/skills/traffic_accident/extract`);
-                if (res.success) {
-                    setFormData(prev => ({
-                        ...prev,
-                        ...res.defaults,
-                        ...res.extractedData
-                    }));
-                }
-            } catch (error) {
-                console.error("Failed to extract params", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchParams();
-    }, [task.id]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value, type } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'number' ? Number(value) : value
-        }));
-    };
-
-    // --- 在渲染时实时计算所有项目 ---
-    const calc = {
-        medical: formData.medicalFeeActual,
-        hospitalFood: formData.hospitalDays * formData.hospitalFoodPerDay,
-        nutrition: formData.nutritionDays * formData.nutritionFeePerDay,
-        nursing: formData.nursingDays * formData.nursingFeePerDay,
-        misusedWork: formData.misusedWorkDays * formData.misusedWorkFeePerDay,
-        disability: formData.urbanDisposableIncome * formData.disabilityYears * formData.disabilityRate,
-        traffic: formData.trafficFeeRecommended,
-        appraisal: formData.appraisalFee,
-    };
-
-    const totalClaim = Object.values(calc).reduce((a, b) => a + b, 0);
-    const finalAmount = totalClaim - formData.paidByOthers;
-
-    const handleDownload = async () => {
-        setGenerating(true);
-        try {
-            // 组装最终给到 docxtemplater 的渲染对象
-            const payload = {
-                原告姓名: formData.plaintiffName,
-                被告诉求: formData.defendantName,
-                // 这里要组装符合 docxtemplater 占位符结构的数据
-                // 我们看一下模板里需要哪些变量。由于我们目前没有完整看完 docx 模板的占位符 {变量}, 
-                // 我们在这传输一份结构化数据，供模板消费。
-                // 暂时假设模板里有以下变量：
-                事实发生情况: formData.accidentFacts,
-                责任认定: formData.liability,
-                医疗费: calc.medical.toFixed(2),
-                住院伙食补助费: `${formData.hospitalFoodPerDay}元/天 × ${formData.hospitalDays}天 = ${calc.hospitalFood.toFixed(2)}元`,
-                营养费: `${formData.nutritionFeePerDay}元/天 × ${formData.nutritionDays}天 = ${calc.nutrition.toFixed(2)}元`,
-                误工费: `${formData.misusedWorkFeePerDay}元/天 × ${formData.misusedWorkDays}天 = ${calc.misusedWork.toFixed(2)}元`,
-                护理费: `${formData.nursingFeePerDay}元/天 × ${formData.nursingDays}天 = ${calc.nursing.toFixed(2)}元`,
-                残疾赔偿金: `${formData.urbanDisposableIncome}元/年 × ${formData.disabilityYears}年 × ${(formData.disabilityRate * 100).toFixed(0)}% = ${calc.disability.toFixed(2)}元`,
-                交通费: `${calc.traffic.toFixed(2)}元`,
-                鉴定费: `${calc.appraisal.toFixed(2)}元`,
-                总计金额: totalClaim.toFixed(2),
-                垫付金额: formData.paidByOthers.toFixed(2),
-                最终金额: finalAmount.toFixed(2)
-            };
-
-            const response = await fetch(`${api.baseURL}/cases/${task.id}/skills/traffic_accident/generate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) throw new Error("Generate failed");
-
-            // 将二进制流转为 Blob 并下载
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `交通事故索赔清单_${task.title}.docx`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error(error);
-            alert("下载失败！");
-        } finally {
-            setGenerating(false);
+        // If there's no saved claim data, automatically trigger AI extraction
+        if (!task.claimData) {
+            handleExtractFromAI();
         }
+    }, [task.id, task.claimData]);
+
+    const handleExtractFromAI = async () => {
+        setLoading(true);
+        setIsEditing(true);
+        try {
+            const res = await api.post<any>(`/cases/${task.id}/skills/traffic_accident/extract`, {});
+            if (res.success && res.generatedText) {
+                setMarkdownText(res.generatedText);
+            }
+        } catch (error) {
+            console.error("Failed to extract claim text from AI", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!markdownText.trim()) return;
+        setSaving(true);
+        try {
+            const updatedTask = await updateCase(task.id, { claimData: markdownText });
+            // Ideally we'd sync this back up to the parent component, but it will be refetched
+            // when the task modal is reopened.
+            setIsEditing(false);
+        } catch (e) {
+            console.error("Failed to save claimData", e);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDownloadWord = () => {
+        // Simple HTML to Word conversion fallback
+        const html = `
+            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+            <head><meta charset='utf-8'><title>起诉状导出</title></head>
+            <body style="font-family: 'SimSun', '宋体', serif; font-size: 16pt; line-height: 1.5;">
+                ${markdownText.split('\n').map(line => {
+            if (line.startsWith('# ')) return `<h1 style="text-align: center; font-size: 22pt;">${line.replace('# ', '')}</h1>`;
+            if (line.startsWith('## ')) return `<h2>${line.replace('## ', '')}</h2>`;
+            if (line.startsWith('### ')) return `<h3>${line.replace('### ', '')}</h3>`;
+            if (line.startsWith('- ')) return `<p style="margin-left: 20px;">• ${line.replace('- ', '')}</p>`;
+            return `<p style="text-indent: 32pt;">${line}</p>`;
+        }).join('')}
+            </body>
+            </html>
+        `;
+        const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `民事起诉状_${task.title}.doc`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     };
 
     return (
         <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/60 backdrop-blur-sm p-6 overflow-hidden">
-            <div className={`w-full max-w-5xl h-[90vh] flex flex-col rounded-2xl shadow-2xl relative ${isDark ? 'bg-slate-900 text-slate-200' : 'bg-white text-slate-800'}`}>
+            <div className={`w-full max-w-6xl h-[92vh] flex flex-col rounded-2xl shadow-2xl relative ${isDark ? 'bg-slate-900 text-slate-200' : 'bg-white text-slate-800'}`}>
 
                 {/* Header */}
-                <div className={`flex justify-between items-center p-5 border-b ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+                <div className={`flex justify-between items-center p-4 border-b ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
                     <div className="flex items-center gap-2">
-                        <Table className="w-5 h-5 text-blue-500" />
-                        <h2 className="text-lg font-bold">交互式赔偿计算器 (交通事故)</h2>
+                        <LayoutTemplate className="w-5 h-5 text-indigo-500" />
+                        <h2 className="text-lg font-bold">交互式诉状生成器 (Skill 驱动)</h2>
+                        {saving && <span className="ml-4 text-xs text-slate-500 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> 保存中...</span>}
                     </div>
-                    <button onClick={onClose} className="p-1 rounded-md hover:bg-slate-500/20"><X className="w-5 h-5" /></button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleExtractFromAI}
+                            disabled={loading}
+                            className={`px-3 py-1.5 text-xs rounded-lg flex items-center gap-1 transition ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-slate-100 hover:bg-slate-200'}`}
+                            title="重新要求 AI 阅读证据并生成最新版本的文本"
+                        >
+                            <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin text-indigo-500' : ''}`} />
+                            {loading ? "AI 阅读案卷中..." : "重新由 AI 生成"}
+                        </button>
+                        <button onClick={onClose} className="p-1.5 rounded-md hover:bg-slate-500/20"><X className="w-5 h-5" /></button>
+                    </div>
                 </div>
 
-                {/* Body Content */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 relative">
+                {/* Body Content - Split Pane or Full View */}
+                <div className="flex-1 overflow-hidden flex relative">
                     {loading && (
                         <div className="absolute inset-0 z-10 bg-slate-900/50 backdrop-blur-sm flex flex-col items-center justify-center">
-                            <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-2" />
-                            <p>AI 正在为您精读所有病历和证据，极速提取天数和参数...</p>
+                            <Loader2 className="w-10 h-10 animate-spin text-indigo-500 mb-4" />
+                            <p className="font-medium text-lg">AI 正在根据 Skill 规则精读证据...</p>
+                            <p className="text-sm opacity-70 mt-2">自动分析人伤/车损属性，并演算各项赔偿公式</p>
                         </div>
                     )}
 
-                    {/* 基本信息 & 参数配置 */}
-                    <div className="grid grid-cols-2 gap-8">
-                        <div>
-                            <h3 className="text-md font-semibold mb-3 border-b pb-2 border-slate-500/20">基础赔偿标准设置</h3>
-                            <div className="space-y-3">
-                                <LabelInput label="城镇年人均可支配收入(元)" name="urbanDisposableIncome" value={formData.urbanDisposableIncome} isDark={isDark} onChange={handleChange} />
-                                <LabelInput label="日均伙食补助费(元)" name="hospitalFoodPerDay" value={formData.hospitalFoodPerDay} isDark={isDark} onChange={handleChange} />
-                                <LabelInput label="日均营养费(元)" name="nutritionFeePerDay" value={formData.nutritionFeePerDay} isDark={isDark} onChange={handleChange} />
-                                <LabelInput label="日均误工费基数(元)" name="misusedWorkFeePerDay" value={formData.misusedWorkFeePerDay} isDark={isDark} onChange={handleChange} />
-                                <LabelInput label="日均护理费基数(元)" name="nursingFeePerDay" value={formData.nursingFeePerDay} isDark={isDark} onChange={handleChange} />
-                            </div>
+                    {/* Left Pane: Markdown Editor */}
+                    <div className={`w-1/2 h-full flex flex-col border-r ${isDark ? 'border-white/10' : 'border-slate-200'} transition-all ${isEditing ? 'flex' : 'hidden'}`}>
+                        <div className={`p-2 flex justify-between items-center bg-opacity-50 ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-2 flex items-center gap-1"><Edit3 className="w-3 h-3" /> 文本编辑区 (支持自由修改)</span>
                         </div>
-
-                        <div>
-                            <h3 className="text-md font-semibold mb-3 border-b pb-2 border-slate-500/20">AI提取当事人及案情 (可修正)</h3>
-                            <div className="space-y-3">
-                                <LabelInput label="原告姓名" name="plaintiffName" type="text" value={formData.plaintiffName} isDark={isDark} onChange={handleChange} />
-                                <LabelInput label="被告诉求人" name="defendantName" type="text" value={formData.defendantName} isDark={isDark} onChange={handleChange} />
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-xs font-semibold opacity-70">事故经过简述</label>
-                                    <textarea name="accidentFacts" value={formData.accidentFacts} onChange={handleChange} className={`p-2 rounded-md text-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-300'}`} rows={3} />
-                                </div>
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-xs font-semibold opacity-70">交警责任划分</label>
-                                    <textarea name="liability" value={formData.liability} onChange={handleChange} className={`p-2 rounded-md text-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-300'}`} rows={2} />
-                                </div>
-                            </div>
-                        </div>
+                        <textarea
+                            value={markdownText}
+                            onChange={(e) => setMarkdownText(e.target.value)}
+                            className={`flex-1 w-full p-6 resize-none outline-none font-mono text-sm leading-relaxed ${isDark ? 'bg-slate-900 text-slate-300 placeholder-slate-700' : 'bg-white text-slate-700 placeholder-slate-300'}`}
+                            placeholder="AI 生成的诉状大纲会显示在这里，您可以随意增删改..."
+                        />
                     </div>
 
-                    {/* 赔偿明细计算表 */}
-                    <div>
-                        <h3 className="text-md font-semibold mb-3 border-b pb-2 border-slate-500/20">索赔项目计算表 (实时计算)</h3>
-                        <table className="w-full text-sm text-left border-collapse">
-                            <thead>
-                                <tr className={`border-b ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-                                    <th className="py-2 w-1/4">索赔项目</th>
-                                    <th className="py-2 w-1/4">AI 提取系数 / 天数</th>
-                                    <th className="py-2 w-1/2">自动公式与金额 (元)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <TableRow label="医疗费凭证总额" name="medicalFeeActual" val={formData.medicalFeeActual} isDark={isDark} onChange={handleChange} sumText={`${calc.medical.toFixed(2)}`} />
-                                <TableRow label="住院天数" name="hospitalDays" val={formData.hospitalDays} isDark={isDark} onChange={handleChange} sumText={`[伙食费] ${formData.hospitalFoodPerDay} × ${formData.hospitalDays} = ${calc.hospitalFood.toFixed(2)}`} />
-                                <TableRow label="营养天数" name="nutritionDays" val={formData.nutritionDays} isDark={isDark} onChange={handleChange} sumText={`[营养费] ${formData.nutritionFeePerDay} × ${formData.nutritionDays} = ${calc.nutrition.toFixed(2)}`} />
-                                <TableRow label="误工天数" name="misusedWorkDays" val={formData.misusedWorkDays} isDark={isDark} onChange={handleChange} sumText={`[误工费] ${formData.misusedWorkFeePerDay} × ${formData.misusedWorkDays} = ${calc.misusedWork.toFixed(2)}`} />
-                                <TableRow label="护理天数" name="nursingDays" val={formData.nursingDays} isDark={isDark} onChange={handleChange} sumText={`[护理费] ${formData.nursingFeePerDay} × ${formData.nursingDays} = ${calc.nursing.toFixed(2)}`} />
-                                <TableRow label="伤残赔偿指数 (如0.1=十级)" name="disabilityRate" val={formData.disabilityRate} step="0.01" isDark={isDark} onChange={handleChange} sumText={`[残疾赔偿] ${formData.urbanDisposableIncome} × ${formData.disabilityYears}年 × ${(formData.disabilityRate * 100).toFixed(0)}% = ${calc.disability.toFixed(2)}`} />
-                                <TableRow label="交通费评估" name="trafficFeeRecommended" val={formData.trafficFeeRecommended} isDark={isDark} onChange={handleChange} sumText={`${calc.traffic.toFixed(2)}`} />
-                                <TableRow label="鉴定费发票总额" name="appraisalFee" val={formData.appraisalFee} isDark={isDark} onChange={handleChange} sumText={`${calc.appraisal.toFixed(2)}`} />
-                            </tbody>
-                        </table>
-
-                        <div className={`mt-4 p-4 rounded-xl flex items-center justify-between border ${isDark ? 'bg-slate-800 border-emerald-900' : 'bg-emerald-50 border-emerald-200'}`}>
-                            <div className="flex flex-col gap-2">
-                                <p className="font-semibold">索赔总金额：<span className="text-xl text-emerald-500 font-bold">{totalClaim.toFixed(2)}</span> 元</p>
-                                <div className="flex items-center gap-2">
-                                    <label className="text-sm">扣除已垫付金额：</label>
-                                    <input type="number" name="paidByOthers" value={formData.paidByOthers} onChange={handleChange} className={`w-24 p-1 rounded border text-sm ${isDark ? 'bg-slate-900 border-slate-600' : 'bg-white border-slate-300'}`} />
-                                    <span className="text-sm">元</span>
+                    {/* Right Pane: Markdown Preview */}
+                    <div className={`h-full flex flex-col ${isEditing ? 'w-1/2' : 'w-full'} transition-all`}>
+                        <div className={`p-2 flex justify-between items-center bg-opacity-50 ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                            <span className="text-xs font-bold text-indigo-500 uppercase tracking-wider ml-2">右侧实时预览 (所见即所得)</span>
+                            {!isEditing && (
+                                <button onClick={() => setIsEditing(true)} className={`text-xs px-2 py-1 rounded bg-indigo-500 text-white flex items-center gap-1`}>
+                                    <Edit3 className="w-3 h-3" /> 编辑文本
+                                </button>
+                            )}
+                            {isEditing && (
+                                <button onClick={handleSave} className={`text-xs px-2 py-1 rounded bg-emerald-500 text-white flex items-center gap-1`}>
+                                    <Save className="w-3 h-3" /> 确认并进入全屏预览
+                                </button>
+                            )}
+                        </div>
+                        <div className={`flex-1 overflow-y-auto p-8 prose prose-sm max-w-none ${isDark ? 'prose-invert prose-headings:text-slate-100 prose-p:text-slate-300' : 'prose-slate'}`}>
+                            {markdownText ? (
+                                <ReactMarkdown>{markdownText}</ReactMarkdown>
+                            ) : (
+                                <div className="h-full flex items-center justify-center text-slate-500 opacity-50 flex-col gap-4">
+                                    <LayoutTemplate className="w-12 h-12" />
+                                    <p>暂无内容，请点击左上角【由 AI 生成】</p>
                                 </div>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-sm opacity-80 mb-1">最终应赔偿金额</p>
-                                <p className="text-3xl text-emerald-500 font-black">{finalAmount.toFixed(2)}</p>
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>
 
                 {/* Footer Controls */}
-                <div className={`p-5 border-t flex justify-end gap-3 ${isDark ? 'border-white/10 bg-slate-900' : 'border-slate-200 bg-slate-50'} rounded-b-2xl`}>
-                    <button onClick={onClose} className={`px-4 py-2 rounded-lg font-medium transition ${isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-200'}`}>取消</button>
+                <div className={`p-4 border-t flex justify-end gap-3 ${isDark ? 'border-white/10 bg-slate-900/50' : 'border-slate-200 bg-slate-50/50'} rounded-b-2xl`}>
+                    <button onClick={onClose} className={`px-4 py-2 rounded-lg font-medium transition text-sm ${isDark ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-slate-200 text-slate-600'}`}>取消</button>
                     <button
-                        onClick={handleDownload}
-                        disabled={generating || loading}
-                        className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 transition"
+                        onClick={handleDownloadWord}
+                        disabled={generating || loading || !markdownText}
+                        className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 transition text-sm shadow-lg shadow-indigo-500/20"
                     >
                         {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                        确认无误，生成起诉状 (Word)
+                        一键导出 Word 起诉状
                     </button>
                 </div>
             </div>
         </div>
     );
 };
-
-const LabelInput = ({ label, name, value, isDark, type = "number", onChange, step = "any" }: any) => (
-    <div className="flex items-center justify-between">
-        <label className="text-xs font-semibold opacity-70">{label}</label>
-        <input
-            type={type}
-            step={step}
-            name={name}
-            value={value}
-            onChange={onChange}
-            className={`w-1/2 p-1.5 px-2 rounded-md text-sm border font-mono text-right ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-300'}`}
-        />
-    </div>
-);
-
-const TableRow = ({ label, name, val, isDark, onChange, sumText, step = "any" }: any) => (
-    <tr className={`border-b border-dashed ${isDark ? 'border-slate-700/50' : 'border-slate-200'}`}>
-        <td className="py-3 items-center opacity-80">{label}</td>
-        <td className="py-3 items-center">
-            <input
-                type="number"
-                step={step}
-                name={name}
-                value={val}
-                onChange={onChange}
-                className={`w-24 p-1 px-2 rounded border text-sm text-center font-mono ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-300'}`}
-            />
-        </td>
-        <td className="py-3 items-center font-mono text-slate-500">{sumText}</td>
-    </tr>
-)

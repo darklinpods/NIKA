@@ -21,6 +21,7 @@ export interface Case {
   title: string;
   description: string;
   aiSummary?: string;
+  claimData?: string;
   priority: Priority;
   status: 'todo' | 'in-progress' | 'done';
   tags: string[];

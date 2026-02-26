@@ -23,39 +23,42 @@ export const extractTrafficAccident = async (req: Request, res: Response) => {
             where: { caseId: id }
         });
 
+        const currentCase = await prisma.case.findUnique({
+            where: { id }
+        });
+
         if (!docs || docs.length === 0) {
-            // 如果连证据都没有，也照样初始化一个空白表单，只是没有参数可以带进去了。
-            const skill = new TrafficAccidentSkill();
             return res.json({
                 success: true,
-                extractedData: {
-                    hospitalDays: 0, nutritionDays: 0, nursingDays: 0, misusedWorkDays: 0,
-                    disabilityRate: 0, disabilityYears: 20, medicalFeeActual: 0,
-                    trafficFeeRecommended: 1000, appraisalFee: 0, paidByOthers: 0,
-                    accidentFacts: "", liability: ""
-                },
-                defaults: TrafficAccidentSkill.defaults
+                generatedText: "（该案件暂无证据文件，无法由 AI 自动生成初步索赔清单，请手动补充。）"
             });
         }
 
         const documentsContent = docs.map(d => `--- 文档标题: ${d.title} ---\n${d.content}\n`).join('\n');
 
         const skill = new TrafficAccidentSkill();
-        const result = await skill.extractParams({ documentsContent });
+        const text = await skill.generateClaimText({
+            documentsContent,
+            caseTitle: currentCase?.title || '',
+            caseDescription: currentCase?.description || '',
+            parties: currentCase?.parties || ''
+        });
 
         res.json({
             success: true,
-            ...result
+            generatedText: text
         });
     } catch (error: any) {
-        console.error("Traffic Accident Extract Error:", error);
-        res.status(500).json({ error: error.message || "Failed to extract parameters." });
+        console.error("Traffic Accident Generation Error:", error);
+        res.status(500).json({ error: error.message || "Failed to generate text." });
     }
 };
 
 /**
- * [Generate] 接收前端完整的 JSON 数据（已经过律师修改并在前端计算好总计金额和每一项的公式说明），
- * 利用 docxtemplater 生成 docx 文档，并作为文件流直接下发。
+ * [Generate] 已经不需要 docxtemplater 生成，现在的生成可以是直接把用户编辑好的 Markdown 转换为 Word 
+ * （也可以交给前端直接导出，或者后端接收 markdown 然后走 html-to-docx 之类的流程，甚至直接下载 txt/md 伪装 doc）。
+ * 为了兼容已有前端并在右侧实现“确认无误，生成起诉状”，我们要把后端的 docxtemplater 去掉，
+ * 改为一个使用 markdown 处理或者简单文件流返回的方法。不过先保留这个端点，待会重构它。
  */
 export const generateTrafficAccidentDocx = async (req: Request, res: Response) => {
     try {
