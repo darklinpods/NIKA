@@ -3,7 +3,9 @@ import fs from 'fs';
 import path from 'path';
 
 /**
- * 交通事故 Skill：读取 Skill 配置文件 + 案件证据 → AI 生成完整格式化索赔清单与诉状文本
+ * 交通事故 Skill：
+ *   - generateClaimText()  → Markdown 格式全文，用于预览/编辑（保留）
+ *   - generateDocxVariables() → 22个变量 JSON，用于填充 docxtemplater Word 模板
  */
 export class TrafficAccidentSkill {
 
@@ -13,7 +15,6 @@ export class TrafficAccidentSkill {
     private getSkillContent(): string {
         const skillPath = path.resolve(process.cwd(), '..', 'skills', 'traffic_accident.md');
         if (!fs.existsSync(skillPath)) {
-            // 兜底：尝试从项目根目录读取
             const altPath = path.resolve(process.cwd(), 'skills', 'traffic_accident.md');
             if (fs.existsSync(altPath)) {
                 return fs.readFileSync(altPath, 'utf-8');
@@ -25,8 +26,7 @@ export class TrafficAccidentSkill {
     }
 
     /**
-     * 调用 AI，读取 Skill 规则 + 证据原文 → 生成完整的诉状文本（Markdown 格式）
-     * 返回的文本已包含：当事人信息、索赔清单（带公式）、事实与理由
+     * 调用 AI → 生成完整的诉状文本（Markdown 格式，用于左边编辑预览）
      */
     public async generateClaimText(params: {
         documentsContent: string;
@@ -88,9 +88,115 @@ ${params.documentsContent}
         });
 
         let text = response.text || '';
-        // 清理可能的 markdown code block 包裹
         text = text.replace(/^```markdown\n?/i, '').replace(/\n?```$/i, '').trim();
-        
+
         return text;
+    }
+
+    /**
+     * 调用 AI → 生成 Word 模板的 22 个填充变量（JSON 对象）
+     * 用于 docxtemplater 渲染 traffic_accident_with_vars.docx
+     */
+    public async generateDocxVariables(params: {
+        documentsContent: string;
+        caseTitle: string;
+        caseDescription: string;
+        parties: string;
+        model?: string;
+    }): Promise<Record<string, string>> {
+
+        const skillContent = this.getSkillContent();
+        const model = params.model || 'gemini-2.5-flash';
+
+        const prompt = `你是一位资深的交通事故赔偿律师助理。请根据下方的【Skill 规则文件】和【案件证据材料】，提取并计算出诉状所需的所有信息，然后以 JSON 格式输出。
+
+## 你的任务
+
+1. 从证据材料中提取所有当事人信息（原告、被告驾驶员、车主、保险公司）。
+2. 从证据材料（特别是《司法鉴定意见书》）中提取住院天数、误工天数、护理天数、伤残等级及赔偿系数。
+3. 严格使用 Skill 规则文件中的"赔偿计算基准参数"计算每一项赔偿金额，每项都要展示计算公式。
+4. 计算结果必须精确，所有数字计算仔细验算。
+5. 按照以下 JSON 格式输出，不输出任何其他内容。
+
+## 输出格式（严格 JSON，不加注释）
+
+\`\`\`json
+{
+  "plaintiffName": "原告姓名",
+  "defendant1Name": "被告1（驾驶员）姓名",
+  "defendant2Name": "被告2（车主）姓名，如与驾驶员相同则留空",
+  "insurer1Name": "保险公司全称",
+  "defendantDriver": "驾驶员简短姓名（用于诉讼请求句中）",
+  "defendantOwner": "车主简短姓名（用于诉讼请求句中）",
+  "tplcInsurer": "交强险保险公司简称",
+  "commercialInsurer": "商业险/统筹公司简称",
+  "totalCompensation": "诉讼请求总金额（元），例如：291,022.94元",
+  "medicalFeeText": "治疗费：XXX元（含各院费用明细，如：30020.92+5575.26=35596.18元）",
+  "futureTreatmentText": "后期治疗费：15,000元（或据实结算）",
+  "hospitalFoodText": "住院伙食补助费：50元/天×XX天=XXX元",
+  "nutritionText": "营养费：50元/天×XX天=XXX元",
+  "lostWageText": "误工费：54,553元/年÷365天×XX天=XXX元",
+  "nursingText": "护理费：XXX元（护工XX天×XX元/天=XXX元；居民服务业标准：52,532元/年÷365天×XX天=XXX元；合计：XXX元）",
+  "disabilityCompText": "残疾赔偿金：46,987元/年×XX%×XX年=XXX元",
+  "dependentText": "无 或 具体金额和说明",
+  "mentalCompText": "精神损害抚慰金：XX,000元",
+  "trafficFeeText": "交通费：1,200元（根据住院天数酌定）",
+  "vehicleRepairText": "无 或 车辆维修费：XXX元",
+  "appraisalFeeText": "鉴定费：2,280元",
+  "totalLoss": "原告各项损失合计金额（数字，不带单位）",
+  "paidByInsurer": "保险公司已垫付金额（数字，没有则填0）",
+  "netPayable": "扣除后最终应赔偿金额（数字）",
+  "plaintiffSignName": "原告姓名（落款用）",
+  "accidentFacts": "一段完整的事故经过叙述，包括时间、地点、驾驶员、车型、事故过程、伤亡后果。约200字。",
+  "liabilityDetermination": "一段完整的责任认定叙述，包括交警队名称、认定书编号、各方责任划分结论。约100字。",
+  "insuranceStatus": "一段完整的投保情况叙述，包括车辆、车主、交强险/商业险/统筹的保险公司名称、保险期间、事故是否在期间内。约100字。",
+  "otherFacts": "一段完整的其他情况叙述，包括：原告受伤住院经过、护工费、鉴定委托情况、鉴定结论（伤残等级/误工期/护理期/营养期/鉴定费）。约300字。"
+}
+\`\`\`
+
+---
+
+【Skill 规则文件】
+${skillContent}
+
+---
+
+【案件基本信息】
+案件标题：${params.caseTitle}
+案件描述：${params.caseDescription}
+当事人信息：${params.parties || '暂无'}
+
+---
+
+【案件证据材料原文】
+${params.documentsContent}
+
+---
+
+只输出 JSON，不输出任何其他内容。`;
+
+        const response = await aiService.generateContent({
+            model,
+            contents: [{ role: 'user', parts: [{ text: prompt }] }]
+        });
+
+        let raw = response.text || '{}';
+        // 清理 markdown code block
+        raw = raw.replace(/^```json\n?/i, '').replace(/\n?```$/i, '').trim();
+        // 尝试找到第一个 { 到最后一个 }
+        const start = raw.indexOf('{');
+        const end = raw.lastIndexOf('}');
+        if (start !== -1 && end !== -1) {
+            raw = raw.substring(start, end + 1);
+        }
+
+        try {
+            return JSON.parse(raw);
+        } catch (e) {
+            console.error('[TrafficAccidentSkill.generateDocxVariables] JSON parse error:', e);
+            console.error('Raw response:', raw.substring(0, 500));
+            // 返回空对象让 controller 能检测到错误
+            throw new Error('AI 返回的 JSON 格式有误，无法解析。');
+        }
     }
 }

@@ -59,31 +59,45 @@ export const ClaimListGenerator: React.FC<ClaimListGeneratorProps> = ({ task, th
         }
     };
 
-    const handleDownloadWord = () => {
-        // Simple HTML to Word conversion fallback
-        const html = `
-            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-            <head><meta charset='utf-8'><title>起诉状导出</title></head>
-            <body style="font-family: 'SimSun', '宋体', serif; font-size: 16pt; line-height: 1.5;">
-                ${markdownText.split('\n').map(line => {
-            if (line.startsWith('# ')) return `<h1 style="text-align: center; font-size: 22pt;">${line.replace('# ', '')}</h1>`;
-            if (line.startsWith('## ')) return `<h2>${line.replace('## ', '')}</h2>`;
-            if (line.startsWith('### ')) return `<h3>${line.replace('### ', '')}</h3>`;
-            if (line.startsWith('- ')) return `<p style="margin-left: 20px;">• ${line.replace('- ', '')}</p>`;
-            return `<p style="text-indent: 32pt;">${line}</p>`;
-        }).join('')}
-            </body>
-            </html>
-        `;
-        const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `民事起诉状_${task.title}.doc`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+    const handleDownloadWord = async () => {
+        setGenerating(true);
+        try {
+            // Call backend: AI generates 22 variables → docxtemplater fills template → .docx returned
+            const response = await fetch(`/api/cases/${task.id}/skills/traffic_accident/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({}),
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({ error: '下载失败' }));
+                alert(`生成 Word 失败：${errData.error || response.statusText}`);
+                return;
+            }
+
+            // Extract filename from Content-Disposition header
+            const disposition = response.headers.get('Content-Disposition') || '';
+            let fileName = `民事起诉状_${task.title}.docx`;
+            const fileNameMatch = disposition.match(/filename\*=UTF-8''(.+)/);
+            if (fileNameMatch) {
+                fileName = decodeURIComponent(fileNameMatch[1]);
+            }
+
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('handleDownloadWord error:', error);
+            alert('生成 Word 文档时发生错误，请检查服务器日志。');
+        } finally {
+            setGenerating(false);
+        }
     };
 
     return (
@@ -170,8 +184,17 @@ export const ClaimListGenerator: React.FC<ClaimListGeneratorProps> = ({ task, th
                         disabled={generating || loading || !markdownText}
                         className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 transition text-sm shadow-lg shadow-indigo-500/20"
                     >
-                        {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                        一键导出 Word 起诉状
+                        {generating ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                AI 生成中，请稍候…
+                            </>
+                        ) : (
+                            <>
+                                <Download className="w-4 h-4" />
+                                一键导出 Word 起诉状
+                            </>
+                        )}
                     </button>
                 </div>
             </div>
