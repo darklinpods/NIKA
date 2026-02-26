@@ -64,7 +64,7 @@ export const generateTrafficAccidentDocx = async (req: Request, res: Response) =
         // 我们需要把前端传过来的变量塞进 docxtemplater 里
 
         // 加载模板文件
-        const templatePath = path.resolve(process.cwd(), 'templates', '民事起诉状-要素式模版-机动车交通事故责任纠纷.docx');
+        const templatePath = path.resolve(process.cwd(), '../templates', '民事起诉状-要素式模版-机动车交通事故责任纠纷.docx');
         const content = fs.readFileSync(templatePath, 'binary');
 
         const zip = new PizZip(content);
