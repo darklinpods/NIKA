@@ -108,6 +108,7 @@ export const generateTrafficAccidentDocx = async (req: Request, res: Response) =
         const doc = new Docxtemplater(zip, {
             paragraphLoop: true,
             linebreaks: true,   // 允许变量里的 \n 换行
+            delimiters: { start: '{', end: '}' },   // 单花括号，避免 Word 跨 run 分拆 {{ 导致双重标签错误
         });
 
         doc.render(variables);
