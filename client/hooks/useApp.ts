@@ -26,7 +26,8 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     deleteCaseDocument,
     handleDeleteCase,
     handleUpdatePriority,
-    handleMoveStage
+    handleMoveStage,
+    handleUpdateCaseType
   } = useTaskOperations(data, setData, loadData, confirm, lang);
 
   // 4. Drag & Drop interactions
@@ -61,5 +62,6 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     handleGeneratePlan,
     handleUpdatePriority,
     handleMoveStage,
+    handleUpdateCaseType,
   };
 };

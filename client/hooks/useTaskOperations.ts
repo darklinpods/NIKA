@@ -156,6 +156,21 @@ export const useTaskOperations = (
         }
     }, [loadData]);
 
+    // 快捷设置案由，乐观更新后同步后端
+    const handleUpdateCaseType = useCallback(async (caseId: string, caseType: string) => {
+        // 乐观更新
+        setData(prev => ({
+            ...prev,
+            tasks: { ...prev.tasks, [caseId]: { ...prev.tasks[caseId], caseType } }
+        }));
+        try {
+            await updateCase(caseId, { caseType } as any);
+        } catch (err) {
+            logError(err, 'handleUpdateCaseType');
+            loadData(); // 失败则回滚
+        }
+    }, [setData, loadData]);
+
     /**
      * 不通过拖拽，通过菜单点击快捷移动案件进入下一个/上一个阶段
      */
@@ -197,6 +212,7 @@ export const useTaskOperations = (
         deleteCaseDocument,
         handleDeleteCase,
         handleUpdatePriority,
-        handleMoveStage
+        handleMoveStage,
+        handleUpdateCaseType
     };
 };

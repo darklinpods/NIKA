@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { Case } from '../types';
 import { getPriorityBorderColor } from '../constants/priorities';
@@ -23,12 +23,25 @@ const TaskCard: React.FC<TaskCardProps> = ({
   task, index, theme, lang
 }) => {
   const {
-    setEditingTask, handleDeleteCase, handleGeneratePlan, handleUpdatePriority, handleMoveStage
+    setEditingTask, handleDeleteCase, handleGeneratePlan, handleUpdatePriority, handleMoveStage, handleUpdateCaseType
   } = useAppContext();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
+  const menuWrapperRef = useRef<HTMLDivElement>(null);
   const t = translations[lang];
+
+  // 点击卡片外部关闭菜单
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuWrapperRef.current && !menuWrapperRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMenuOpen]);
 
   // 计算进度相关数据
   const progressData = useMemo(() => {
@@ -108,7 +121,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             <div className="flex-1">
               <TaskTitle title={task.title} theme={theme} />
             </div>
-            <div className="relative">
+            <div className="relative" ref={menuWrapperRef}>
               <button onClick={(e) => { e.stopPropagation(); setIsMenuOpen(!isMenuOpen); }} className="p-1 text-slate-400 hover:text-indigo-400">
                 <MoreVertical size={14} />
               </button>
@@ -139,7 +152,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
             progress={progressData.progress}
             clientName={task.clientName}
             tags={task.tags}
+            caseType={task.caseType}
+            taskId={task.id}
+            onUpdateCaseType={handleUpdateCaseType}
             theme={theme}
+            lang={lang}
           />
 
           {summary && (

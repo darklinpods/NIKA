@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Edit2, Check, UploadCloud, Users, Loader, Scan } from 'lucide-react';
 import { uploadCaseEvidence, api } from '../../services/api';
+import { CASE_TYPES } from '../../constants/caseTypes';
 
 /**
  * 任务模态框信息面板组件属性
@@ -198,11 +199,11 @@ export const TaskModalInfoPanel: React.FC<TaskModalInfoPanelProps> = ({
             value={task.caseType || 'general'}
             onChange={(e) => onTaskChange({ ...task, caseType: e.target.value })}
           >
-            <option value="general">{lang === 'zh' ? '普通案件' : 'General'}</option>
-            <option value="traffic_accident">{lang === 'zh' ? '机动车交通事故责任纠纷' : 'Motor Vehicle Traffic Accident'}</option>
-            <option value="contract_dispute">{lang === 'zh' ? '合同纠纷' : 'Contract Dispute'}</option>
-            <option value="labor_dispute">{lang === 'zh' ? '劳动争议' : 'Labor Dispute'}</option>
-            <option value="loan_dispute">{lang === 'zh' ? '民间借贷纠纷' : 'Loan Dispute'}</option>
+            {CASE_TYPES.map(ct => (
+              <option key={ct.value} value={ct.value}>
+                {lang === 'zh' ? ct.labelZh : ct.labelEn}
+              </option>
+            ))}
           </select>
         </div>
 
