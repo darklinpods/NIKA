@@ -150,9 +150,11 @@ ${textToAnalyze}
 
         const response = await aiService.generateContent({
             model: 'gemini-2.5-flash',
+            // 修复：Gemini API 要求 contents 参数必须是特定结构的对象数组，
+            // 这里将非 PDF 的纯文本请求也统一包装成了 [{ role: 'user', parts: [{ text: prompt }] }] 格式以解决报错。
             contents: mimeType === 'application/pdf'
                 ? [{ role: 'user', parts: [{ text: prompt }, { inlineData: { data: fileBuffer.toString('base64'), mimeType: 'application/pdf' } }] }]
-                : prompt
+                : [{ role: 'user', parts: [{ text: prompt }] }]
         });
 
         let rawResult = response.text;
@@ -201,8 +203,11 @@ export const uploadEvidence = async (req: Request, res: Response) => {
         const existingCase = await caseService.getCaseById(caseId);
         if (!existingCase) {
             console.log(`[Evidence Import] Case ${caseId} not found in DB. Auto-creating...`);
+            // 修复：当从案件详情上传证据时如果案件尚未真正创建（例如使用临时任务ID），会自动初始化案件。
+            // 在此补充 description: '' 空字符串字段，防止因数据库 schema 对 description 的非空要求导致创建失败。
             await caseService.updateCase(caseId, {
                 title: '待完善案件（证据先行导入）',
+                description: '',
                 status: 'todo',
                 priority: 'medium',
             });
@@ -301,7 +306,8 @@ ${textToAnalyze}
 
         const response = await aiService.generateContent({
             model: 'gemini-2.5-flash',
-            contents: prompt
+            // 修复：此处的 Gemini 请求用于分析提取当事人信息，同样需要包装为统一的对象数组格式，解决传入纯字符串导致的 API 错误
+            contents: [{ role: 'user', parts: [{ text: prompt }] }]
         });
 
         let rawResult = response.text;
