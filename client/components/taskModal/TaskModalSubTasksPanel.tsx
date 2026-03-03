@@ -116,7 +116,7 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
             </p>
           </div>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-3">
             {task.subTasks.map((subTask: SubTask) => (
               <SubTaskItem
                 key={subTask.id}

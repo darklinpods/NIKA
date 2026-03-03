@@ -1,15 +1,40 @@
 import { Type } from "@google/genai";
 import { aiService } from './aiService';
 import { caseService } from './caseService';
+import { knowledgeService } from './knowledgeService';
 
 export const aiTaskService = {
     async generateTasks(prompt: string, lang: string) {
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
+        const kDocs = await knowledgeService.getAllDocuments();
+        let kContext = '';
+        if (kDocs && kDocs.length > 0) {
+            const cats: Record<string, string> = {
+                'pleading': 'Original Pleadings/Drafts',
+                'precedent': 'Court Precedents',
+                'provision': 'Legal Provisions',
+                'notebook_lm': 'Logic & Notes'
+            };
+            const grouped = kDocs.reduce((acc: any, doc: any) => {
+                const catName = cats[doc.category] || 'General Knowledge';
+                if (!acc[catName]) acc[catName] = [];
+                acc[catName].push(`Title: ${doc.title}\nContent: ${doc.content}`);
+                return acc;
+            }, {});
+
+            kContext = "\n[System Knowledge Base / Guidelines]:\n";
+            for (const [cat, items] of Object.entries(grouped)) {
+                kContext += `### ${cat} ###\n${(items as string[]).join('\n\n')}\n\n`;
+            }
+            kContext += "\nPlease analyze the current case based on these guidelines.\n";
+        }
+
         const response = await aiService.generateContent({
             model: "gemini-2.5-flash",
             contents: [{
                 role: "user", parts: [{
                     text: `Generate a list of 3-5 structured legal cases for the following request: "${prompt}". 
+                 ${kContext}
                  The response MUST be in ${languageName}.
                  Each case must have a title, description, priority (low, medium, or high), 1-2 relevant tags, and a list of 3-5 procedural sub-tasks (as strings).` }]
             }],
@@ -92,6 +117,27 @@ export const aiTaskService = {
             }
         }
 
+        const kDocs = await knowledgeService.getAllDocuments();
+        if (kDocs && kDocs.length > 0) {
+            const cats: Record<string, string> = {
+                'pleading': 'Pleadings Reference',
+                'precedent': 'Case Precedents',
+                'provision': 'Legal Provisions',
+                'notebook_lm': 'Strategic Notes'
+            };
+            const grouped = kDocs.reduce((acc: any, doc: any) => {
+                const catName = cats[doc.category] || 'Knowledge Base';
+                if (!acc[catName]) acc[catName] = [];
+                acc[catName].push(`Title: ${doc.title}\nContent: ${doc.content}`);
+                return acc;
+            }, {});
+
+            ragContext += "\n[Global Knowledge Base / Firm Guidelines]:\n";
+            for (const [cat, items] of Object.entries(grouped)) {
+                ragContext += `### ${cat} ###\n${(items as string[]).join('\n\n')}\n\n`;
+            }
+        }
+
         let prompt = "";
         switch (docType) {
             case 'analysis':
@@ -147,12 +193,36 @@ export const aiTaskService = {
 
     async generateCasePlan(title: string, desc: string, lang: string) {
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
+        const kDocs = await knowledgeService.getAllDocuments();
+        let kContext = '';
+        if (kDocs && kDocs.length > 0) {
+            const cats: Record<string, string> = {
+                'pleading': 'Workflow from Pleadings',
+                'precedent': 'Procedural Precedents',
+                'provision': 'Procedural Requirements',
+                'notebook_lm': 'Internal Logic/Notes'
+            };
+            const grouped = kDocs.reduce((acc: any, doc: any) => {
+                const catName = cats[doc.category] || 'Guidelines';
+                if (!acc[catName]) acc[catName] = [];
+                acc[catName].push(`Title: ${doc.title}\nContent: ${doc.content}`);
+                return acc;
+            }, {});
+
+            kContext = "\n[System Knowledge Base / Guidelines]:\n";
+            for (const [cat, items] of Object.entries(grouped)) {
+                kContext += `### ${cat} ###\n${(items as string[]).join('\n\n')}\n\n`;
+            }
+            kContext += "\nPlease follow the workflows suggested in the guidelines above.\n";
+        }
+
         const response = await aiService.generateContent({
             model: "gemini-2.5-flash",
             contents: [{
                 role: "user", parts: [{
                     text: `As a professional legal assistant, create a procedural plan for this case. 
                  Generate 4-6 specific, actionable subtasks (e.g., "Collect medical records", "Draft notice to defendant").
+                 ${kContext}
                  The response MUST be in ${languageName}.
                  Return a JSON object with a "subTasks" array of strings.
                  

@@ -87,3 +87,9 @@ export const uploadCaseEvidence = (id: string, formData: FormData): Promise<{ su
 export const fetchChatHistory = (caseId: string): Promise<{ success: boolean; data: any[] }> => api.get<{ success: boolean; data: any[] }>(`/cases/${caseId}/chat`);
 export const sendChatMessage = (caseId: string, content: string, lang: string): Promise<{ success: boolean; userMessage: any; aiMessage: any }> =>
     api.post<{ success: boolean; userMessage: any; aiMessage: any }>(`/cases/${caseId}/chat`, { content, lang });
+
+// Knowledge Base API
+export const fetchKnowledgeDocs = (): Promise<any[]> => api.get<any[]>('/knowledge');
+export const uploadKnowledgeDoc = (formData: FormData): Promise<any> => api.post<any>('/knowledge/upload', formData);
+export const deleteKnowledgeDoc = (id: string): Promise<void> => api.delete<void>(`/knowledge/${id}`);
+export const updateKnowledgeDoc = (id: string, data: { title?: string, category?: string }): Promise<any> => api.put<any>(`/knowledge/${id}`, data);

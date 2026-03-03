@@ -58,3 +58,13 @@ model CaseChatMessage {
   caseId    String
   case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
 }
+
+// 全局知识库/经验库（用于存放 NotebookLM 导出的笔记、法律解读、类案参考）
+model KnowledgeDocument {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  category    String   @default("notebook_lm") // "notebook_lm", "law_article", "template"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

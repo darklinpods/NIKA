@@ -6,6 +6,7 @@ export const translations = {
     analytics: "Practice Analytics",
     myBoards: "Active Files",
     taskView: "Daily Tasks",
+    knowledgeBase: "Knowledge Base",
     settings: "Settings",
     logout: "Log out",
     searchPlaceholder: "Search case title, client or keywords...",
@@ -77,6 +78,10 @@ export const translations = {
     overviewTab: "Overview",
     tasksTab: "Tasks",
     docsTab: "Documents",
+    cat_pleading: "Pleadings",
+    cat_precedent: "Precedents",
+    cat_provision: "Law/Provisions",
+    cat_note: "Logic/Notes",
   },
   zh: {
     title: "律政先锋 - 办案系统",
@@ -84,6 +89,7 @@ export const translations = {
     analytics: "办案效能",
     myBoards: "卷宗中心",
     taskView: "任务清单",
+    knowledgeBase: "全局经验库",
     settings: "系统设置",
     logout: "退出登录",
     searchPlaceholder: "搜索案件标题、当事人、关键词...",
@@ -155,5 +161,9 @@ export const translations = {
     overviewTab: "案件概况",
     tasksTab: "任务与打卡",
     docsTab: "证据与文档",
+    cat_pleading: "原创诉状库",
+    cat_precedent: "法院判例参考",
+    cat_provision: "相关法条/规定",
+    cat_note: "办案心得/笔记",
   }
 };

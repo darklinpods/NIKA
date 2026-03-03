@@ -6,6 +6,7 @@ import cors from 'cors';
 import caseRoutes from './routes/caseRoutes';
 import geminiRoutes from './routes/geminiRoutes';
 import templateRoutes from './routes/templateRoutes';
+import knowledgeRoutes from './routes/knowledgeRoutes';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -34,6 +35,7 @@ const apiRouter = express.Router();
 apiRouter.use('/cases', caseRoutes);
 apiRouter.use('/ai', geminiRoutes);
 apiRouter.use('/templates', templateRoutes);
+apiRouter.use('/knowledge', knowledgeRoutes);
 
 // Handle both with and without /api prefix for robustness on Vercel
 app.use('/api', apiRouter);

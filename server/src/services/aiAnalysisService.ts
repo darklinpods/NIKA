@@ -1,8 +1,34 @@
 import { aiService } from './aiService';
+import { knowledgeService } from './knowledgeService';
 
 export const aiAnalysisService = {
   async extractCaseData(textToAnalyze: string, isPdfStr: boolean, fileBuffer?: Buffer): Promise<any> {
-    const prompt = `
+    const kDocs = await knowledgeService.getAllDocuments();
+    let kContext = '';
+
+    if (kDocs && kDocs.length > 0) {
+      const cats: Record<string, string> = {
+        'pleading': '原创诉状参考',
+        'precedent': '法院判例参考',
+        'provision': '法律法规依据',
+        'notebook_lm': '办案笔记/逻辑'
+      };
+
+      const grouped = kDocs.reduce((acc: any, doc: any) => {
+        const catName = cats[doc.category] || '其他经验';
+        if (!acc[catName]) acc[catName] = [];
+        acc[catName].push(`文档标题: ${doc.title}\n内容详情: ${doc.content}`);
+        return acc;
+      }, {});
+
+      kContext = "【系统全局经验库/办案指南】\n";
+      for (const [cat, items] of Object.entries(grouped)) {
+        kContext += `### ${cat} ###\n${(items as string[]).join('\n\n')}\n\n`;
+      }
+      kContext += "【提示】：请充分结合以上经验库中的内容（尤其是诉状风格、判例标准和法律依据）来处理当前案件。\n\n";
+    }
+
+    const prompt = `${kContext}
 你是一位专业的法律助理，主要负责从案卷材料中提取关键要素以建立案件档案。
 请阅读以下案卷材料文本，并提取出核心信息。
 必须返回一个极其严格的经过格式化的 JSON 对象，不要包含任何 \`\`\`json\`\`\` 等 Markdown 引用符号。
@@ -35,7 +61,29 @@ ${textToAnalyze}
   },
 
   async extractParties(textToAnalyze: string): Promise<any[]> {
-    const prompt = `
+    const kDocs = await knowledgeService.getAllDocuments();
+    let kContext = '';
+    if (kDocs && kDocs.length > 0) {
+      const cats: Record<string, string> = {
+        'pleading': '原创诉状参考',
+        'precedent': '法院判例参考',
+        'provision': '法律法规依据',
+        'notebook_lm': '办案笔记/逻辑'
+      };
+      const grouped = kDocs.reduce((acc: any, doc: any) => {
+        const catName = cats[doc.category] || '其他经验';
+        if (!acc[catName]) acc[catName] = [];
+        acc[catName].push(`文档标题: ${doc.title}\n内容详情: ${doc.content}`);
+        return acc;
+      }, {});
+
+      kContext = "【系统全局经验库】\n";
+      for (const [cat, items] of Object.entries(grouped)) {
+        kContext += `### ${cat} ###\n${(items as string[]).join('\n\n')}\n\n`;
+      }
+    }
+
+    const prompt = `${kContext}
 请作为专业的法律助理，从以下法律案卷文稿中仔细提取所有涉及的当事人（包括原告、被告、第三人、上诉人、被上诉人等，或者是协议的甲方乙方）的详细信息。
 如果没有提取到任何特定信息，可以在该字段留空。必须返回一个严格的 JSON 对象。
 
