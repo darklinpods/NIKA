@@ -139,16 +139,18 @@ export const TaskModalDocumentsPanel: React.FC<TaskModalDocumentsPanelProps> = (
                         {isGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
                         {lang === 'zh' ? "策略" : "Strategy"}
                     </button>
-                    {/* NEW SMART DOCX BUTTON */}
-                    <button
-                        onClick={handleSmartDocxGenerate}
-                        disabled={isGenerating || isSmartGenerating}
-                        className={`p-1.5 rounded-lg transition-colors text-xs flex items-center gap-1 ${theme === 'dark' ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'}`}
-                        title={lang === 'zh' ? "基于文书模板引导生成并打包下载" : "Guided template generation"}
-                    >
-                        {isSmartGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSignature className="w-3 h-3" />}
-                        {lang === 'zh' ? "模板文书生成" : "Template Gen"}
-                    </button>
+                    {/* NEW SMART DOCX BUTTON - Only for traffic accident cases as requested */}
+                    {task.caseType === 'traffic_accident' && (
+                        <button
+                            onClick={handleSmartDocxGenerate}
+                            disabled={isGenerating || isSmartGenerating}
+                            className={`p-1.5 rounded-lg transition-colors text-xs flex items-center gap-1 ${theme === 'dark' ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'}`}
+                            title={lang === 'zh' ? "基于文书模板引导生成并打包下载" : "Guided template generation"}
+                        >
+                            {isSmartGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSignature className="w-3 h-3" />}
+                            {lang === 'zh' ? "模板文书生成" : "Template Gen"}
+                        </button>
+                    )}
                     {/* SKILL BUTTON — only for traffic accident cases */}
                     {task.caseType === 'traffic_accident' && (
                         <button
