@@ -151,7 +151,7 @@ class AIService {
 
                     // 构造兼容原 Gemini 接口的返回对象
                     return {
-                        text: () => textResponse
+                        text: textResponse
                     };
 
                 } catch (error: any) {

@@ -1,0 +1,169 @@
+import { Type } from "@google/genai";
+import { aiService } from './aiService';
+import { caseService } from './caseService';
+
+export const aiTaskService = {
+    async generateTasks(prompt: string, lang: string) {
+        const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
+        const response = await aiService.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [{
+                role: "user", parts: [{
+                    text: `Generate a list of 3-5 structured legal cases for the following request: "${prompt}". 
+                 The response MUST be in ${languageName}.
+                 Each case must have a title, description, priority (low, medium, or high), 1-2 relevant tags, and a list of 3-5 procedural sub-tasks (as strings).` }]
+            }],
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        cases: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    title: { type: Type.STRING },
+                                    description: { type: Type.STRING },
+                                    priority: { type: Type.STRING },
+                                    tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+                                    subTasks: { type: Type.ARRAY, items: { type: Type.STRING } }
+                                },
+                                propertyOrdering: ["title", "description", "priority", "tags", "subTasks"]
+                            }
+                        }
+                    },
+                }
+            }
+        });
+
+        const resultText = response.text || "";
+        return JSON.parse(resultText.trim());
+    },
+
+    async suggestImprovement(taskTitle: string, taskDesc: string, lang: string) {
+        const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
+        const response = await aiService.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [{
+                role: "user", parts: [{
+                    text: `Improve and expand this task description for clarity and professionalism. 
+                 The response MUST be in ${languageName}.
+                 Task Title: ${taskTitle}
+                 Current Description: ${taskDesc}
+                 Output only the improved description text.` }]
+            }],
+        });
+        return response.text || taskDesc;
+    },
+
+    async summarizeTask(title: string, desc: string, lang: string) {
+        const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
+        const response = await aiService.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [{
+                role: "user", parts: [{
+                    text: `As an expert legal assistant, summarize this legal case in under 80 words. Focus on the core conflict and key next step.
+                 Language: ${languageName}
+                 Title: ${title}
+                 Details: ${desc}`
+                }]
+            }],
+        });
+        return response.text || "";
+    },
+
+    async generateCaseDocument(docType: string, caseTitle: string, caseDesc: string, lang: string, caseId?: string) {
+        const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
+        let ragContext = "";
+
+        if (caseId) {
+            const targetCase = await caseService.getCaseById(caseId);
+            if (targetCase) {
+                if (targetCase.parties) {
+                    ragContext += `\n[当事人详细信息 Parties Information]:\n${targetCase.parties}\n`;
+                }
+                if (targetCase.documents && targetCase.documents.length > 0) {
+                    ragContext += `\n[案件证据与关联文档 Evidence & Documents]:\n`;
+                    targetCase.documents.forEach((doc: any, index: number) => {
+                        ragContext += `--- Document ${index + 1}: ${doc.title} ---\n${doc.content}\n`;
+                    });
+                }
+            }
+        }
+
+        let prompt = "";
+        switch (docType) {
+            case 'analysis':
+                prompt = `Act as a senior legal expert. Analyze the following legal case. 
+        Identify the core legal dispute points (Controversy Focus). 
+        For each point, provide a brief legal assessment based on general legal principles.
+        Format the output in Markdown.
+        
+        Case Title: ${caseTitle}
+        Case Details: ${caseDesc}
+        ${ragContext ? `\nReference Knowledge Base for Context:\n${ragContext}` : ''}
+        Language: ${languageName}`;
+                break;
+            case 'strategy':
+                prompt = `Act as a senior litigation lawyer. Propose a litigation strategy for the following case.
+        Outline key evidence needed, potential risks, and recommended next steps.
+        Format the output in Markdown.
+  
+        Case Title: ${caseTitle}
+        Case Details: ${caseDesc}
+        ${ragContext ? `\nReference Knowledge Base for Context:\n${ragContext}` : ''}
+        Language: ${languageName}`;
+                break;
+            case 'offical_doc':
+                prompt = `Act as a legal assistant. Draft a formal legal document structure (e.g., a Petition or Legal Opinion) for the following case.
+        Include placeholders for specific facts but provide the standard legal boilerplate and structure.
+        ${ragContext ? 'STRICTLY base the facts, party details, and claims on the Reference Knowledge Base provided below.' : ''}
+        Format the output in Markdown.
+  
+        Case Title: ${caseTitle}
+        Case Details: ${caseDesc}
+        ${ragContext ? `\nReference Knowledge Base for Context:\n${ragContext}` : ''}
+        Language: ${languageName}`;
+                break;
+            case 'evidence_list':
+                prompt = `Act as a legal assistant. Generate a list of evidence for the following case.
+          Format the output in Markdown.
+    
+          Case Title: ${caseTitle}
+          Case Details: ${caseDesc}
+          ${ragContext ? `\nReference Knowledge Base for Context:\n${ragContext}` : ''}
+          Language: ${languageName}`;
+                break;
+        }
+
+        const response = await aiService.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+        });
+
+        return response.text || "";
+    },
+
+    async generateCasePlan(title: string, desc: string, lang: string) {
+        const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
+        const response = await aiService.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [{
+                role: "user", parts: [{
+                    text: `As a professional legal assistant, create a procedural plan for this case. 
+                 Generate 4-6 specific, actionable subtasks (e.g., "Collect medical records", "Draft notice to defendant").
+                 The response MUST be in ${languageName}.
+                 Return a JSON object with a "subTasks" array of strings.
+                 
+                 Case Title: ${title}
+                 Case Details: ${desc}`
+                }]
+            }],
+        });
+
+        const resultText = response.text || "";
+        const cleaned = resultText.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(cleaned);
+    }
+};
