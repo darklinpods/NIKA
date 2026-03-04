@@ -218,7 +218,9 @@ export const translations = {
     systemTheme: "Follow System",
     lightTheme: "Light Mode",
     darkTheme: "Dark Mode",
-    caseTypeGeneral: "General"
+    caseTypeGeneral: "General",
+    newCase: "New Case",
+    newClient: "New Client"
   },
   zh: {
     title: "律政先锋 - 办案系统",
@@ -438,6 +440,8 @@ export const translations = {
     systemTheme: "跟随系统",
     lightTheme: "浅色模式",
     darkTheme: "深色模式",
-    caseTypeGeneral: "一般案件"
+    caseTypeGeneral: "一般案件",
+    newCase: "新案件",
+    newClient: "新客户"
   }
 };

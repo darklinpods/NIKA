@@ -76,7 +76,7 @@ export const reorderCases = async (req: Request, res: Response) => {
     }
 };
 
-// 智能导入案件 (PDF/Word解析 + AI信息提取)
+// 智能导入案件 (PDF/Word解析 + AI信息提取 + 立即入库并保存证据文档)
 export const smartImportCase = async (req: Request, res: Response) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
@@ -94,7 +94,29 @@ export const smartImportCase = async (req: Request, res: Response) => {
         const isPdf = req.file.mimetype === 'application/pdf' || filename.endsWith('.pdf');
         const caseData = await aiAnalysisService.extractCaseData(textToAnalyze, isPdf, isPdf ? req.file.buffer : undefined);
 
-        res.json({ success: true, data: caseData });
+        // 直接在数据库创建案件，避免前端用临时 ID 保存时丢失证据
+        const newCase = await caseService.createCase({
+            title: caseData.title || originalName,
+            description: caseData.description || '',
+            priority: caseData.priority || 'medium',
+            tags: caseData.tags || [],
+            clientName: caseData.clientName || '',
+            status: 'todo',
+        });
+
+        // 将解析出的原文保存为该案件的「原始证据材料」
+        await caseService.addDocument(newCase.id, {
+            title: originalName,
+            content: extractedText,
+            category: 'Evidence',
+        });
+
+        // 返回包含 documents 在内的完整案件对象
+        const fullCase = await caseService.getCaseById(newCase.id);
+
+        console.log(`[Smart Import] Case "${newCase.title}" (id=${newCase.id}) created with evidence document "${originalName}".`);
+
+        res.json({ success: true, data: fullCase });
 
     } catch (error: any) {
         console.error("Smart Import Case Error:", error);

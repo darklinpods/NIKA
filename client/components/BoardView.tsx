@@ -74,6 +74,7 @@ interface BoardViewProps {
   collapsedColumns: Set<string>;
   onToggleColumn: (id: string) => void;
   onAddTask: (initialData?: any) => void;
+  onSmartImportSuccess: (caseData: any) => void;
 }
 
 export const BoardView: React.FC<BoardViewProps> = ({
@@ -83,6 +84,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
   collapsedColumns,
   onToggleColumn,
   onAddTask,
+  onSmartImportSuccess,
 }) => {
   const { data, onDragEnd } = useAppContext();
   const t = translations[lang];
@@ -106,8 +108,9 @@ export const BoardView: React.FC<BoardViewProps> = ({
       const response = await smartImportCase(formData);
 
       if (response.success && response.data) {
-        // 打开新建案件面板并预填数据
-        onAddTask(response.data);
+        // The case is already persisted in DB with evidence saved.
+        // Open it directly in TaskModal instead of pre-filling a new case form.
+        onSmartImportSuccess(response.data);
       }
     } catch (error) {
       console.error("Smart Import Failed:", error);

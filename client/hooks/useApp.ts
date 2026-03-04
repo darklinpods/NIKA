@@ -47,6 +47,8 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
 
   return {
     data,
+    setData,
+    loadData,
     editingTask,
     isOverviewGenerating,
     isSaving,

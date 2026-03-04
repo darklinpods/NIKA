@@ -54,9 +54,23 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
     const handleExtractPartiesFromEvidence = async () => {
         try {
             setIsExtractingParties(true);
-            const res = await api.post<{ success: boolean; parties: any[]; caseData: any }>(`/cases/${task.id}/extract-parties`, {});
+            const res = await api.post<{
+                success: boolean;
+                parties: any[];
+                caseFactsNarrative: string;
+                caseType: string;
+                caseData: any;
+            }>(`/cases/${task.id}/extract-parties`, {});
+
             if (res.success && res.caseData) {
-                onTaskChange({ ...task, parties: res.caseData.parties });
+                // Apply parties + description (事实与理由) + caseType all at once
+                const updatedTask = {
+                    ...task,
+                    parties: res.caseData.parties,
+                    ...(res.caseData.caseType ? { caseType: res.caseData.caseType } : {}),
+                    ...(res.caseData.description ? { description: res.caseData.description } : {}),
+                };
+                onTaskChange(updatedTask);
             }
         } catch (error) {
             console.error('Failed to extract parties:', error);

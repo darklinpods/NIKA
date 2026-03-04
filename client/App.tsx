@@ -3,6 +3,7 @@ import { LoginScreen, Sidebar, Header, TaskModal, BoardView, StatsBoard, GlobalT
 import { useTheme, useAuth, ThemeMode } from './hooks';
 import { AppProvider, useAppContext } from './providers/AppProvider';
 import { Case } from './types';
+import { translations } from './translations';
 
 const App: React.FC = () => {
   const { isAuthenticated, username, password, error, setUsername, setPassword, handleLogin, handleLogout } = useAuth('zh');
@@ -48,7 +49,7 @@ const AppLayout: React.FC<{
   onThemeToggle: () => void;
   onLangToggle: () => void;
 }> = ({ theme, themeMode, lang, onLogout, onThemeToggle, onLangToggle }) => {
-  const { editingTask, isOverviewGenerating, isSaving, setEditingTask, toggleSubTask, updateSubTaskTitle, updateSubTaskDate, deleteSubTask, addEmptySubTask, addCaseDocument, deleteCaseDocument, handleGenerateAiOverview, saveEditedTask } = useAppContext();
+  const { data, setData, editingTask, isOverviewGenerating, isSaving, setEditingTask, toggleSubTask, updateSubTaskTitle, updateSubTaskDate, deleteSubTask, addEmptySubTask, addCaseDocument, deleteCaseDocument, handleGenerateAiOverview, saveEditedTask } = useAppContext();
   const [activeTab, setActiveTab] = useState<'board' | 'stats' | 'tasks' | 'knowledge'>('board');
   const [searchQuery, setSearchQuery] = useState('');
   const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set());
@@ -62,18 +63,37 @@ const AppLayout: React.FC<{
   const handleAddTask = (initialData: Partial<Case> = {}) => {
     setEditingTask({
       id: `task-${Date.now()}`,
-      title: initialData.title || (lang === 'zh' ? '新案件' : 'New Case'),
+      title: initialData.title || translations[lang].newCase,
       description: initialData.description || '',
       priority: initialData.priority || 'medium',
       status: 'todo',
       caseType: initialData.caseType || 'general',
-      clientName: initialData.clientName || (lang === 'zh' ? '新客户' : 'New Client'),
+      clientName: initialData.clientName || translations[lang].newClient,
       tags: initialData.tags || [],
       subTasks: [],
       order: 0,
       createdAt: new Date().toISOString(),
     });
   };
+
+  const handleSmartImportSuccess = (importedCase: Case) => {
+    // Add the newly-created case to the board state (col-1 = todo)
+    setData((prev: any) => {
+      const newTasks = { ...prev.tasks, [importedCase.id]: importedCase };
+      const newColumns = { ...prev.columns };
+      const todoColId = 'col-1';
+      if (newColumns[todoColId]) {
+        newColumns[todoColId] = {
+          ...newColumns[todoColId],
+          taskIds: [...newColumns[todoColId].taskIds, importedCase.id],
+        };
+      }
+      return { ...prev, tasks: newTasks, columns: newColumns };
+    });
+    // Open the case immediately in the TaskModal for review / editing
+    setEditingTask(importedCase);
+  };
+
 
   if (editingTask) {
     return (
@@ -117,6 +137,7 @@ const AppLayout: React.FC<{
             collapsedColumns={collapsedColumns}
             onToggleColumn={toggleColumn}
             onAddTask={handleAddTask}
+            onSmartImportSuccess={handleSmartImportSuccess}
           />
         );
     }
