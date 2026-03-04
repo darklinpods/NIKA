@@ -26,7 +26,7 @@ export const KnowledgeBaseView: React.FC<KnowledgeBaseViewProps> = ({ theme, lan
     const t = translations[lang];
 
     const categoryMap: Record<string, string> = {
-        'auto': lang === 'zh' ? '✨ AI 智能判断' : '✨ AI Auto Category',
+        'auto': t.autoCategory,
         'pleading': (t as any).cat_pleading || 'Pleadings',
         'precedent': (t as any).cat_precedent || 'Precedents',
         'provision': (t as any).cat_provision || 'Provisions',
@@ -63,7 +63,7 @@ export const KnowledgeBaseView: React.FC<KnowledgeBaseViewProps> = ({ theme, lan
             await loadDocs(); // Refresh
         } catch (error) {
             console.error('Failed to upload doc:', error);
-            alert(lang === 'zh' ? '上传失败' : 'Upload failed');
+            alert(t.uploadFailed);
         } finally {
             setIsUploading(false);
             if (fileInputRef.current) {
@@ -79,7 +79,7 @@ export const KnowledgeBaseView: React.FC<KnowledgeBaseViewProps> = ({ theme, lan
             setConfirmDeleteId(null);
         } catch (error) {
             console.error('Failed to delete doc:', error);
-            alert(lang === 'zh' ? '删除失败' : 'Delete failed');
+            alert(t.deleteFailed);
         }
     };
 
@@ -89,7 +89,7 @@ export const KnowledgeBaseView: React.FC<KnowledgeBaseViewProps> = ({ theme, lan
             setDocs(prev => prev.map(d => d.id === id ? { ...d, category: newCategory } : d));
         } catch (error) {
             console.error('Failed to update category:', error);
-            alert(lang === 'zh' ? '更新分类失败' : 'Update category failed');
+            alert(t.updateCatFailed);
         }
     };
 
@@ -97,11 +97,9 @@ export const KnowledgeBaseView: React.FC<KnowledgeBaseViewProps> = ({ theme, lan
         <div className="max-w-5xl mx-auto py-4">
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">{lang === 'zh' ? '全局经验库' : 'Global Knowledge Base'}</h2>
+                    <h2 className="text-2xl font-bold tracking-tight">{t.globalKnowledgeBase}</h2>
                     <p className="text-slate-500 text-sm mt-1">
-                        {lang === 'zh'
-                            ? '上传 NotebookLM 导出的笔记或类案分析。AI 处理新案件时将自动参考此处的经验。'
-                            : 'Upload NotebookLM notes or prior case analysis. AI will reference these guidelines automatically.'}
+                        {t.globalKnowledgeBaseDesc}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -133,7 +131,7 @@ export const KnowledgeBaseView: React.FC<KnowledgeBaseViewProps> = ({ theme, lan
                             } ${isUploading ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
                         {isUploading ? <Loader2 size={20} className="animate-spin" /> : <Upload size={20} />}
-                        {isUploading ? (lang === 'zh' ? '解析中...' : 'Uploading...') : (lang === 'zh' ? '点击上传' : 'Upload')}
+                        {isUploading ? t.uploading : t.clickToUpload}
                     </button>
                 </div>
             </div>
@@ -143,7 +141,7 @@ export const KnowledgeBaseView: React.FC<KnowledgeBaseViewProps> = ({ theme, lan
                     <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center">
                         <Library size={20} />
                     </div>
-                    <h3 className="text-lg font-bold">{lang === 'zh' ? '可用参考资料' : 'Available References'} ({docs.length})</h3>
+                    <h3 className="text-lg font-bold">{t.availableReferences} ({docs.length})</h3>
                 </div>
 
                 {isLoading ? (
@@ -153,9 +151,9 @@ export const KnowledgeBaseView: React.FC<KnowledgeBaseViewProps> = ({ theme, lan
                 ) : docs.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 opacity-50 text-center">
                         <Zap size={48} className={`mb-4 ${theme === 'dark' ? 'text-slate-600' : 'text-slate-300'}`} />
-                        <p className="font-medium text-lg mb-2">{lang === 'zh' ? '暂无经验储备' : 'Knowledge base is empty'}</p>
+                        <p className="font-medium text-lg mb-2">{t.emptyKnowledgeBase}</p>
                         <p className="text-sm">
-                            {lang === 'zh' ? '点击右上角上传历史案件总结或办案指南，打造您的个人 AI。' : 'Upload case summaries or guidelines to build your personal AI.'}
+                            {t.uploadNotesTip}
                         </p>
                     </div>
                 ) : (
@@ -200,7 +198,7 @@ export const KnowledgeBaseView: React.FC<KnowledgeBaseViewProps> = ({ theme, lan
                                             }}
                                             className="px-2 py-1 bg-rose-500 text-white text-[10px] font-bold rounded-lg hover:bg-rose-600 transition-colors shadow-lg shadow-rose-500/20"
                                         >
-                                            {lang === 'zh' ? '确认删除' : 'Delete'}
+                                            {t.confirmDeleteOption}
                                         </button>
                                         <button
                                             onClick={(e) => {
@@ -209,7 +207,7 @@ export const KnowledgeBaseView: React.FC<KnowledgeBaseViewProps> = ({ theme, lan
                                             }}
                                             className="p-1 px-2 text-[10px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                                         >
-                                            {lang === 'zh' ? '取消' : 'Cancel'}
+                                            {t.cancel}
                                         </button>
                                     </div>
                                 ) : (
@@ -219,7 +217,7 @@ export const KnowledgeBaseView: React.FC<KnowledgeBaseViewProps> = ({ theme, lan
                                             setConfirmDeleteId(doc.id);
                                         }}
                                         className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100 shrink-0"
-                                        title={lang === 'zh' ? '删除' : 'Delete'}
+                                        title={t.deleteOption}
                                     >
                                         <Trash2 size={18} />
                                     </button>

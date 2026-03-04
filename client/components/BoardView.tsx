@@ -111,7 +111,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
       }
     } catch (error) {
       console.error("Smart Import Failed:", error);
-      alert(lang === 'zh' ? '智能导入失败，请稍后重试。' : 'Smart Import failed. Please try again later.');
+      alert(t.smartImportFailed);
     } finally {
       setIsImporting(false);
       // 清空 input，以便可以重复选择同一个文件
@@ -145,7 +145,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
               } ${isImporting ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
             {isImporting ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
-            {isImporting ? (lang === 'zh' ? 'AI解析中...' : 'Parsing...') : (lang === 'zh' ? '智能导入' : 'Smart Import')}
+            {isImporting ? t.aiParsing : t.smartImport}
           </button>
           <button onClick={() => onAddTask()} className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition-all">
             <Plus size={20} />{t.addTask}

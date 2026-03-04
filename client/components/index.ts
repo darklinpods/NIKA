@@ -10,7 +10,6 @@ export { KnowledgeBaseView } from './KnowledgeBaseView';
 
 // TaskModal sub-components
 export { TaskModalHeader } from './taskModal/TaskModalHeader';
-export { TaskModalInfoPanel } from './taskModal/TaskModalInfoPanel';
 export { TaskModalSubTasksPanel } from './taskModal/TaskModalSubTasksPanel';
 export { SubTaskItem } from './taskModal/SubTaskItem';
 export { TaskModalFooter } from './taskModal/TaskModalFooter';

@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { BoardData, Case, SubTask } from '../types';
 import { createCase, updateCase, deleteCase } from '../services/api';
 import { logError } from '../utils/errorHandler';
+import { translations } from '../translations';
 
 /**
  * 案件核心操作专属 Hook
@@ -126,13 +127,12 @@ export const useTaskOperations = (
      * 提供带危险提醒的自定义全局确认弹窗（ConfirmProvider)
      */
     const handleDeleteCase = useCallback(async (caseId: string) => {
+        const t = (translations[lang] as any) || (translations['en'] as any);
         const isConfirmed = await confirm({
-            title: lang === 'zh' ? '删除确认' : 'Confirm Delete',
-            message: lang === 'zh'
-                ? '确定要永久删除此案件及其所有相关数据吗？此操作无法撤销。'
-                : 'Are you sure you want to permanently delete this case and all related data? This action cannot be undone.',
-            confirmText: lang === 'zh' ? '删除' : 'Delete',
-            cancelText: lang === 'zh' ? '取消' : 'Cancel',
+            title: t.confirmDeleteTitle,
+            message: t.confirmDeleteDesc,
+            confirmText: t.deleteOption,
+            cancelText: t.cancel,
             type: 'danger'
         });
 

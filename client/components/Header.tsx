@@ -52,7 +52,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
       <div className="flex items-center gap-4">
         <button onClick={onLangToggle} className="p-2 text-xs font-bold uppercase tracking-tighter hover:text-indigo-500">{lang}</button>
-        <button onClick={onThemeToggle} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg" title={themeMode === 'system' ? (lang === 'zh' ? '跟随系统' : 'Follow System') : (themeMode === 'light' ? (lang === 'zh' ? '浅色模式' : 'Light Mode') : (lang === 'zh' ? '深色模式' : 'Dark Mode'))}>
+        <button onClick={onThemeToggle} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg" title={themeMode === 'system' ? t.systemTheme : (themeMode === 'light' ? t.lightTheme : t.darkTheme)}>
           {getThemeIcon()}
         </button>
         <div className="flex items-center gap-3 ml-4 pl-4 border-l border-slate-200 dark:border-slate-800">

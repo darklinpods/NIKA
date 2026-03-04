@@ -24,7 +24,7 @@ export const PanelBasicInfo: React.FC<PanelBasicInfoProps> = ({
     onGenerateOverview,
     isOverviewGenerating
 }) => {
-    const t = translations[lang];
+    const t = translations[lang] as any;
     const [isEditingDesc, setIsEditingDesc] = useState(false);
     const [isEditingFacts, setIsEditingFacts] = useState(false);
 
@@ -35,7 +35,7 @@ export const PanelBasicInfo: React.FC<PanelBasicInfoProps> = ({
             <div>
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
                     <span className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 p-2 rounded-xl text-sm font-black">INFO</span>
-                    {lang === 'zh' ? '案件基本信息' : 'Basic Information'}
+                    {t.basicInfo}
                 </h2>
                 <div className={`p-6 rounded-2xl border shadow-sm ${theme === 'dark' ? 'bg-slate-800/50 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
                     <div className="grid grid-cols-2 gap-6">
@@ -50,7 +50,7 @@ export const PanelBasicInfo: React.FC<PanelBasicInfoProps> = ({
                                     }`}
                                 value={task.title}
                                 onChange={(e) => onTaskChange({ ...task, title: e.target.value })}
-                                placeholder={lang === 'zh' ? '输入案件标题...' : 'Enter case title...'}
+                                placeholder={t.enterCaseTitle}
                             />
                         </div>
 
@@ -65,13 +65,13 @@ export const PanelBasicInfo: React.FC<PanelBasicInfoProps> = ({
                                     }`}
                                 value={task.clientName || ''}
                                 onChange={(e) => onTaskChange({ ...task, clientName: e.target.value })}
-                                placeholder={lang === 'zh' ? '输入客户姓名...' : 'Enter client name...'}
+                                placeholder={t.enterClientName}
                             />
                         </div>
 
                         <div>
                             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">
-                                {lang === 'zh' ? '案件类型 / 案由' : 'Case Type'}
+                                {t.caseType}
                             </label>
                             <select
                                 className={`w-full p-3 rounded-xl border text-sm font-medium outline-none transition-colors ${theme === 'dark'
@@ -109,7 +109,7 @@ export const PanelBasicInfo: React.FC<PanelBasicInfoProps> = ({
 
                         <div>
                             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">
-                                {(t as any).currentStage || "Current Stage"}
+                                {t.currentStage}
                             </label>
                             <select
                                 className={`w-full p-3 rounded-xl border text-sm font-medium outline-none transition-colors ${theme === 'dark'
@@ -142,9 +142,9 @@ export const PanelBasicInfo: React.FC<PanelBasicInfoProps> = ({
                             }`}
                     >
                         {isEditingDesc ? (
-                            <><Check size={14} /> {lang === 'zh' ? '完成编辑' : 'Done'}</>
+                            <><Check size={14} /> {t.doneEditing}</>
                         ) : (
-                            <><Edit2 size={14} /> {lang === 'zh' ? '编辑描述' : 'Edit'}</>
+                            <><Edit2 size={14} /> {t.editDesc}</>
                         )}
                     </button>
                 </div>
@@ -157,7 +157,7 @@ export const PanelBasicInfo: React.FC<PanelBasicInfoProps> = ({
                             }`}
                         value={task.description || ''}
                         onChange={(e) => onTaskChange({ ...task, description: e.target.value })}
-                        placeholder={lang === 'zh' ? '支持 Markdown 格式编排案件详细情况...' : 'Supports Markdown...'}
+                        placeholder={t.markdownSupport}
                     />
                 ) : (
                     <div className={`flex-1 w-full p-6 rounded-xl border overflow-y-auto custom-scrollbar ${theme === 'dark'
@@ -184,7 +184,7 @@ export const PanelBasicInfo: React.FC<PanelBasicInfoProps> = ({
                             </ReactMarkdown>
                         ) : (
                             <div className="h-full flex items-center justify-center text-slate-400 italic text-sm">
-                                {lang === 'zh' ? '暂无案件详细描述' : 'No description provided'}
+                                {t.noDesc}
                             </div>
                         )}
                     </div>
@@ -195,7 +195,7 @@ export const PanelBasicInfo: React.FC<PanelBasicInfoProps> = ({
             <div className={`p-6 rounded-2xl border flex-1 flex flex-col min-h-[400px] shadow-sm ${theme === 'dark' ? 'bg-slate-800/50 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
                 <div className="flex items-center justify-between mb-4">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">
-                        {lang === 'zh' ? '案件基本事实' : 'Basic Facts'}
+                        {t.basicFacts}
                     </label>
                     <button
                         onClick={() => setIsEditingFacts(!isEditingFacts)}
@@ -205,9 +205,9 @@ export const PanelBasicInfo: React.FC<PanelBasicInfoProps> = ({
                             }`}
                     >
                         {isEditingFacts ? (
-                            <><Check size={14} /> {lang === 'zh' ? '完成编辑' : 'Done'}</>
+                            <><Check size={14} /> {t.doneEditing}</>
                         ) : (
-                            <><Edit2 size={14} /> {lang === 'zh' ? '编辑事实' : 'Edit Facts'}</>
+                            <><Edit2 size={14} /> {t.editFacts}</>
                         )}
                     </button>
                 </div>
@@ -220,7 +220,7 @@ export const PanelBasicInfo: React.FC<PanelBasicInfoProps> = ({
                             }`}
                         value={task.caseFactSheet || ''}
                         onChange={(e) => onTaskChange({ ...task, caseFactSheet: e.target.value })}
-                        placeholder={lang === 'zh' ? '支持 Markdown 格式编排案件基本事实...' : 'Supports Markdown...'}
+                        placeholder={t.markdownSupport}
                     />
                 ) : (
                     <div className={`flex-1 w-full p-6 rounded-xl border overflow-y-auto custom-scrollbar ${theme === 'dark'
@@ -247,7 +247,7 @@ export const PanelBasicInfo: React.FC<PanelBasicInfoProps> = ({
                             </ReactMarkdown>
                         ) : (
                             <div className="h-full flex items-center justify-center text-slate-400 italic text-sm">
-                                {lang === 'zh' ? '暂无基本事实记录' : 'No basic facts provided'}
+                                {t.noFacts}
                             </div>
                         )}
                     </div>
@@ -288,7 +288,7 @@ export const PanelBasicInfo: React.FC<PanelBasicInfoProps> = ({
                         </p>
                     ) : (
                         <div className={`h-full flex items-center justify-center text-sm italic ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
-                            {lang === 'zh' ? '点击右上角按钮由 AI 总结全案概况...' : 'Click generate to summarize the case...'}
+                            {t.aiGenerateTip}
                         </div>
                     )}
                 </div>

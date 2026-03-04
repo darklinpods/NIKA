@@ -180,7 +180,7 @@ export const FactSheetEditor: React.FC<Props> = ({ task, theme, onSaved }) => {
                     {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : status === 'saved' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
                     {saving ? '保存中…' : status === 'saved' ? '已保存' : '保存'}
                 </button>
-                {status === 'error' && <AlertCircle className="w-4 h-4 text-red-500" title="操作失败，请重试" />}
+                {status === 'error' && <AlertCircle className="w-4 h-4 text-red-500"  />}
             </div>
 
             {/* Form */}

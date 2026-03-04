@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { Case } from '../types';
 import { TaskModalHeader } from './taskModal/TaskModalHeader';
-import { TaskModalInfoPanel } from './taskModal/TaskModalInfoPanel';
 import { TaskModalSubTasksPanel } from './taskModal/TaskModalSubTasksPanel';
-import { TaskModalDocumentsPanel } from './taskModal/TaskModalDocumentsPanel';
 import { CaseChatPanel } from './taskModal/CaseChatPanel';
 import { TaskModalFooter } from './taskModal/TaskModalFooter';
 import { LoadingOverlay } from './LoadingOverlay';
@@ -73,7 +71,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   onClose,
 }) => {
   const [activeTab, setActiveTab] = useState<'basic' | 'evidence' | 'analysis' | 'documents'>('basic');
-  const t = translations[lang];
+  const t = translations[lang] as any;
 
   const renderContent = () => {
     switch (activeTab) {
@@ -137,7 +135,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               }`}
           >
             <ClipboardList size={18} />
-            {lang === 'zh' ? '案件基本信息' : 'Basic Info'}
+            {t.tabBasicInfo}
           </button>
           <button
             onClick={() => setActiveTab('evidence')}
@@ -147,7 +145,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               }`}
           >
             <Database size={18} />
-            {lang === 'zh' ? '事实与证据' : 'Facts & Evidence'}
+            {t.tabFactsEvidence}
           </button>
           <button
             onClick={() => setActiveTab('analysis')}
@@ -157,7 +155,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               }`}
           >
             <Scale size={18} />
-            {lang === 'zh' ? '法律与分析' : 'Law & Analysis'}
+            {t.tabLawAnalysis}
           </button>
           <button
             onClick={() => setActiveTab('documents')}
@@ -167,7 +165,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               }`}
           >
             <Folders size={18} />
-            {lang === 'zh' ? '文档与生成' : 'Documents'}
+            {t.tabDocuments}
           </button>
         </div>
 
@@ -184,7 +182,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         onCancel={onClose}
       />
 
-      <LoadingOverlay isVisible={isSaving} message={lang === 'zh' ? '正在保存...' : 'Saving...'} theme={theme} />
+      <LoadingOverlay isVisible={isSaving} message={t.saving} theme={theme} />
     </div>
   );
 };

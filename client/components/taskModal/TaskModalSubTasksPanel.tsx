@@ -25,7 +25,7 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
   onDeleteSubTask,
   onAddSubTask,
 }) => {
-  const t = translations[lang];
+  const t = translations[lang] as any;
   const subTasksLength = task.subTasks.length;
   const prevLengthRef = useRef(subTasksLength);
   // 用 ref 存储最新添加的任务 ID，避免重复触发聚焦
@@ -38,12 +38,6 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
   }
   prevLengthRef.current = subTasksLength;
 
-  // 消费最新 ID（只用一次，取完即清）
-  const consumeLatestId = () => {
-    const id = latestAddedIdRef.current;
-    latestAddedIdRef.current = null;
-    return id;
-  };
   const focusTargetId = latestAddedIdRef.current;
 
   // Calculate progress
@@ -74,7 +68,7 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
             }`}
         >
           <Plus size={13} />
-          {lang === 'zh' ? '添加' : 'Add'}
+          {t.add}
         </button>
       </div>
 
@@ -89,7 +83,7 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
           </div>
           {progress === 100 && (
             <p className="text-xs text-emerald-500 font-medium mt-1">
-              {lang === 'zh' ? '🎉 全部完成！' : '🎉 All done!'}
+              {t.allDone}
             </p>
           )}
         </div>
@@ -104,7 +98,7 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
             onClick={onAddSubTask}
           >
             <Plus size={14} />
-            <span className="text-sm">{lang === 'zh' ? '添加待办事项' : 'Add a to-do item'}</span>
+            <span className="text-sm">{t.addProceduralStep}</span>
           </div>
         ) : (
           <div className="flex flex-col">
@@ -130,7 +124,7 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
               onClick={onAddSubTask}
             >
               <Plus size={13} />
-              <span className="text-xs">{lang === 'zh' ? '添加事项' : 'Add item'}</span>
+              <span className="text-xs">{t.addProceduralStep}</span>
             </div>
           </div>
         )}
@@ -138,9 +132,7 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
 
       {/* Footer hint */}
       <div className={`mt-4 pt-3 border-t text-xs ${theme === 'dark' ? 'border-white/5 text-slate-600' : 'border-slate-100 text-slate-400'}`}>
-        {lang === 'zh'
-          ? '按 Enter 快速添加 · 按 Backspace 删除空事项'
-          : 'Enter to add · Backspace to remove empty item'}
+        {t.subTaskHint}
       </div>
     </div>
   );

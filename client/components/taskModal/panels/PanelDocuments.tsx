@@ -5,6 +5,7 @@ import { ClaimListGenerator } from '../../claimList/ClaimListGenerator';
 import { generateCaseDocument } from '../../../services/geminiService';
 import { api } from '../../../services/api';
 import { Case, CaseDocument, DocumentCategory } from '../../../types';
+import { translations } from '../../../translations';
 
 interface PanelDocumentsProps {
     task: Case;
@@ -31,6 +32,7 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
     onAddDocument,
     onDeleteDocument
 }) => {
+    const t = translations[lang] as any;
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSmartGenerating, setIsSmartGenerating] = useState(false);
     const [selectedDoc, setSelectedDoc] = useState<CaseDocument | null>(null);
@@ -60,7 +62,7 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
             onAddDocument(newDoc);
         } catch (error) {
             console.error('Failed to generate document:', error);
-            alert(lang === 'zh' ? '生成文书失败' : 'Failed to generate document');
+            alert(t.genDocFailed);
         } finally {
             setIsGenerating(false);
         }
@@ -92,15 +94,15 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
 
             const newDoc: CaseDocument = {
                 id: `docx-${Date.now()}`,
-                title: lang === 'zh' ? '要素式起诉状 (Docx)' : 'Complaint (Docx)',
-                content: `Document successfully generated on Server at:\n${genResponse.filePath}\n\n(Feature complete in future version)`,
+                title: t.trafficDocx,
+                content: t.docxGeneratedSuccess.replace('{path}', genResponse.filePath),
                 category: 'offical_doc',
                 createdAt: new Date().toISOString(),
             };
             onAddDocument(newDoc);
         } catch (error) {
             console.error('Failed smart docx generation:', error);
-            alert(lang === 'zh' ? '生成失败，请查看控制台日志' : 'Generation failed. Check console.');
+            alert(t.genDocFailedDetail);
         } finally {
             setIsSmartGenerating(false);
         }
@@ -126,7 +128,7 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
                     <div className="p-4 border-b dark:border-white/10 border-slate-200">
                         <h3 className="font-bold flex items-center gap-2 text-lg">
                             <span className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 p-1.5 rounded-lg"><CheckSquare size={18} /></span>
-                            {lang === 'zh' ? '案件推进流程' : 'Workflow Tasks'}
+                            {t.workflowTasks}
                         </h3>
                     </div>
                     <div className="flex-1 overflow-hidden relative pb-4">
@@ -145,9 +147,9 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
                 <div className={`flex-1 p-6 ${theme === 'dark' ? 'bg-slate-900' : 'bg-slate-50'}`}>
                     <h3 className="font-bold flex items-center gap-2 mb-4 text-lg">
                         <span className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 p-1.5 rounded-lg"><Settings2 size={18} /></span>
-                        {lang === 'zh' ? '智能文书生成台' : 'Document Generator'}
+                        {t.docGenerator}
                     </h3>
-                    <p className="text-sm text-slate-500 mb-6">{lang === 'zh' ? '基于事实与证据板块认定的结论，一键生成结案所需材料。' : 'Generate final documents based on agreed facts and evidence.'}</p>
+                    <p className="text-sm text-slate-500 mb-6">{t.docGeneratorDesc}</p>
                     <div className="grid grid-cols-2 gap-4">
                         <button
                             onClick={() => handleGenerateValues('offical_doc')}
@@ -155,8 +157,8 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
                             className={`p-4 text-sm font-bold flex flex-col gap-2 rounded-xl border-2 transition-all shadow-sm ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''
                                 } ${theme === 'dark' ? 'border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 hover:border-blue-300 text-slate-700'}`}
                         >
-                            <span className="flex items-center gap-2">📄 {lang === 'zh' ? '生成《通用起诉状》' : 'Generic Complaint'}</span>
-                            <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{lang === 'zh' ? '基于全部材料撰写的初稿' : 'First draft based on facts'}</span>
+                            <span className="flex items-center gap-2">📄 {t.complaintDraft}</span>
+                            <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{t.complaintDraftDesc}</span>
                         </button>
 
                         <button
@@ -165,8 +167,8 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
                             className={`p-4 text-sm font-bold flex flex-col gap-2 rounded-xl border-2 transition-all shadow-sm ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''
                                 } ${theme === 'dark' ? 'border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 hover:border-blue-300 text-slate-700'}`}
                         >
-                            <span className="flex items-center gap-2">📊 {lang === 'zh' ? '归纳《证据目录》' : 'Evidence List'}</span>
-                            <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{lang === 'zh' ? '对左侧证据的证明目的梳理' : 'Organize evidence items'}</span>
+                            <span className="flex items-center gap-2">📊 {t.evidenceList}</span>
+                            <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{t.evidenceListDesc}</span>
                         </button>
 
                         {task.caseType === 'traffic_accident' && (
@@ -179,17 +181,17 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
                                 >
                                     <span className="flex items-center gap-2">
                                         {isSmartGenerating ? <Loader2 size={16} className="animate-spin" /> : <FileSignature size={16} />}
-                                        {lang === 'zh' ? '生成《要素式交通诉状》' : 'Traffic Docx Template'}
+                                        {t.trafficDocx}
                                     </span>
-                                    <span className="text-xs font-normal opacity-80">{lang === 'zh' ? '严格匹配法院格式模版的完整文档' : 'Official DOCX format'}</span>
+                                    <span className="text-xs font-normal opacity-80">{t.trafficDocxDesc}</span>
                                 </button>
 
                                 <button
                                     onClick={() => setShowClaimGenerator(true)}
                                     className={`p-4 text-sm font-bold flex flex-col gap-2 rounded-xl border-2 transition-all shadow-sm ${theme === 'dark' ? 'border-indigo-500/30 bg-indigo-900/20 hover:bg-indigo-900/40 text-indigo-300' : 'border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700'}`}
                                 >
-                                    <span className="flex items-center gap-2"><Calculator size={16} /> {lang === 'zh' ? '赔偿清单计算器' : 'Compensation Calc'}</span>
-                                    <span className="text-xs font-normal opacity-80">{lang === 'zh' ? '精细计算伤残分项明细' : 'Detail list for claims'}</span>
+                                    <span className="flex items-center gap-2"><Calculator size={16} /> {t.compCalc}</span>
+                                    <span className="text-xs font-normal opacity-80">{t.compCalcDesc}</span>
                                 </button>
                             </>
                         )}
@@ -203,13 +205,13 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
                     <div>
                         <h3 className="text-lg font-bold flex items-center gap-2">
                             <span className="bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200 p-1.5 rounded-lg"><FileOutput size={20} /></span>
-                            {lang === 'zh' ? '最终卷宗库' : 'Final Dossier Vault'}
+                            {t.finalVault}
                         </h3>
-                        <p className="text-sm text-slate-500 mt-1">{lang === 'zh' ? '存放所有生成完毕、可供提交的成文材料' : 'All finalized generated documents ready for submission'}</p>
+                        <p className="text-sm text-slate-500 mt-1">{t.finalVaultDesc}</p>
                     </div>
                     {generatedDocs.length > 0 && (
                         <button className="px-6 py-2.5 bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-bold text-sm rounded-xl hover:opacity-90 transition-all flex items-center gap-2 shadow-lg">
-                            <Package size={18} /> {lang === 'zh' ? '一键打包出卷 (ZIP)' : 'Bundle Dossier'}
+                            <Package size={18} /> {t.bundleDossier}
                         </button>
                     )}
                 </div>
@@ -256,8 +258,8 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
                 ) : (
                     <div className="flex-1 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-slate-400 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 h-full shadow-inner">
                         <Download size={40} className="mb-4 text-slate-300 dark:text-slate-600" />
-                        <p className="font-bold text-lg mb-1">{lang === 'zh' ? '暂无生成的卷宗材料' : 'No generated case files yet'}</p>
-                        <p className="text-sm">{lang === 'zh' ? '在上方生成台选取功能生成文书' : 'Use the generator above to create documents'}</p>
+                        <p className="font-bold text-lg mb-1">{t.noGenDoc}</p>
+                        <p className="text-sm">{t.generateDocHint}</p>
                     </div>
                 )}
             </div>

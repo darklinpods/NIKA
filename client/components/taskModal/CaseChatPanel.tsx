@@ -3,6 +3,7 @@ import { Send, MessageSquare, Loader, Sparkles, User, Bot } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { fetchChatHistory, sendChatMessage } from '../../services/api';
+import { translations } from '../../translations';
 
 interface Message {
     id: string;
@@ -18,22 +19,18 @@ interface CaseChatPanelProps {
 }
 
 export const CaseChatPanel: React.FC<CaseChatPanelProps> = ({ caseId, theme, lang }) => {
+    const t = translations[lang] as any;
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    const shortcuts = lang === 'zh' ? [
-        { label: '🔍 梳理案情时间轴', prompt: '请帮我梳理本案的关键时间轴。' },
-        { label: '⚖️ 识别争议焦点', prompt: '根据现有证据，本案的核心争议焦点有哪些？' },
-        { label: '🛡️ 抗辩策略建议', prompt: '作为被告/原告律师，你会提供哪些关键的抗辩或诉讼策略？' },
-        { label: '📋 证据链评估', prompt: '目前已有的证据链是否存在明显缺陷或矛盾？' }
-    ] : [
-        { label: '🔍 Timeline', prompt: 'Please help me organize the key timeline of this case.' },
-        { label: '⚖️ Dispute Focus', prompt: 'Based on existing evidence, what are the core dispute points?' },
-        { label: '🛡️ Strategy', prompt: 'As a lawyer, what litigation or defense strategy would you suggest?' },
-        { label: '📋 Evidence Check', prompt: 'Are there any obvious gaps or contradictions in the current evidence chain?' }
+    const shortcuts = [
+        { label: t.sc_timeline, prompt: t.sc_timelinePrompt },
+        { label: t.sc_focus, prompt: t.sc_focusPrompt },
+        { label: t.sc_strategy, prompt: t.sc_strategyPrompt },
+        { label: t.sc_evidence, prompt: t.sc_evidencePrompt }
     ];
 
     useEffect(() => {
@@ -87,7 +84,7 @@ export const CaseChatPanel: React.FC<CaseChatPanelProps> = ({ caseId, theme, lan
             }
         } catch (err) {
             console.error("Chat Error:", err);
-            alert(lang === 'zh' ? '消息发送失败，请检查网络' : 'Failed to send message');
+            alert(t.chatFailed);
         } finally {
             setIsLoading(false);
         }
@@ -118,9 +115,9 @@ export const CaseChatPanel: React.FC<CaseChatPanelProps> = ({ caseId, theme, lan
                             <MessageSquare className="text-slate-400" size={32} />
                         </div>
                         <div className="space-y-1">
-                            <p className="text-sm font-bold">{lang === 'zh' ? '开启案件脑暴' : 'Start Brainstorming'}</p>
+                            <p className="text-sm font-bold">{t.startBrainstorming}</p>
                             <p className="text-xs text-slate-500 max-w-[200px]">
-                                {lang === 'zh' ? '您可以针对此案的证据、当事人或法律策略向我提问。' : 'Ask me about evidence, parties, or legal strategies for this case.'}
+                                {t.chatWelcomeText}
                             </p>
                         </div>
                     </div>
@@ -138,8 +135,8 @@ export const CaseChatPanel: React.FC<CaseChatPanelProps> = ({ caseId, theme, lan
                             : (theme === 'dark' ? 'bg-slate-800/80 text-slate-200 rounded-tl-none border border-white/5' : 'bg-white text-slate-700 rounded-tl-none border border-slate-100 shadow-sm')
                             }`}>
                             <div className={`prose prose-sm max-w-none prose-p:my-1 prose-ul:my-2 ${msg.role === 'user'
-                                    ? 'prose-invert prose-p:text-white prose-strong:text-white prose-headings:text-white'
-                                    : (theme === 'dark' ? 'prose-invert' : 'prose-slate')
+                                ? 'prose-invert prose-p:text-white prose-strong:text-white prose-headings:text-white'
+                                : (theme === 'dark' ? 'prose-invert' : 'prose-slate')
                                 }`}>
                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                     {msg.content.replace(/\\n/g, '\n')}
@@ -191,7 +188,7 @@ export const CaseChatPanel: React.FC<CaseChatPanelProps> = ({ caseId, theme, lan
                                 handleSendMessage();
                             }
                         }}
-                        placeholder={lang === 'zh' ? '输入您对本案的疑问...' : 'Ask about this case...'}
+                        placeholder={t.chatPlaceholder}
                         className={`w-full min-h-[100px] max-h-[200px] p-4 pr-12 rounded-2xl text-sm border outline-none transition-all resize-none custom-scrollbar ${theme === 'dark'
                             ? 'bg-slate-900/50 border-white/10 text-slate-100 focus:border-blue-500 focus:bg-slate-900 shadow-xl'
                             : 'bg-white border-slate-200 text-slate-800 focus:border-blue-400 focus:shadow-lg'
@@ -209,7 +206,7 @@ export const CaseChatPanel: React.FC<CaseChatPanelProps> = ({ caseId, theme, lan
                     </button>
                 </div>
                 <p className="text-[9px] text-center text-slate-500 font-medium">
-                    {lang === 'zh' ? 'AI 助手基于案件知识库提供参考，请注意核实关键事实。' : 'AI Assistant provides reference based on case knowledge base. Please verify key facts.'}
+                    {t.chatWarning}
                 </p>
             </div>
         </div>

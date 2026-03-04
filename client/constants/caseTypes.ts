@@ -3,6 +3,7 @@ export interface CaseTypeOption {
     labelZh: string;
     labelEn: string;
 }
+import { translations } from '../translations';
 
 export const CASE_TYPES: CaseTypeOption[] = [
     { value: 'general', labelZh: '一般案件', labelEn: 'General' },
@@ -15,7 +16,8 @@ export const CASE_TYPES: CaseTypeOption[] = [
 ];
 
 export const getCaseTypeLabel = (value: string, lang: 'zh' | 'en'): string => {
+    const t = (translations[lang] as any) || (translations['en'] as any);
     const found = CASE_TYPES.find(ct => ct.value === value);
-    if (!found) return lang === 'zh' ? '一般案件' : 'General';
+    if (!found) return t.caseTypeGeneral;
     return lang === 'zh' ? found.labelZh : found.labelEn;
 };

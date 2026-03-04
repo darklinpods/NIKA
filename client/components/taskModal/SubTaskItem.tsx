@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { CheckCircle2, Circle, Calendar as CalendarIcon, X } from 'lucide-react';
 import { SubTask } from '../../types';
 import { isApproaching } from '../../utils/dateUtils';
+import { translations } from '../../translations';
 
 /**
  * 子任务项组件属性
@@ -30,6 +31,7 @@ export const SubTaskItem: React.FC<SubTaskItemProps> = ({
   onEnterPress,
   autoFocus,
 }) => {
+  const t = translations[lang] as any;
   const approaching = isApproaching(subTask.dueDate);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -68,7 +70,7 @@ export const SubTaskItem: React.FC<SubTaskItemProps> = ({
             onDelete();
           }
         }}
-        placeholder={lang === 'zh' ? '待办事项...' : 'To-do item...'}
+        placeholder={t.enterTaskTitle}
         className={`flex-1 bg-transparent !border-none !ring-0 !shadow-none !outline-none text-[13px] transition-colors px-0 py-0.5 ${subTask.isCompleted
           ? 'line-through text-slate-400 dark:text-slate-600'
           : theme === 'dark'
@@ -99,7 +101,7 @@ export const SubTaskItem: React.FC<SubTaskItemProps> = ({
         {/* Delete */}
         <button
           onClick={onDelete}
-          title={lang === 'zh' ? '删除' : 'Delete'}
+          title={t.delete}
           className="p-0.5 rounded text-slate-300 hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
         >
           <X size={14} />

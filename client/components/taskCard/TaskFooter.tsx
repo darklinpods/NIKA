@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Scale, ChevronDown } from 'lucide-react';
 import { CASE_TYPES, getCaseTypeLabel } from '../../constants/caseTypes';
+import { translations } from '../../translations';
 
 interface TaskFooterProps {
   progress: number;
@@ -16,6 +17,7 @@ interface TaskFooterProps {
 export const TaskFooter: React.FC<TaskFooterProps> = ({
   progress, clientName, tags, caseType, taskId, onUpdateCaseType, theme, lang
 }) => {
+  const t = translations[lang];
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -49,7 +51,7 @@ export const TaskFooter: React.FC<TaskFooterProps> = ({
         <button
           onClick={(e) => { e.stopPropagation(); setOpen(prev => !prev); }}
           className={`flex items-center gap-1.5 w-full text-left group/ct transition-colors`}
-          title={lang === 'zh' ? '快捷设置案由' : 'Set case type'}
+          title={t.setCaseTypeShortcut}
         >
           <Scale size={10} className="text-indigo-400 shrink-0" />
           <span className={`text-[10px] font-semibold truncate flex-1 transition-colors

@@ -21,6 +21,7 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
     onAddDocument,
     onDeleteDocument
 }) => {
+    const t = translations[lang] as any;
     const [isUploading, setIsUploading] = useState(false);
     const [isExtractingParties, setIsExtractingParties] = useState(false);
 
@@ -43,7 +44,7 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
             }
         } catch (error) {
             console.error('Failed to upload evidence:', error);
-            alert(lang === 'zh' ? '上传或解析证据失败，请重试' : 'Failed to upload and parse evidence, please try again.');
+            alert(t.evidenceUploadFailed);
         } finally {
             setIsUploading(false);
             e.target.value = '';
@@ -59,7 +60,7 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
             }
         } catch (error) {
             console.error('Failed to extract parties:', error);
-            alert(lang === 'zh' ? '提取当事人失败，请重试' : 'Failed to extract parties, please retry.');
+            alert(t.partiesExtractionFailed);
         } finally {
             setIsExtractingParties(false);
         }
@@ -85,9 +86,9 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
                     <div>
                         <h3 className="font-bold flex items-center gap-2 text-lg">
                             <span className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 p-1.5 rounded-lg"><Database size={18} /></span>
-                            {lang === 'zh' ? '原始证据材料' : 'Raw Evidence'}
+                            {t.rawEvidence}
                         </h3>
-                        <p className="text-xs text-slate-500 mt-1">{lang === 'zh' ? '上传当事人提交的各类材料 (.pdf, .doc)' : 'Upload client materials'}</p>
+                        <p className="text-xs text-slate-500 mt-1">{t.uploadClientMaterials}</p>
                     </div>
 
                     <div className="relative">
@@ -104,7 +105,7 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
                                 }`}
                         >
                             {isUploading ? <Loader size={16} className="animate-spin" /> : <Plus size={16} />}
-                            {lang === 'zh' ? '导入文件' : 'Import'}
+                            {t.importFile}
                         </button>
                     </div>
                 </div>
@@ -136,7 +137,7 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
                     {evidenceDocs.length === 0 && (
                         <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-3 opacity-60">
                             <Database size={48} />
-                            <p className="text-sm font-medium">{lang === 'zh' ? '暂无原始证据' : 'No raw evidence'}</p>
+                            <p className="text-sm font-medium">{t.noRawEvidence}</p>
                         </div>
                     )}
                 </div>
@@ -148,20 +149,20 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
                     <div>
                         <h3 className="font-bold flex items-center gap-2 text-lg">
                             <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 p-1.5 rounded-lg"><Users size={18} /></span>
-                            {lang === 'zh' ? '当事人及关键事实' : 'Extracted Details'}
+                            {t.extractedDetails}
                         </h3>
-                        <p className="text-xs text-slate-500 mt-1">{lang === 'zh' ? '基于上传之证据由 AI 自动提取' : 'Auto-extracted from evidence'}</p>
+                        <p className="text-xs text-slate-500 mt-1">{t.autoExtracted}</p>
                     </div>
                     <button
                         onClick={handleExtractPartiesFromEvidence}
                         disabled={isExtractingParties || isUploading}
                         className={`px-4 py-2 font-bold text-sm rounded-xl flex items-center gap-2 transition-colors shadow-sm ${isExtractingParties
-                                ? 'bg-slate-200 text-slate-400'
-                                : (theme === 'dark' ? 'bg-purple-900/40 text-purple-300 hover:bg-purple-900/60 border border-purple-500/30' : 'bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-200')
+                            ? 'bg-slate-200 text-slate-400'
+                            : (theme === 'dark' ? 'bg-purple-900/40 text-purple-300 hover:bg-purple-900/60 border border-purple-500/30' : 'bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-200')
                             }`}
                     >
                         {isExtractingParties ? <Loader size={16} className="animate-spin" /> : <Scan size={16} />}
-                        {lang === 'zh' ? '重新扫描案卷' : 'Rescan Evidence'}
+                        {t.rescanEvidenceBtn}
                     </button>
                 </div>
 
@@ -180,9 +181,9 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
                                             <span className={theme === 'dark' ? 'text-white' : 'text-slate-900'}>{party.name}</span>
                                             {party.role && <span className="bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 px-3 py-1 rounded-full text-xs">{party.role}</span>}
                                         </div>
-                                        {party.idNumber && <div className="text-sm font-medium"><span className="text-slate-400 mr-2">{lang === 'zh' ? '证件号' : 'ID'}:</span> {party.idNumber}</div>}
-                                        {party.contact && <div className="text-sm font-medium"><span className="text-slate-400 mr-2">{lang === 'zh' ? '联系方式' : 'Contact'}:</span> {party.contact}</div>}
-                                        {party.address && <div className="text-sm font-medium"><span className="text-slate-400 mr-2">{lang === 'zh' ? '地址' : 'Address'}:</span> <span className="break-words">{party.address}</span></div>}
+                                        {party.idNumber && <div className="text-sm font-medium"><span className="text-slate-400 mr-2">{t.idNum}:</span> {party.idNumber}</div>}
+                                        {party.contact && <div className="text-sm font-medium"><span className="text-slate-400 mr-2">{t.contact}:</span> {party.contact}</div>}
+                                        {party.address && <div className="text-sm font-medium"><span className="text-slate-400 mr-2">{t.address}:</span> <span className="break-words">{party.address}</span></div>}
                                     </div>
                                 ))}
                             </div>
@@ -190,8 +191,8 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
                             <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-4 opacity-60">
                                 <Wand2 size={48} />
                                 <div className="text-center">
-                                    <p className="font-medium text-lg mb-1">{lang === 'zh' ? '暂无结构化的实体信息' : 'No structured data'}</p>
-                                    <p className="text-sm">{lang === 'zh' ? '上传证据后系统将自动进行抽取' : 'Upload evidence to extract automatically'}</p>
+                                    <p className="font-medium text-lg mb-1">{t.noStructuredData}</p>
+                                    <p className="text-sm">{t.uploadEvidenceToExtract}</p>
                                 </div>
                             </div>
                         );
