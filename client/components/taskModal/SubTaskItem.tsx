@@ -1,28 +1,22 @@
-import React from 'react';
-import { CheckCircle2, Circle, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
+import React, { useRef, useEffect } from 'react';
+import { CheckCircle2, Circle, Calendar as CalendarIcon, X } from 'lucide-react';
 import { SubTask } from '../../types';
-import { formatDateOptional, isApproaching } from '../../utils/dateUtils';
+import { isApproaching } from '../../utils/dateUtils';
 
 /**
  * 子任务项组件属性
  */
 interface SubTaskItemProps {
-  /** 子任务数据 */
   subTask: SubTask;
-  /** 主题模式 */
   theme: 'light' | 'dark';
-  /** 语言设置 */
   lang: 'zh' | 'en';
-  /** 切换完成状态 */
   onToggle: () => void;
-  /** 更新标题 */
   onTitleChange: (title: string) => void;
-  /** 更新日期 */
   onDateChange: (date: string) => void;
-  /** 删除子任务 */
   onDelete: () => void;
-  /** 回车键按下 */
   onEnterPress?: () => void;
+  /** 是否聚焦（新增时） */
+  autoFocus?: boolean;
 }
 
 export const SubTaskItem: React.FC<SubTaskItemProps> = ({
@@ -34,93 +28,91 @@ export const SubTaskItem: React.FC<SubTaskItemProps> = ({
   onDateChange,
   onDelete,
   onEnterPress,
+  autoFocus,
 }) => {
   const approaching = isApproaching(subTask.dueDate);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  /**
-   * 子任务项组件
-   * 显示单个子任务的信息
-   * 包含完成状态、标题、日期和删除按钮
-   */
+  // 当 autoFocus 为 true 时（新增任务），主动聚焦输入框
+  useEffect(() => {
+    if (autoFocus && inputRef.current) {
+      // 稍微延迟以确保 DOM 已完成渲染
+      const timer = setTimeout(() => inputRef.current?.focus(), 30);
+      return () => clearTimeout(timer);
+    }
+  }, [autoFocus]);
+
   return (
-    <div
-      className={`group relative p-4 rounded-2xl flex items-center gap-4 border-2 transition-all duration-300 hover:scale-[1.01] ${subTask.isCompleted
-        ? (theme === 'dark'
-          ? 'bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]'
-          : 'bg-emerald-50 border-emerald-200 shadow-sm shadow-emerald-500/20')
-        : approaching
-          ? (theme === 'dark'
-            ? 'bg-rose-500/10 border-rose-500/40 shadow-[0_0_25px_rgba(244,63,94,0.15)] animate-pulse'
-            : 'bg-rose-50 border-rose-300 shadow-md shadow-rose-500/20 animate-pulse')
-          : (theme === 'dark'
-            ? 'bg-slate-800/80 border-slate-700/50 hover:border-blue-500/50 hover:bg-slate-800 shadow-lg shadow-black/20'
-            : 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-lg shadow-sm')
-        }`}
-    >
-      {/* 装饰性渐变边框效果 */}
-      <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none ${subTask.isCompleted ? '' : approaching ? '' : 'bg-gradient-to-r from-blue-500/10 to-transparent'
-        }`} />
-
+    <div className="group relative py-1 pl-1.5 flex items-center gap-2 transition-all hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-md">
       {/* Checkbox */}
       <button
         onClick={onToggle}
-        className={`relative z-10 shrink-0 transition-transform active:scale-90 flex items-center justify-center ${subTask.isCompleted ? 'text-emerald-500' : 'text-slate-400 group-hover:text-blue-500'
+        className={`relative z-10 shrink-0 transition-all flex items-center justify-center hover:scale-110 active:scale-95 ${subTask.isCompleted ? 'text-emerald-500' : 'text-slate-300 hover:text-blue-500 dark:text-slate-600 dark:hover:text-blue-400'
           }`}
       >
-        {subTask.isCompleted ? <CheckCircle2 size={22} /> : <Circle size={22} />}
+        {subTask.isCompleted ? <CheckCircle2 size={18} /> : <Circle size={18} />}
       </button>
 
-      {/* Title & Date */}
-      <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-3 min-w-0">
-        <input
-          type="text"
-          value={subTask.title}
-          onChange={(e) => onTitleChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              if (subTask.title.trim() !== '') {
-                onEnterPress?.();
-              } else {
-                e.currentTarget.blur();
-              }
-            }
-          }}
-          onBlur={() => {
-            if (subTask.title.trim() === '') {
-              onDelete();
-            }
-          }}
-          placeholder={lang === 'zh' ? '输入任务名称...' : 'Task name...'}
-          className={`flex-1 bg-transparent outline-none font-semibold text-sm transition-colors ${subTask.isCompleted
-            ? 'line-through text-slate-500'
-            : theme === 'dark' ? 'text-slate-100 focus:text-blue-400' : 'text-slate-700 focus:text-blue-600'
-            }`}
-        />
+      {/* Title */}
+      <input
+        ref={inputRef}
+        type="text"
+        value={subTask.title}
+        onChange={(e) => onTitleChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            onEnterPress?.();
+          } else if (e.key === 'Backspace' && subTask.title === '') {
+            e.preventDefault();
+            onDelete();
+          }
+        }}
+        placeholder={lang === 'zh' ? '待办事项...' : 'To-do item...'}
+        className={`flex-1 bg-transparent !border-none !ring-0 !shadow-none !outline-none text-[13px] transition-colors px-0 py-0.5 ${subTask.isCompleted
+          ? 'line-through text-slate-400 dark:text-slate-600'
+          : theme === 'dark'
+            ? 'text-slate-200 placeholder-slate-600'
+            : 'text-slate-700 placeholder-slate-400'
+          }`}
+      />
 
-        <div className="flex items-center gap-3 shrink-0">
-          <div className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${approaching
-            ? 'bg-rose-500/10 border-rose-500/20 text-rose-500'
-            : (theme === 'dark' ? 'bg-slate-900 border-white/5 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500')
-            }`}>
-            <CalendarIcon size={12} className={approaching ? 'text-rose-500' : 'text-slate-400'} />
-            <input
-              type="date"
-              value={subTask.dueDate ? subTask.dueDate.split('T')[0] : ''}
-              onChange={(e) => onDateChange(e.target.value)}
-              className={`bg-transparent text-[11px] font-bold outline-none cursor-pointer ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}
-            />
-          </div>
-
-          {/* Delete Button */}
-          <button
-            onClick={onDelete}
-            className="p-1.5 text-slate-400 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
-          >
-            <Trash2 size={16} />
-          </button>
+      {/* Right side: date + delete */}
+      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Date picker */}
+        <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] cursor-pointer transition-colors ${approaching
+          ? 'text-rose-500 bg-rose-50 dark:bg-rose-500/10'
+          : 'text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+          }`}
+          onClick={() => inputRef.current?.blur()}
+        >
+          <CalendarIcon size={11} />
+          <input
+            type="date"
+            value={subTask.dueDate ? subTask.dueDate.split('T')[0] : ''}
+            onChange={(e) => onDateChange(e.target.value)}
+            className={`bg-transparent !border-none !ring-0 !shadow-none !outline-none text-[11px] font-medium cursor-pointer w-[90px] px-0 py-0 ${approaching ? 'text-rose-500' : theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
+              }`}
+          />
         </div>
+
+        {/* Delete */}
+        <button
+          onClick={onDelete}
+          title={lang === 'zh' ? '删除' : 'Delete'}
+          className="p-0.5 rounded text-slate-300 hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+        >
+          <X size={14} />
+        </button>
       </div>
+
+      {/* Date badge when not hovering (if date set) */}
+      {subTask.dueDate && (
+        <div className={`shrink-0 text-[11px] font-medium group-hover:opacity-0 transition-opacity ${approaching ? 'text-rose-500' : 'text-slate-400 dark:text-slate-500'
+          }`}>
+          {new Date(subTask.dueDate).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}
+        </div>
+      )}
     </div>
   );
 };

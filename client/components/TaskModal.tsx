@@ -8,6 +8,11 @@ import { CaseChatPanel } from './taskModal/CaseChatPanel';
 import { TaskModalFooter } from './taskModal/TaskModalFooter';
 import { LoadingOverlay } from './LoadingOverlay';
 import { translations } from '../translations';
+import { PanelBasicInfo } from './taskModal/panels/PanelBasicInfo';
+import { PanelEvidence } from './taskModal/panels/PanelEvidence';
+import { PanelAnalysis } from './taskModal/panels/PanelAnalysis';
+import { PanelDocuments } from './taskModal/panels/PanelDocuments';
+import { ClipboardList, Database, Scale, Folders } from 'lucide-react';
 
 /**
  * 任务模态框组件属性
@@ -67,23 +72,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   onSave,
   onClose,
 }) => {
-  const [activeTab, setActiveTab] = useState<'tasks' | 'documents' | 'ai_chat'>('tasks');
+  const [activeTab, setActiveTab] = useState<'basic' | 'evidence' | 'analysis' | 'documents'>('basic');
   const t = translations[lang];
 
-  /**
-   * 任务详情页面组件 (以前的模态框)
-   * 用于显示和编辑任务详情的独立页面
-   * 包含任务基本信息、子任务列表、文档列表和AI概况
-   */
-  return (
-    <div className={`flex flex-col h-full w-full ${theme === 'dark' ? 'bg-slate-900' : 'bg-white'}`}>
-      <TaskModalHeader task={task} theme={theme} onClose={onClose} />
-
-      {/* --- Left / Right Split Layout --- */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel: Always visible Overview */}
-        <div className={`w-[50%] border-r flex flex-col min-h-0 overflow-hidden ${theme === 'dark' ? 'border-white/10' : 'border-slate-200'}`}>
-          <TaskModalInfoPanel
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'basic':
+        return (
+          <PanelBasicInfo
             task={task}
             theme={theme}
             lang={lang}
@@ -91,74 +87,93 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             onGenerateOverview={onGenerateOverview}
             isOverviewGenerating={isOverviewGenerating}
           />
+        );
+      case 'evidence':
+        return (
+          <PanelEvidence
+            task={task}
+            theme={theme}
+            lang={lang}
+            onTaskChange={onTaskChange}
+            onAddDocument={onAddDocument}
+            onDeleteDocument={onDeleteDocument}
+          />
+        );
+      case 'analysis':
+        return <PanelAnalysis task={task} theme={theme} lang={lang} />;
+      case 'documents':
+        return (
+          <PanelDocuments
+            task={task}
+            theme={theme}
+            lang={lang}
+            onToggleSubTask={onToggleSubTask}
+            onUpdateSubTaskTitle={onUpdateSubTaskTitle}
+            onUpdateSubTaskDate={onUpdateSubTaskDate}
+            onDeleteSubTask={onDeleteSubTask}
+            onAddSubTask={onAddSubTask}
+            onAddDocument={onAddDocument}
+            onDeleteDocument={onDeleteDocument}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className={`flex flex-col h-full w-full ${theme === 'dark' ? 'bg-slate-900' : 'bg-white'}`}>
+      <TaskModalHeader task={task} theme={theme} onClose={onClose} />
+
+      {/* --- New 4-Pillar Layout --- */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Vertical Navigation */}
+        <div className={`w-64 flex-shrink-0 border-r flex flex-col py-6 px-4 gap-2 ${theme === 'dark' ? 'border-white/10 bg-slate-900/50' : 'border-slate-200 bg-slate-50/50'}`}>
+          <button
+            onClick={() => setActiveTab('basic')}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all text-sm ${activeTab === 'basic'
+              ? (theme === 'dark' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'bg-blue-600 text-white shadow-lg shadow-blue-500/20')
+              : (theme === 'dark' ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-800')
+              }`}
+          >
+            <ClipboardList size={18} />
+            {lang === 'zh' ? '案件基本信息' : 'Basic Info'}
+          </button>
+          <button
+            onClick={() => setActiveTab('evidence')}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all text-sm ${activeTab === 'evidence'
+              ? (theme === 'dark' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'bg-blue-600 text-white shadow-lg shadow-blue-500/20')
+              : (theme === 'dark' ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-800')
+              }`}
+          >
+            <Database size={18} />
+            {lang === 'zh' ? '事实与证据' : 'Facts & Evidence'}
+          </button>
+          <button
+            onClick={() => setActiveTab('analysis')}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all text-sm ${activeTab === 'analysis'
+              ? (theme === 'dark' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'bg-blue-600 text-white shadow-lg shadow-blue-500/20')
+              : (theme === 'dark' ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-800')
+              }`}
+          >
+            <Scale size={18} />
+            {lang === 'zh' ? '法律与分析' : 'Law & Analysis'}
+          </button>
+          <button
+            onClick={() => setActiveTab('documents')}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all text-sm ${activeTab === 'documents'
+              ? (theme === 'dark' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'bg-blue-600 text-white shadow-lg shadow-blue-500/20')
+              : (theme === 'dark' ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-800')
+              }`}
+          >
+            <Folders size={18} />
+            {lang === 'zh' ? '文档与生成' : 'Documents'}
+          </button>
         </div>
 
-        {/* Right Panel: Tabs for Tasks, Documents and AI Chat */}
-        <div className={`w-[50%] flex flex-col min-h-0 overflow-hidden ${theme === 'dark' ? 'bg-slate-900/50' : 'bg-white'}`}>
-          {/* Tabs Navigation */}
-          <div className={`px-8 pt-4 border-b flex items-center gap-8 ${theme === 'dark' ? 'border-white/10 bg-slate-900' : 'border-slate-200 bg-white'}`}>
-            <button
-              onClick={() => setActiveTab('tasks')}
-              className={`pb-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'tasks'
-                ? (theme === 'dark' ? 'text-blue-400 border-blue-400' : 'text-blue-600 border-blue-600')
-                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                }`}
-            >
-              {(t as any).tasksTab || 'Tasks'}
-            </button>
-            <button
-              onClick={() => setActiveTab('documents')}
-              className={`pb-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'documents'
-                ? (theme === 'dark' ? 'text-blue-400 border-blue-400' : 'text-blue-600 border-blue-600')
-                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                }`}
-            >
-              {(t as any).docsTab || 'Documents'}
-            </button>
-            <button
-              onClick={() => setActiveTab('ai_chat')}
-              className={`pb-3 text-sm font-bold transition-all border-b-2 flex items-center gap-1.5 ${activeTab === 'ai_chat'
-                ? (theme === 'dark' ? 'text-blue-400 border-blue-400' : 'text-blue-600 border-blue-600')
-                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                }`}
-            >
-              <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
-              {lang === 'zh' ? 'AI 助手' : 'AI Copilot'}
-            </button>
-          </div>
-
-          <div className="flex-1 flex overflow-hidden">
-            {activeTab === 'tasks' && (
-              <TaskModalSubTasksPanel
-                task={task}
-                theme={theme}
-                lang={lang}
-                onToggleSubTask={onToggleSubTask}
-                onUpdateSubTaskTitle={onUpdateSubTaskTitle}
-                onUpdateSubTaskDate={onUpdateSubTaskDate}
-                onDeleteSubTask={onDeleteSubTask}
-                onAddSubTask={onAddSubTask}
-              />
-            )}
-
-            {activeTab === 'documents' && (
-              <TaskModalDocumentsPanel
-                task={task}
-                theme={theme}
-                lang={lang}
-                onAddDocument={onAddDocument}
-                onDeleteDocument={onDeleteDocument}
-              />
-            )}
-
-            {activeTab === 'ai_chat' && (
-              <CaseChatPanel
-                caseId={task.id}
-                theme={theme}
-                lang={lang}
-              />
-            )}
-          </div>
+        {/* Right Main Content Area */}
+        <div className="flex-1 overflow-hidden bg-white dark:bg-slate-900">
+          {renderContent()}
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import { useBoardData } from './useBoardData';
 import { useTaskOperations } from './useTaskOperations';
+import { useSubTaskOperations } from './useSubTaskOperations';
 import { useDragAndDrop } from './useDragAndDrop';
 import { useAIFeatures } from './useAIFeatures';
 import { useConfirm } from '../providers/ConfirmProvider';
@@ -18,10 +19,6 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     isSaving,
     saveEditedTask,
     toggleSubTask,
-    updateSubTaskTitle,
-    updateSubTaskDate,
-    addEmptySubTask,
-    deleteSubTask,
     addCaseDocument,
     deleteCaseDocument,
     handleDeleteCase,
@@ -29,6 +26,14 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     handleMoveStage,
     handleUpdateCaseType
   } = useTaskOperations(data, setData, loadData, confirm, lang);
+
+  // 3b. Real-time subtask CRUD (with debounced auto-save)
+  const {
+    updateSubTaskTitle,
+    updateSubTaskDate,
+    addEmptySubTask,
+    deleteSubTask,
+  } = useSubTaskOperations(editingTask, setEditingTask as any);
 
   // 4. Drag & Drop interactions
   const { onDragEnd } = useDragAndDrop(data, setData);

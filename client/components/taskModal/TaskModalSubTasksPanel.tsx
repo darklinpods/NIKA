@@ -1,28 +1,17 @@
-import React, { useRef, useEffect } from 'react';
-import { Sparkles, Plus } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { CheckSquare, Plus } from 'lucide-react';
 import { Case, SubTask } from '../../types';
 import { translations } from '../../translations';
 import { SubTaskItem } from './SubTaskItem';
 
-/**
- * 任务模态框子任务面板组件属性
- */
 interface TaskModalSubTasksPanelProps {
-  /** 任务数据 */
   task: Case;
-  /** 主题模式 */
   theme: 'light' | 'dark';
-  /** 语言设置 */
   lang: 'zh' | 'en';
-  /** 切换子任务完成状态 */
   onToggleSubTask: (subTaskId: string) => void;
-  /** 更新子任务标题 */
   onUpdateSubTaskTitle: (subTaskId: string, newTitle: string) => void;
-  /** 更新子任务日期 */
   onUpdateSubTaskDate: (subTaskId: string, newDate: string) => void;
-  /** 删除子任务 */
   onDeleteSubTask: (subTaskId: string) => void;
-  /** 添加子任务 */
   onAddSubTask: () => void;
 }
 
@@ -37,29 +26,25 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
   onAddSubTask,
 }) => {
   const t = translations[lang];
-
-  /**
-   * 任务模态框子任务面板组件
-   * 显示和管理任务的所有子任务
-   * 包含进度条和子任务列表
-   */
   const subTasksLength = task.subTasks.length;
   const prevLengthRef = useRef(subTasksLength);
-  const containerRef = useRef<HTMLDivElement>(null);
+  // 用 ref 存储最新添加的任务 ID，避免重复触发聚焦
+  const latestAddedIdRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    if (subTasksLength > prevLengthRef.current) {
-      setTimeout(() => {
-        if (containerRef.current) {
-          const inputs = containerRef.current.querySelectorAll<HTMLInputElement>('input[type="text"]');
-          if (inputs.length > 0) {
-            inputs[inputs.length - 1].focus();
-          }
-        }
-      }, 50);
-    }
-    prevLengthRef.current = subTasksLength;
-  }, [subTasksLength]);
+  // 每当列表增长时，记录最新添加的 ID
+  if (subTasksLength > prevLengthRef.current && task.subTasks.length > 0) {
+    const newest = task.subTasks[task.subTasks.length - 1];
+    latestAddedIdRef.current = newest.id;
+  }
+  prevLengthRef.current = subTasksLength;
+
+  // 消费最新 ID（只用一次，取完即清）
+  const consumeLatestId = () => {
+    const id = latestAddedIdRef.current;
+    latestAddedIdRef.current = null;
+    return id;
+  };
+  const focusTargetId = latestAddedIdRef.current;
 
   // Calculate progress
   const completedCount = task.subTasks.filter(st => st.isCompleted).length;
@@ -67,62 +52,69 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
   const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
-    <div className="flex-1 p-8 flex flex-col min-w-0 overflow-hidden">
+    <div className="flex-1 p-6 flex flex-col min-w-0 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-blue-500/10 rounded-lg text-blue-500">
-            <Sparkles size={18} />
-          </div>
-          <h3 className="text-base font-bold">{t.subTasks}</h3>
+          <CheckSquare size={16} className={theme === 'dark' ? 'text-blue-400' : 'text-blue-500'} />
+          <h3 className={`text-sm font-semibold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-700'}`}>
+            {t.subTasks}
+            {totalCount > 0 && (
+              <span className={`ml-2 text-xs font-normal ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+                {completedCount}/{totalCount}
+              </span>
+            )}
+          </h3>
         </div>
         <button
           onClick={onAddSubTask}
-          className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${theme === 'dark'
-            ? 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
-            : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+          className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-md transition-all ${theme === 'dark'
+            ? 'text-blue-400 hover:bg-blue-500/10'
+            : 'text-blue-500 hover:bg-blue-50'
             }`}
         >
-          <Plus size={14} />
-          {t.addTaskItem}
+          <Plus size={13} />
+          {lang === 'zh' ? '添加' : 'Add'}
         </button>
       </div>
 
       {/* Progress Bar */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between text-xs mb-2">
-          <span className={theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}>
-            {t.progress}
-          </span>
-          <span className={`font-bold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
-            {progress}%
-          </span>
+      {totalCount > 0 && (
+        <div className="mb-4">
+          <div className={`h-1 rounded-full overflow-hidden ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-100'}`}>
+            <div
+              className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all duration-500 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          {progress === 100 && (
+            <p className="text-xs text-emerald-500 font-medium mt-1">
+              {lang === 'zh' ? '🎉 全部完成！' : '🎉 All done!'}
+            </p>
+          )}
         </div>
-        <div className={`h-2 rounded-full overflow-hidden ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-200'
-          }`}>
-          <div
-            className="h-full bg-gradient-to-r from-blue-600 to-cyan-500 transition-all duration-500"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </div>
+      )}
 
       {/* SubTasks List */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar" ref={containerRef}>
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
         {task.subTasks.length === 0 ? (
-          <div className="text-center py-12">
-            <p className={`text-sm ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
-              {lang === 'zh' ? '暂无任务，点击上方按钮添加' : 'No tasks yet, click button above to add'}
-            </p>
+          <div
+            className={`flex items-center gap-2 py-2 pl-1.5 cursor-pointer rounded-md transition-colors ${theme === 'dark' ? 'text-slate-600 hover:text-slate-400' : 'text-slate-400 hover:text-slate-500'
+              }`}
+            onClick={onAddSubTask}
+          >
+            <Plus size={14} />
+            <span className="text-sm">{lang === 'zh' ? '添加待办事项' : 'Add a to-do item'}</span>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="flex flex-col">
             {task.subTasks.map((subTask: SubTask) => (
               <SubTaskItem
                 key={subTask.id}
                 subTask={subTask}
                 theme={theme}
                 lang={lang}
+                autoFocus={subTask.id === focusTargetId}
                 onToggle={() => onToggleSubTask(subTask.id)}
                 onTitleChange={(title) => onUpdateSubTaskTitle(subTask.id, title)}
                 onDateChange={(date) => onUpdateSubTaskDate(subTask.id, date)}
@@ -130,17 +122,25 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
                 onEnterPress={() => onAddSubTask()}
               />
             ))}
+
+            {/* Quick-add row at bottom */}
+            <div
+              className={`flex items-center gap-2 py-1 pl-1.5 mt-1 cursor-pointer rounded-md transition-colors opacity-0 hover:opacity-100 ${theme === 'dark' ? 'text-slate-600 hover:text-slate-400' : 'text-slate-400 hover:text-slate-500'
+                }`}
+              onClick={onAddSubTask}
+            >
+              <Plus size={13} />
+              <span className="text-xs">{lang === 'zh' ? '添加事项' : 'Add item'}</span>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Footer */}
-      <div className="mt-6 pt-6 border-t border-white/5">
-        <p className={`text-sm text-slate-500 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
-          {lang === 'zh'
-            ? '点击任务名称或日期即可修改，红色标签表示即刻到期'
-            : 'Click task name or date to edit. Red label indicates due soon'}
-        </p>
+      {/* Footer hint */}
+      <div className={`mt-4 pt-3 border-t text-xs ${theme === 'dark' ? 'border-white/5 text-slate-600' : 'border-slate-100 text-slate-400'}`}>
+        {lang === 'zh'
+          ? '按 Enter 快速添加 · 按 Backspace 删除空事项'
+          : 'Enter to add · Backspace to remove empty item'}
       </div>
     </div>
   );
