@@ -5,6 +5,8 @@ import { translations } from '../../../translations';
 import { uploadCaseEvidence, api } from '../../../services/api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import MDEditor from '@uiw/react-md-editor';
+
 
 interface PanelEvidenceProps {
     task: Case;
@@ -282,11 +284,9 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
                         </button>
                     </div>
 
-                    {/* Scrollable content: parties + description */}
-                    <div className="flex-1 overflow-y-auto custom-scrollbar">
-
-                        {/* Party cards — compact 2-column grid */}
-                        <div className="p-4">
+                    {/* ── 当事人卡片区（固定，自动收缩滚动）──────────── */}
+                    <div className="shrink-0 max-h-[220px] overflow-y-auto custom-scrollbar pb-2">
+                        <div className="p-4 pb-0">
                             {partiesArray.length > 0 ? (
                                 <div className="grid grid-cols-2 gap-3">
                                     {partiesArray.map((party, idx) => (
@@ -303,65 +303,69 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
                                 </div>
                             )}
                         </div>
+                    </div>
 
-                        {/* ── 案件描述与策略（事实与理由）────────────── */}
-                        <div className={`mx-4 mb-4 rounded-2xl border shadow-sm overflow-hidden
-                            ${isDark ? 'bg-slate-800/50 border-white/5' : 'bg-white border-slate-200'}`}>
-                            {/* Sub-header */}
-                            <div className={`px-5 py-3 flex items-center justify-between border-b
-                                ${isDark ? 'border-white/10 bg-slate-800/80' : 'border-slate-200 bg-slate-50'}`}>
-                                <div className="flex items-center gap-2">
-                                    <AlignLeft size={14} className="text-indigo-500" />
-                                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest">
-                                        {t.description}
-                                    </span>
-                                </div>
-                                <button
-                                    onClick={() => setIsEditingDesc(v => !v)}
-                                    className={`flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg transition-all
-                                        ${isEditingDesc
-                                            ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                            : (isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50')}`}
-                                >
-                                    {isEditingDesc ? <><Check size={12} /> {t.doneEditing}</> : <><Edit2 size={12} /> {t.editDesc}</>}
-                                </button>
+                    {/* ── 案件描述与策略（填满剩余高度）──────────────── */}
+                    <div className={`flex-1 flex flex-col min-h-0 mx-4 mb-4 rounded-2xl border shadow-sm overflow-hidden
+                        ${isDark ? 'bg-slate-800/50 border-white/5' : 'bg-white border-slate-200'}`}>
+                        {/* Sub-header */}
+                        <div className={`px-5 py-3 flex items-center justify-between border-b shrink-0
+                            ${isDark ? 'border-white/10 bg-slate-800/80' : 'border-slate-200 bg-slate-50'}`}>
+                            <div className="flex items-center gap-2">
+                                <AlignLeft size={14} className="text-indigo-500" />
+                                <span className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest">
+                                    {t.description}
+                                </span>
                             </div>
-
-                            {/* Content */}
-                            {isEditingDesc ? (
-                                <textarea
-                                    className={`w-full min-h-[260px] p-5 text-sm leading-relaxed border-0 outline-none resize-none
-                                        ${isDark ? 'bg-slate-900 text-slate-200' : 'bg-white text-slate-800'}`}
-                                    value={task.description || ''}
-                                    onChange={(e) => onTaskChange({ ...task, description: e.target.value })}
-                                    placeholder={t.markdownSupport}
-                                />
-                            ) : (
-                                <div className={`p-5 min-h-[120px] overflow-y-auto custom-scrollbar
-                                    ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                                    {task.description ? (
-                                        <ReactMarkdown
-                                            remarkPlugins={[remarkGfm]}
-                                            components={{
-                                                h1: ({ node, ...props }) => <h1 className="text-lg font-bold mb-3 mt-4" {...props} />,
-                                                h2: ({ node, ...props }) => <h2 className="text-base font-bold mb-2 mt-3" {...props} />,
-                                                h3: ({ node, ...props }) => <h3 className="text-sm font-bold mb-2 mt-2" {...props} />,
-                                                p: ({ node, ...props }) => <p className="mb-3 text-sm leading-relaxed" {...props} />,
-                                                ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-3 text-sm space-y-1" {...props} />,
-                                                ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-3 text-sm space-y-1" {...props} />,
-                                                li: ({ node, ...props }) => <li {...props} />,
-                                                strong: ({ node, ...props }) => <strong className="font-bold text-indigo-600 dark:text-indigo-400" {...props} />,
-                                                blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-indigo-400 pl-4 italic my-3 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 py-2 rounded-r" {...props} />,
-                                            }}
-                                        >
-                                            {task.description}
-                                        </ReactMarkdown>
-                                    ) : (
-                                        <p className="text-sm italic text-slate-400 text-center py-8">{t.noDesc}</p>
-                                    )}
-                                </div>
-                            )}
+                            <button
+                                onClick={() => setIsEditingDesc(v => !v)}
+                                className={`flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg transition-all
+                                    ${isEditingDesc
+                                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                        : (isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50')}`}
+                            >
+                                {isEditingDesc ? <><Check size={12} /> {t.doneEditing}</> : <><Edit2 size={12} /> {t.editDesc}</>}
+                            </button>
                         </div>
+
+                        {/* Content — fills all remaining height */}
+                        {isEditingDesc ? (
+                            <div className="flex-1 overflow-hidden" data-color-mode={isDark ? 'dark' : 'light'}>
+                                <MDEditor
+                                    value={task.description || ''}
+                                    onChange={(val) => onTaskChange({ ...task, description: val || '' })}
+                                    preview="edit"
+                                    height="100%"
+                                    hideToolbar={false}
+                                    visibleDragbar={false}
+                                    style={{ border: 'none', borderRadius: 0, height: '100%' }}
+                                />
+                            </div>
+                        ) : (
+                            <div className={`flex-1 p-5 overflow-y-auto custom-scrollbar
+                                ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                                {task.description ? (
+                                    <ReactMarkdown
+                                        remarkPlugins={[remarkGfm]}
+                                        components={{
+                                            h1: ({ node, ...props }) => <h1 className="text-lg font-bold mb-3 mt-4" {...props} />,
+                                            h2: ({ node, ...props }) => <h2 className="text-base font-bold mb-2 mt-3" {...props} />,
+                                            h3: ({ node, ...props }) => <h3 className="text-sm font-bold mb-2 mt-2" {...props} />,
+                                            p: ({ node, ...props }) => <p className="mb-3 text-sm leading-relaxed" {...props} />,
+                                            ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-3 text-sm space-y-1" {...props} />,
+                                            ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-3 text-sm space-y-1" {...props} />,
+                                            li: ({ node, ...props }) => <li {...props} />,
+                                            strong: ({ node, ...props }) => <strong className="font-bold text-indigo-600 dark:text-indigo-400" {...props} />,
+                                            blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-indigo-400 pl-4 italic my-3 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 py-2 rounded-r" {...props} />,
+                                        }}
+                                    >
+                                        {task.description}
+                                    </ReactMarkdown>
+                                ) : (
+                                    <p className="text-sm italic text-slate-400 text-center py-8">{t.noDesc}</p>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

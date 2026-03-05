@@ -140,6 +140,7 @@ class AIService {
 
             for (let attempt = 0; attempt < this.maxRetries; attempt++) {
                 try {
+                    console.log(`[AIService] Executing generation using Provider: [${effectiveProvider.toUpperCase()}] | Model: [${currentModel}]`);
                     const response = await this.openaiClient.chat.completions.create({
                         model: currentModel,
                         messages: messages,
@@ -170,6 +171,7 @@ class AIService {
         for (let attempt = 0; attempt < this.maxRetries; attempt++) {
             try {
                 const client = this.getGeminiClient();
+                console.log(`[AIService] Executing generation using Provider: [GEMINI] | Model: [${modelName}]`);
                 const result = await client.models.generateContent({
                     model: modelName,
                     contents: params.contents,
