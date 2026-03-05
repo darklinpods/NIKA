@@ -1,102 +1,102 @@
-# NIKA - Law case management system (律师案件管理系统)
+# ⚖️ NIKA - AI 法律案件管理系统
 
-一个功能强大的本地化律师案件管理系统，提供直观的看板视图、智能任务拆解以及案件文书管理功能。
+一个为律师量身定制的、端到端的 AI 辅助案件管理系统。NIKA 不仅仅是一个看板，它是你的 AI 律师助理，能够深度解析证据、自动撰写事实理由并智能化管理案件全生命周期。
 
-## ✨ 核心功能
-* **📊 看板管理**：直观的拖拽式看板，支持自定义案件状态流转（待办、进行中、已完成）。
-* **🤖 AI 智能辅助**：内置 Gemini 大语言模型集成。能够一键生成案件摘要、自动出具案件执行计划（自动拆解子任务）。
-* **📑 案件详情与文书管理**：记录案件各项基本信息（客户、法院等），支持无限层级的子任务管理以及多端 Markdown 文档归档。包括：
-  * **基本信息**：原告、被告、案号、管辖法院等。
-  * **事实与证据**：记录案件事实，上传和管理证据文件。
-  * **法律与分析**：法律法规检索与应用，案件争议焦点分析。
-  * **文书管理**：生成和管理各类法律文书（起诉状、代理词等）。
-* **🛡️ 数据隐私与本地控制**：采用 PostgreSQL 数据库存储，支持离线或局域网私有化部署，确保敏感案件数据绝对安全。
+## ✨ 核心亮点
 
-## 🛠️ 技术栈
-
-### 前端 (Client)
-* **框架**: React 18 + TypeScript + Vite
-* **样式**: Tailwind CSS + Lucide React (图标)
-* **状态管理**: 基于 Context API (自定义 Hooks 如 `useBoardData`, `useTaskOperations`)
-* **交互**: `@hello-pangea/dnd` 实现高性能前端看板拖拽
-
-### 后端 (Server)
-* **环境**: Node.js + Express
-* **ORM**: Prisma
-* **数据库**: PostgreSQL
-* **AI 集成**: `@google/genai` (Gemini API)
-* **架构**: Controller + Service 分层路由抽象，数据操作高度解耦且易于测试
+*   **📊 智能化看板视图**：直观的拖拽式看板，支持自定义案件阶段（待办、进行中、已完成）。
+*   **🤖 多模型 AI 路由**：内置对 **Gemini 2.0/1.5** (原生支持 PDF OCR)、**DeepSeek**、**豆包 (Doubao)**、**通义千问 (Qwen)** 的全面支持。
+*   **🚀 智能导入 (Smart Import)**：一键上传 PDF 或 Word 案卷，AI 自动解析全文、提取核心要素并**立即同步至数据库**。
+*   **🔍 深度证据扫描与解析**：
+    *   **自动提取当事人**：精准识别原告、被告、第三人、保险公司及其详细信息。
+    *   **案情叙述生成**：根据证据自动撰写详尽的 **"事实与理由"**，包含事故经过、责任划分、医疗救治、保险方案等。
+    *   **案由智能判定**：基于证据自动判断案件类型（如机动车交通事故、借贷纠纷等）。
+*   **📄 内置文本预览与 OCR**：直接在浏览器内查看提取的 OCR 文字，支持一键下载为 `.txt` 格式以便二次编辑。
+*   **🛡️ 隐私优先**：默认使用本地 **SQLite** 数据库，所有案件敏感信息物理隔绝，支持私有化部署。
 
 ---
 
-## 🚀 快速启动
+## 🛠️ 技术架构
+
+### 前端 (Client)
+*   **核心**: React 18 + TypeScript + Vite
+*   **样式**: Tailwind CSS (现代玻璃拟物化设计) + Lucide Icons
+*   **交互**: `@hello-pangea/dnd` 高性能看板拖拽
+*   **渲染**: `react-markdown` 完美呈现 AI 生成的法律叙述
+
+### 后端 (Server)
+*   **环境**: Node.js + Express
+*   **持久层**: Prisma ORM + SQLite (默认) / PostgreSQL (可选)
+*   **AI 引擎**: 
+    *   `@google/genai` (原生 PDF 解析)
+    *   `OpenAI SDK` (兼容 DeepSeek/豆包/千问)
+*   **解析引擎**: `mammoth` (Word), `pdf-parse` (PDF)
+
+---
+
+## 🚀 快速开始
 
 ### 1. 环境准备
-确保本机已安装 **Node.js (v18+)** 和 **PostgreSQL** 数据库。
+确保已安装 **Node.js (v18+)**。
 
-### 2. 下载与依赖安装
+### 2. 下载并安装
 ```bash
-git clone <repository-url>
-cd law-case-manager
+git clone https://github.com/darklinpods/NIKA
+cd NIKA
 
-# 安装所有依赖 (前后端)
+# 安装前后端所有依赖
 npm install
 ```
 
-### 3. 环境配置
-在 `server` 目录下创建 `.env` 文件，完善你的本地配置资料：
+### 3. 配置 .env
+在 `server` 目录下创建 `.env` 文件：
 ```env
-# 数据库连接字符串 (请替换为你的本地或远程 PostgreSQL)
-DATABASE_URL="postgresql://用户名:密码@localhost:5432/law_case_manager?schema=public"
+# AI 提供商选择: gemini, deepseek, doubao, qwen
+AI_PROVIDER="gemini"
 
-# Gemini AI 密钥 (用于 AI 任务拆解和总结)
-API_KEYS="你的_GEMINI_API_KEY_1,你的_GEMINI_API_KEY_2"
+# 如果使用 Gemini (推荐，支持 OCR)
+GEMINI_API_KEY="你的_KEY1,你的_KEY2"
 
-# 服务器端口
+# 如果使用 DeepSeek 等兼容 OpenAI 的接口
+# OPENAI_API_KEY="你的_KEY"
+# OPENAI_BASE_URL="https://api.deepseek.com"
+
+# 数据库连接 (SQLite 示例)
+DATABASE_URL="file:./dev.db"
+
 PORT=3001
 ```
 
 ### 4. 数据库初始化
-进入 server 目录，同步并推送数据库结构：
 ```bash
 cd server
 npx prisma generate
 npx prisma db push
 ```
 
-### 5. 启动项目
-回到项目根目录，通过 npm workspaces 同时启动前后端服务：
+### 5. 启动
 ```bash
-# 启动前后端服务
+# 在项目根目录下运行
 npm run dev
 ```
-随后在浏览器中访问 `http://localhost:3000` 即可开始使用前端页面。
+访问 `http://localhost:3000` 即可开始使用。
 
 ---
 
-## 📁 核心目录结构
-```text
-law-case-manager/
-├── client/                 # 前端 React 源码
-│   ├── components/         # UI 视图组件 (Board, TaskModal, panels 等)
-│   ├── hooks/              # 核心业务逻辑 (useCases, useTasks 等)
-│   ├── types/              # TypeScript 类型定义
-│   └── lib/                # 工具函数和 API 请求 (api.ts)
-├── server/                 # 后端 Node.js 源码
-│   ├── src/
-│   │   ├── controllers/    # 路由控制器，处理 HTTP 请求与响应
-│   │   ├── services/       # 业务逻辑服务层 (aiService, docGenService)
-│   │   ├── routes/         # Express API 路由定义
-│   │   └── index.ts        # 后端入口文件
-│   └── prisma/             # 数据库 Schema 结构文件 (schema.prisma)
-```
+## 📁 目录结构
 
-## 🤝 开发指南
-本项目近期经历了一次大规模的解耦重构和 UI 升级：
-1. **客户端 UI**：进行了全面的重构，引入了四大业务模块（基本信息、事实与证据、法律与分析、文书管理），使案件详情页结构更加清晰，符合律师工作流。
-2. **服务端**：完善了 Controller 与 Service 的分层结构，特别是针对文档生成和 AI 集成进行了深度优化。
-
-全部核心代码均已补充完善的**简体中文注释**，大幅降低了二次开发门槛。如需增加新功能，可直接跳转阅读前端 `client/components` 与后端 `server/src/controllers` 下的文件。
+*   `client/`: 前端 React 源码，包含 4 大功能面板（基本信息、各事实与证据、分析建议、文书管理）。
+*   `server/src/services/`: 核心 AI 逻辑所在地。
+    *   `documentService.ts`: 处理文档解析与 OCR。
+    *   `aiAnalysisService.ts`: 处理案情要素提取。
+    *   `caseService.ts`: 数据库原子操作。
+*   `samples_docs/`: 存放用于测试的法律起草模板与示例。
 
 ---
+
+## 🤝 开发与贡献
+本项目近期完成了大规模的代码重构，实现了 Controller 与 Service 的深度解耦。
+- **全中文注释**：所有核心业务逻辑均配有详尽的中文注释。
+- **UI 组件化**：各功能面板均已封装为独立组件，易于扩展。
+
 **License**: MIT 
