@@ -1,4 +1,4 @@
-# NIKA - Law Case Management System (律师案件管理系统)
+# NIKA - Law case management system (律师案件管理系统)
 
 一个功能强大的本地化律师案件管理系统，提供直观的看板视图、智能任务拆解以及案件文书管理功能。
 
