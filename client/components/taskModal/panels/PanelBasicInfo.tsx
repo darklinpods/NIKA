@@ -25,7 +25,6 @@ export const PanelBasicInfo: React.FC<PanelBasicInfoProps> = ({
     isOverviewGenerating
 }) => {
     const t = translations[lang] as any;
-    const [isEditingDesc, setIsEditingDesc] = useState(false);
     const [isEditingFacts, setIsEditingFacts] = useState(false);
 
     return (
@@ -128,68 +127,6 @@ export const PanelBasicInfo: React.FC<PanelBasicInfoProps> = ({
                 </div>
             </div>
 
-            {/* Description */}
-            <div className={`p-6 rounded-2xl border flex-1 flex flex-col min-h-[400px] shadow-sm ${theme === 'dark' ? 'bg-slate-800/50 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
-                <div className="flex items-center justify-between mb-4">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">
-                        {t.description}
-                    </label>
-                    <button
-                        onClick={() => setIsEditingDesc(!isEditingDesc)}
-                        className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-sm ${isEditingDesc
-                            ? 'bg-blue-600 text-white hover:bg-blue-700'
-                            : (theme === 'dark' ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50')
-                            }`}
-                    >
-                        {isEditingDesc ? (
-                            <><Check size={14} /> {t.doneEditing}</>
-                        ) : (
-                            <><Edit2 size={14} /> {t.editDesc}</>
-                        )}
-                    </button>
-                </div>
-
-                {isEditingDesc ? (
-                    <textarea
-                        className={`flex-1 w-full p-5 rounded-xl text-sm leading-relaxed border outline-none resize-none transition-all shadow-inner ${theme === 'dark'
-                            ? 'bg-slate-950 border-blue-500 text-slate-200'
-                            : 'bg-white border-blue-400 text-slate-800'
-                            }`}
-                        value={task.description || ''}
-                        onChange={(e) => onTaskChange({ ...task, description: e.target.value })}
-                        placeholder={t.markdownSupport}
-                    />
-                ) : (
-                    <div className={`flex-1 w-full p-6 rounded-xl border overflow-y-auto custom-scrollbar ${theme === 'dark'
-                        ? 'bg-slate-900 border-white/10 text-slate-300'
-                        : 'bg-white border-slate-200 text-slate-700'
-                        }`}>
-                        {task.description ? (
-                            <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
-                                components={{
-                                    h1: ({ node, ...props }) => <h1 className="text-xl font-bold mb-3 mt-4 text-slate-900 dark:text-white" {...props} />,
-                                    h2: ({ node, ...props }) => <h2 className="text-lg font-bold mb-2 mt-3 text-slate-800 dark:text-slate-100" {...props} />,
-                                    h3: ({ node, ...props }) => <h3 className="text-base font-bold mb-2 mt-2 text-slate-800 dark:text-slate-200" {...props} />,
-                                    p: ({ node, ...props }) => <p className="mb-3 text-sm leading-relaxed" {...props} />,
-                                    ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-3 text-sm space-y-1" {...props} />,
-                                    ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-3 text-sm space-y-1" {...props} />,
-                                    li: ({ node, ...props }) => <li className="" {...props} />,
-                                    strong: ({ node, ...props }) => <strong className="font-bold text-blue-600 dark:text-blue-400" {...props} />,
-                                    blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-blue-500 pl-4 italic my-3 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 py-2 rounded-r" {...props} />,
-                                    a: ({ node, ...props }) => <a className="text-blue-500 hover:underline" {...props} />
-                                }}
-                            >
-                                {task.description}
-                            </ReactMarkdown>
-                        ) : (
-                            <div className="h-full flex items-center justify-center text-slate-400 italic text-sm">
-                                {t.noDesc}
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
 
             {/* Basic Facts (案件基本事实) */}
             <div className={`p-6 rounded-2xl border flex-1 flex flex-col min-h-[400px] shadow-sm ${theme === 'dark' ? 'bg-slate-800/50 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
