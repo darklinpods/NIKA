@@ -16,6 +16,14 @@ export interface Party {
   contact?: string;
 }
 
+export interface InvoiceItem {
+  date: string;
+  category: string;
+  description: string;
+  amount: number;
+  invoiceNo: string;
+}
+
 export interface Case {
   id: string;
   title: string;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { FileText, Plus, Database, Wand2, Loader, Scan, Users, Eye, Download, Trash2, X, Edit2, Check, AlignLeft } from 'lucide-react';
-import { Case, CaseDocument } from '../../../types';
+import { FileText, Plus, Database, Wand2, Loader, Scan, Users, Eye, Download, Trash2, X, Edit2, Check, AlignLeft, Receipt } from 'lucide-react';
+import { Case, CaseDocument, InvoiceItem } from '../../../types';
 import { translations } from '../../../translations';
 import { uploadCaseEvidence, api } from '../../../services/api';
 import ReactMarkdown from 'react-markdown';
@@ -129,8 +129,11 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
 
     const [isUploading, setIsUploading] = useState(false);
     const [isExtractingParties, setIsExtractingParties] = useState(false);
+    const [isExtractingInvoices, setIsExtractingInvoices] = useState(false);
     const [viewingDoc, setViewingDoc] = useState<CaseDocument | null>(null);
     const [isEditingDesc, setIsEditingDesc] = useState(false);
+
+    const isTrafficAccident = task.caseType === 'traffic_accident';
 
     const evidenceDocs = task.documents?.filter(d => d.category === 'Evidence') || [];
 
@@ -172,6 +175,27 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
         }
     };
 
+    const handleExtractInvoices = async () => {
+        try {
+            setIsExtractingInvoices(true);
+            const res = await api.post<{ success: boolean; invoices: InvoiceItem[]; total: number }>(
+                `/cases/${task.id}/extract-invoices`, {}
+            );
+            if (res.success) {
+                // Merge returned invoices into local task state via caseFactSheet JSON
+                const existing = task.caseFactSheet ? JSON.parse(task.caseFactSheet) : {};
+                onTaskChange({
+                    ...task,
+                    caseFactSheet: JSON.stringify({ ...existing, invoices: res.invoices })
+                });
+            }
+        } catch (err: any) {
+            alert(err?.message || '提取发票清单失败，请稍后重试。');
+        } finally {
+            setIsExtractingInvoices(false);
+        }
+    };
+
     const handleDownload = (doc: CaseDocument) => {
         const baseName = doc.title.replace(/\.[^.]+$/, '');
         const blob = new Blob([doc.content], { type: 'text/plain;charset=utf-8' });
@@ -191,6 +215,16 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
             ? JSON.parse(task.parties)
             : (Array.isArray(task.parties) ? task.parties : []);
     } catch { partiesArray = []; }
+
+    // Parse invoices from caseFactSheet
+    let invoices: InvoiceItem[] = [];
+    try {
+        if (task.caseFactSheet) {
+            const sheet = JSON.parse(task.caseFactSheet);
+            invoices = Array.isArray(sheet.invoices) ? sheet.invoices : [];
+        }
+    } catch { invoices = []; }
+    const invoiceTotal = invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
 
     return (
         <>
@@ -274,7 +308,7 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
                             <p className="text-[11px] text-slate-500 mt-0.5">{t.autoExtracted}</p>
                         </div>
                         <button onClick={handleExtractPartiesFromEvidence}
-                            disabled={isExtractingParties || isUploading}
+                            disabled={isExtractingParties || isUploading || isExtractingInvoices}
                             className={`px-3 py-1.5 font-bold text-xs rounded-lg flex items-center gap-1.5 transition-colors shrink-0
                                 ${isExtractingParties
                                     ? 'bg-slate-200 text-slate-400 dark:bg-slate-800 cursor-not-allowed'
@@ -282,6 +316,17 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
                             {isExtractingParties ? <Loader size={13} className="animate-spin" /> : <Scan size={13} />}
                             {t.rescanEvidenceBtn}
                         </button>
+                        {isTrafficAccident && (
+                            <button onClick={handleExtractInvoices}
+                                disabled={isExtractingInvoices || isExtractingParties || isUploading}
+                                className={`px-3 py-1.5 font-bold text-xs rounded-lg flex items-center gap-1.5 transition-colors shrink-0
+                                    ${isExtractingInvoices
+                                        ? 'bg-slate-200 text-slate-400 dark:bg-slate-800 cursor-not-allowed'
+                                        : (isDark ? 'bg-amber-900/40 text-amber-300 hover:bg-amber-900/60 border border-amber-500/30' : 'bg-amber-50 text-amber-700 border border-amber-300 hover:bg-amber-100')}`}>
+                                {isExtractingInvoices ? <Loader size={13} className="animate-spin" /> : <Receipt size={13} />}
+                                提取发票清单
+                            </button>
+                        )}
                     </div>
 
                     {/* ── 当事人卡片区（固定，自动收缩滚动）──────────── */}
@@ -304,6 +349,65 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
                             )}
                         </div>
                     </div>
+
+                    {/* ── 发票清单（仅 traffic_accident 且有数据时显示）── */}
+                    {isTrafficAccident && invoices.length > 0 && (
+                        <div className={`mx-4 my-2 rounded-xl border overflow-hidden shrink-0
+                            ${isDark ? 'border-white/10 bg-slate-800/60' : 'border-amber-200 bg-amber-50/50'}`}>
+                            {/* Header */}
+                            <div className={`px-4 py-2.5 flex items-center justify-between border-b
+                                ${isDark ? 'border-white/10 bg-slate-800/80' : 'border-amber-200 bg-amber-50'}`}>
+                                <div className="flex items-center gap-1.5">
+                                    <Receipt size={13} className="text-amber-600 dark:text-amber-400" />
+                                    <span className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider">发票费用清单</span>
+                                    <span className="text-[10px] text-slate-500 ml-1">共 {invoices.length} 张</span>
+                                </div>
+                                <span className={`text-xs font-bold ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+                                    合计：¥ {invoiceTotal.toFixed(2)}
+                                </span>
+                            </div>
+                            {/* Table */}
+                            <div className="overflow-x-auto max-h-48 overflow-y-auto custom-scrollbar">
+                                <table className="w-full text-[11px]">
+                                    <thead>
+                                        <tr className={`${isDark ? 'bg-slate-900/50 text-slate-400' : 'bg-amber-100/60 text-slate-500'}`}>
+                                            <th className="text-left px-3 py-1.5 font-semibold">日期</th>
+                                            <th className="text-left px-3 py-1.5 font-semibold">类别</th>
+                                            <th className="text-left px-3 py-1.5 font-semibold">摘要</th>
+                                            <th className="text-left px-3 py-1.5 font-semibold">票据号</th>
+                                            <th className="text-right px-3 py-1.5 font-semibold">金额（元）</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {invoices.map((inv, idx) => (
+                                            <tr key={idx} className={`border-t transition-colors
+                                                ${isDark ? 'border-white/5 hover:bg-slate-700/40 text-slate-300' : 'border-amber-100 hover:bg-amber-50 text-slate-700'}`}>
+                                                <td className="px-3 py-1.5 whitespace-nowrap">{inv.date || '—'}</td>
+                                                <td className="px-3 py-1.5">
+                                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold
+                                                        ${isDark ? 'bg-amber-900/40 text-amber-300' : 'bg-amber-100 text-amber-700'}`}>
+                                                        {inv.category || '其他'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-3 py-1.5 max-w-[180px] truncate">{inv.description || '—'}</td>
+                                                <td className="px-3 py-1.5 font-mono text-slate-400">{inv.invoiceNo || '—'}</td>
+                                                <td className="px-3 py-1.5 text-right font-mono font-bold">
+                                                    {inv.amount > 0 ? inv.amount.toFixed(2) : '—'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr className={`border-t font-bold
+                                            ${isDark ? 'border-amber-500/30 bg-slate-900/50 text-amber-300' : 'border-amber-300 bg-amber-100/80 text-amber-800'}`}>
+                                            <td className="px-3 py-2" colSpan={4}>合计</td>
+                                            <td className="px-3 py-2 text-right font-mono">¥ {invoiceTotal.toFixed(2)}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    )}
 
                     {/* ── 案件描述与策略（填满剩余高度）──────────────── */}
                     <div className={`flex-1 flex flex-col min-h-0 mx-4 mb-4 rounded-2xl border shadow-sm overflow-hidden
