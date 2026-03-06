@@ -88,8 +88,43 @@ export const fetchChatHistory = (caseId: string): Promise<{ success: boolean; da
 export const sendChatMessage = (caseId: string, content: string, lang: string): Promise<{ success: boolean; userMessage: any; aiMessage: any }> =>
     api.post<{ success: boolean; userMessage: any; aiMessage: any }>(`/cases/${caseId}/chat`, { content, lang });
 
-// Knowledge Base API
 export const fetchKnowledgeDocs = (): Promise<any[]> => api.get<any[]>('/knowledge');
 export const uploadKnowledgeDoc = (formData: FormData): Promise<any> => api.post<any>('/knowledge/upload', formData);
 export const deleteKnowledgeDoc = (id: string): Promise<void> => api.delete<void>(`/knowledge/${id}`);
 export const updateKnowledgeDoc = (id: string, data: { title?: string, category?: string }): Promise<any> => api.put<any>(`/knowledge/${id}`, data);
+
+// Complaint Generator API
+export const extractComplaint = (text: string, templateId: string): Promise<{ success: boolean; data: any }> => api.post<{ success: boolean; data: any }>('/complaints/extract', { text, templateId });
+export const generateComplaintFile = async (formData: any, templateId: string): Promise<void> => {
+    const response = await fetch('/api/complaints/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formData, templateId })
+    });
+    
+    if (!response.ok) {
+        throw new Error('Failed to generate document');
+    }
+    
+    // Auto download the Blob
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    
+    // Extract filename from header if possible
+    let filename = `要素式起诉状.docx`;
+    const disposition = response.headers.get('Content-Disposition');
+    if (disposition && disposition.includes('filename*=')) {
+        const matches = /filename\*=UTF-8''([^;]+)/ig.exec(disposition);
+        if (matches && matches[1]) {
+            filename = decodeURIComponent(matches[1]);
+        }
+    }
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+};

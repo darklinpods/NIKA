@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LoginScreen, Sidebar, Header, TaskModal, BoardView, StatsBoard, GlobalTaskView, KnowledgeBaseView } from './components';
+import { LoginScreen, Sidebar, Header, TaskModal, BoardView, StatsBoard, GlobalTaskView, KnowledgeBaseView, ComplaintGeneratorView } from './components';
 import { useTheme, useAuth, ThemeMode } from './hooks';
 import { AppProvider, useAppContext } from './providers/AppProvider';
 import { Case } from './types';
@@ -50,7 +50,7 @@ const AppLayout: React.FC<{
   onLangToggle: () => void;
 }> = ({ theme, themeMode, lang, onLogout, onThemeToggle, onLangToggle }) => {
   const { data, setData, editingTask, isOverviewGenerating, isSaving, setEditingTask, toggleSubTask, updateSubTaskTitle, updateSubTaskDate, deleteSubTask, addEmptySubTask, addCaseDocument, deleteCaseDocument, handleGenerateAiOverview, saveEditedTask } = useAppContext();
-  const [activeTab, setActiveTab] = useState<'board' | 'stats' | 'tasks' | 'knowledge'>('board');
+  const [activeTab, setActiveTab] = useState<'board' | 'stats' | 'tasks' | 'knowledge' | 'complaint'>('board');
   const [searchQuery, setSearchQuery] = useState('');
   const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set());
 
@@ -128,6 +128,8 @@ const AppLayout: React.FC<{
         return <GlobalTaskView theme={theme} lang={lang} />;
       case 'knowledge':
         return <KnowledgeBaseView theme={theme} lang={lang} />;
+      case 'complaint':
+        return <ComplaintGeneratorView theme={theme} lang={lang} />;
       default:
         return (
           <BoardView
