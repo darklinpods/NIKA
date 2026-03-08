@@ -48,6 +48,17 @@ export class TrafficAccidentSkill {
         let text = response.text || '';
         text = text.replace(/^```markdown\n?/i, '').replace(/\n?```$/i, '').trim();
 
+        // 调试输出：控制台输出生成的诉状文本
+        console.log('[DEBUG] AI生成的交通事故诉状文本:');
+        console.log('=====================================');
+        console.log(text);
+        console.log('=====================================');
+        
+        // 调试输出：写入临时文件
+        const claimTextFilePath = path.join(process.cwd(), 'debug_traffic_accident_claim_text.md');
+        fs.writeFileSync(claimTextFilePath, text, 'utf8');
+        console.log(`[DEBUG] 诉状文本已保存到临时文件: ${claimTextFilePath}`);
+
         return text;
     }
 
@@ -168,7 +179,22 @@ ${params.documentsContent}
         }
 
         try {
-            return JSON.parse(raw);
+            const parsedData = JSON.parse(raw);
+            
+            // 调试输出：控制台输出解析后的数据
+            console.log('[DEBUG] AI分析后的交通事故数据:');
+            console.log('=====================================');
+            console.log(JSON.stringify(parsedData, null, 2));
+            console.log('=====================================');
+            
+            // 调试输出：写入临时文件
+            const fs = require('fs');
+            const path = require('path');
+            const tempFilePath = path.join(process.cwd(), 'debug_traffic_accident_data.json');
+            fs.writeFileSync(tempFilePath, JSON.stringify(parsedData, null, 2), 'utf8');
+            console.log(`[DEBUG] 数据已保存到临时文件: ${tempFilePath}`);
+            
+            return parsedData;
         } catch (e) {
             console.error('[TrafficAccidentSkill.generateDocxVariables] JSON parse error:', e);
             console.error('Raw response:', raw.substring(0, 500));

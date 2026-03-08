@@ -128,3 +128,36 @@ export const generateComplaintFile = async (formData: any, templateId: string): 
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
 };
+
+export const downloadTemplate = async (templateId: string): Promise<void> => {
+    try {
+        const response = await fetch(`/api/complaints/template?templateId=${encodeURIComponent(templateId)}`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to download template');
+        }
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        
+        // Extract filename from header if possible
+        let filename = `模板_${templateId}.docx`;
+        const disposition = response.headers.get('Content-Disposition');
+        if (disposition && disposition.includes('filename*=')) {
+            const matches = /filename\*=UTF-8''([^;]+)/ig.exec(disposition);
+            if (matches && matches[1]) {
+                filename = decodeURIComponent(matches[1]);
+            }
+        }
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    } catch (error: any) {
+        throw new Error(error.message || 'Failed to download template');
+    }
+};

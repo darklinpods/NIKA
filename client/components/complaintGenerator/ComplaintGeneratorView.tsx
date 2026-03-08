@@ -5,7 +5,7 @@ import {
   User, FileSignature, ShieldCheck, Download, 
   FileSearch, CopyPlus, ArrowRight, Wand2, Printer
 } from 'lucide-react';
-import { extractComplaint, generateComplaintFile, fetchCases } from '../../services/api';
+import { extractComplaint, generateComplaintFile, fetchCases, downloadTemplate } from '../../services/api';
 
 interface ComplaintGeneratorViewProps {
   theme: 'light' | 'dark';
@@ -41,6 +41,7 @@ export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ 
   const [isExtracting, setIsExtracting] = useState<boolean>(false);
   const [hasExtracted, setHasExtracted] = useState<boolean>(false);
   const [isGeneratingWord, setIsGeneratingWord] = useState<boolean>(false);
+  const [isDownloadingTemplate, setIsDownloadingTemplate] = useState<boolean>(false);
 
   // Cases state
   const [casesList, setCasesList] = useState<any[]>([]);
@@ -154,6 +155,18 @@ export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ 
         alert(e.message || '生成失败，请重试');
     } finally {
         setIsGeneratingWord(false);
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    setIsDownloadingTemplate(true);
+    try {
+        await downloadTemplate(selectedTemplate);
+    } catch (e: any) {
+        console.error(e);
+        alert(e.message || '下载模板失败，请重试');
+    } finally {
+        setIsDownloadingTemplate(false);
     }
   };
 
@@ -274,7 +287,7 @@ export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ 
                             </div>
                         )}
 
-                        <div>
+                        <div className="flex gap-3">
                             <button
                                 onClick={handleExtract}
                                 disabled={isExtracting || (sourceType === 'text' && !sourceText) || (sourceType === 'case' && !selectedCaseId)}
@@ -284,6 +297,18 @@ export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ 
                                     <><Loader2 size={18} className="animate-spin" /> 正在进行深度语法与事实解析...</>
                                 ) : (
                                     <><Wand2 size={18} /> 智能提取并进入预览</>
+                                )}
+                            </button>
+                            <button
+                                onClick={handleDownloadTemplate}
+                                disabled={isDownloadingTemplate}
+                                className="px-8 py-3.5 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-xl shadow-lg shadow-slate-500/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="下载当前模板文件"
+                            >
+                                {isDownloadingTemplate ? (
+                                    <><Loader2 size={18} className="animate-spin" /> 下载中...</>
+                                ) : (
+                                    <><Download size={18} /> 下载模板</>
                                 )}
                             </button>
                         </div>
