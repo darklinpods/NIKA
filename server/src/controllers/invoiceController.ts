@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { aiService } from '../services/aiService';
+import { getInvoiceExtractionPrompt } from '../prompts/extractionPrompts';
 
 const prisma = new PrismaClient();
 
@@ -53,38 +54,7 @@ export const extractInvoicesFromEvidence = async (req: Request, res: Response) =
         const textToAnalyze = allContent.substring(0, 30000);
 
         // 构建发票提取 Prompt
-        const prompt = [
-            '你是一名专业律师助理，正在处理一起机动车交通事故责任纠纷案件。',
-            '请仔细阅读以下【全部证据材料】，从中找出所有发票、收据、医疗费票据、鉴定费票据等费用凭证，',
-            '并将每一张凭证的关键信息整理成一个 JSON 数组。',
-            '',
-            '## 提取规则',
-            '',
-            '- 每张发票/票据提取一个对象。',
-            '- 如果一份材料内有多张发票，分别列出每一张。',
-            '- 费用类别（category）请从以下类型中选择最匹配的：',
-            '  医疗费 / 住院伙食补助费 / 护理费 / 交通费 / 营养费 / 残疾赔偿金 /',
-            '  误工费 / 鉴定费 / 辅助器具费 / 精神损害抚慰金 / 其他费用',
-            '- 金额（amount）为人民币元的数字，不含"元"字，保留两位小数。',
-            '- 如果某项信息确实无法从材料中找到，对应字段填写空字符串（""）或 0（金额字段）。',
-            '- 不要编造或推测任何数据。',
-            '',
-            '## 输出格式（严格 JSON 数组，不含任何代码块标记或额外说明）',
-            '',
-            '[',
-            '  {',
-            '    "date": "2024-12-10",',
-            '    "category": "医疗费",',
-            '    "description": "武汉市新洲区人民医院-住院医疗费",',
-            '    "amount": 12345.67,',
-            '    "invoiceNo": "0012345678"',
-            '  }',
-            ']',
-            '',
-            '---',
-            '',
-            `【全部证据材料】:\n${textToAnalyze}`,
-        ].join('\n');
+        const prompt = getInvoiceExtractionPrompt(textToAnalyze);
 
         console.log('[InvoiceExtract] Sending invoice extraction prompt to AI...');
 

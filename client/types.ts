@@ -24,6 +24,13 @@ export interface InvoiceItem {
   invoiceNo: string;
 }
 
+export interface ClaimItem {
+  id: string;
+  category: string;
+  amount: number;
+  description: string;
+}
+
 export interface Case {
   id: string;
   title: string;

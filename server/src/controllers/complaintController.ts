@@ -3,6 +3,7 @@ import { aiService } from '../services/aiService';
 import PizZip from 'pizzip';
 import path from 'path';
 import fs from 'fs';
+import { getComplaintElementsExtractionPrompt } from '../prompts/documentPrompts';
 
 // docxtemplater is CJS
 const Docxtemplater = require('docxtemplater');
@@ -59,22 +60,7 @@ export const extractComplaintElements = async (req: Request, res: Response) => {
   "requestsAndFacts": "完整综合的【诉讼请求】和【事实与理由】段落合并。保持原有的清晰条理和分段。"
 }`);
 
-        const aiPrompt = `你是一个专业的中国法务人员和数据提取系统。
-请仔细阅读下面用户提供的原始、非结构化文本（可能是一份传统格式的长篇《民事起诉状》或者案件事实），并将其信息精准提取并返回一个 JSON 对象。绝对不要输出任何 markdown 代码块标识符，直接输出纯 JSON 即可。
-
-JSON 结构及字段定义如下：
-${jsonSchemaStr}
-
-要求：
-1. 绝对忠实于原文，原文没有提到的字段全部填为空字符串 ""。
-2. 当前的目标要素式案由模板为：${templateId}，提取时可以侧重寻找该案由的关键信息。
-3. 请严格输出有效的 JSON。
-
-源文本内容如下：
-=====
-${text}
-=====
-`;
+        const aiPrompt = getComplaintElementsExtractionPrompt(text, templateId);
 
         const response = await aiService.generateContent({
             model: "gemini-2.5-flash",
@@ -157,10 +143,36 @@ export const generateComplaintDocx = async (req: Request, res: Response) => {
          };
 
          if (templateId === 'traffic') {
+             // We need raw xml support for the claims table
              docOptions.delimiters = { start: '{', end: '}' };
+             // The raw xml tag will be {@_CLAIM_ROWS_} since docxtemplater natively uses {@var} for raw xml injection
          }
 
          const doc = new Docxtemplater(zip, docOptions);
+
+        // -- Add the Custom Table Expansion Logic for Claims List --
+        if (templateId === 'traffic' && formData.claimsList && Array.isArray(formData.claimsList)) {
+            const claims = formData.claimsList;
+            if (claims.length > 0) {
+                let rowsXml = '';
+                claims.forEach((claim: any, index: number) => {
+                    // Create a Word table row <w:tr> with style for each claim
+                    rowsXml += `
+                        <w:tr>
+                            <w:tc><w:tcPr><w:tcW w:w="800" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="微软雅黑" w:eastAsia="微软雅黑" w:hAnsi="微软雅黑"/><w:sz w:val="21"/></w:rPr><w:t>${index + 1}</w:t></w:r></w:p></w:tc>
+                            <w:tc><w:tcPr><w:tcW w:w="2500" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="微软雅黑" w:eastAsia="微软雅黑" w:hAnsi="微软雅黑"/><w:sz w:val="21"/></w:rPr><w:t>${claim.category || ''}</w:t></w:r></w:p></w:tc>
+                            <w:tc><w:tcPr><w:tcW w:w="2000" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="微软雅黑" w:eastAsia="微软雅黑" w:hAnsi="微软雅黑"/><w:sz w:val="21"/></w:rPr><w:t>${claim.amount ? Number(claim.amount).toFixed(2) : '0.00'}</w:t></w:r></w:p></w:tc>
+                            <w:tc><w:tcPr><w:tcW w:w="3700" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="微软雅黑" w:eastAsia="微软雅黑" w:hAnsi="微软雅黑"/><w:sz w:val="21"/></w:rPr><w:t>${claim.description || ''}</w:t></w:r></w:p></w:tc>
+                        </w:tr>
+                    `;
+                });
+                
+                // Provide the raw XML to docxtemplater using raw module logic, or simply pre-replace if template macro exists
+                formData._CLAIM_ROWS_ = rowsXml;
+            } else {
+                 formData._CLAIM_ROWS_ = '';
+            }
+        }
 
         // 绑定数据渲染
         doc.render(formData);

@@ -2,6 +2,7 @@ import prisma from '../prisma';
 import fs from 'fs';
 import { documentService } from './documentService';
 import { aiService } from './aiService';
+import { getDocumentClassificationPrompt } from '../prompts/analysisPrompts';
 
 export const knowledgeService = {
     // 获取知识库所有文档列表（不返回全量 content，避免太重）
@@ -18,17 +19,7 @@ export const knowledgeService = {
 
     // AI 辅助分类
     async classifyDocumentCategory(content: string): Promise<string> {
-        const prompt = `
-你是一位专业的法律助理。请阅读以下法律文档的内容片段，并将其归类为以下四类之一：
-- pleading (诉状/代理词): 包含原告、被告信息，案号，或者是具体的诉讼请求和事实理由的文科。
-- precedent (判例/裁定): 法院出具的民事、刑事判决书、裁定书、调解书。
-- provision (法条/规定): 具体的法律条款清单、部委规章、司法解释。
-- notebook_lm (办公笔记/逻辑): 律师自己的办案心得、证据清单、思维导图转录、或者是通用的法律分析笔记。
-
-只需返回分类代码（pleading, precedent, provision, notebook_lm），不要包含任何其他说明文字。
-文档内容如下：
-${content.substring(0, 2000)}
-`;
+        const prompt = getDocumentClassificationPrompt(content);
         try {
             const response = await aiService.generateContent({
                 model: "gemini-2.0-flash", // Use a fast model for classification

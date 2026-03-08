@@ -1,0 +1,54 @@
+export const getCaseDataExtractionPrompt = (kContext: string, textToAnalyze: string) => `${kContext}
+你是一位专业的法律助理，主要负责从案卷材料中提取关键要素以建立案件档案。
+请阅读以下案卷材料文本，并提取出核心信息。
+必须返回一个极其严格的经过格式化的 JSON 对象，不要包含任何 \`\`\`json\`\`\` 等 Markdown 引用符号。
+
+JSON 格式要求如下：
+{
+  "title": "简短的案件标题，如'张三诉李四借款合同纠纷案'或'XX公司劳动争议'",
+  "clientName": "根据文书判断，我们的客户(当事人)是谁？如果不确定，填文本中出现的第一原告/委托人",
+  "description": "用150-300字精炼总结案件的核心事实、争议焦点或诉求",
+  "priority": "low" | "medium" | "high" (判断紧迫程度，如有近期开庭、金额巨大或涉及刑事风险选high，普通欠款选medium，例行审查选low),
+  "tags": ["标签1", "标签2", "标签3"] (提炼3-5个简短的法律标签属性，如"合同纠纷", "民间借贷", "财产保全")
+}
+
+待提取的案卷文稿文本如下：
+----------------
+${textToAnalyze}
+----------------
+`;
+
+export const getPartiesExtractionPrompt = (kContext: string, textToAnalyze: string) => `${kContext}
+请作为专业的法律助理，从以下法律案卷文稿中仔细提取所有涉及的当事人（包括原告、被告、第三人、上诉人、被上诉人等，或者是协议的甲方乙方）的详细信息。
+如果没有提取到任何特定信息，可以在该字段留空。必须返回一个严格的 JSON 对象。
+
+JSON 格式要求如下：
+{
+  "extractedParties": [
+    {
+      "name": "当事人姓名或公司名称",
+      "role": "案件角色（如：原告、被告、甲方、乙方、委托人等）",
+      "idNumber": "身份证号或统一社会信用代码等证件号码（如果有的话）",
+      "address": "住所地、联系地址（如果有的话）",
+      "contact": "联系电话或法定代表人信息（如果有的话）"
+    }
+  ]
+}
+
+待提取的案卷文稿文本如下：
+----------------
+${textToAnalyze}
+----------------
+`;
+
+export const getDocumentClassificationPrompt = (content: string) => `
+你是一位专业的法律助理。请阅读以下法律文档的内容片段，并将其归类为以下四类之一：
+- pleading (诉状/代理词): 包含原告、被告信息，案号，或者是具体的诉讼请求和事实理由的文科。
+- precedent (判例/裁定): 法院出具的民事、刑事判决书、裁定书、调解书。
+- provision (法条/规定): 具体的法律条款清单、部委规章、司法解释。
+- notebook_lm (办公笔记/逻辑): 律师自己的办案心得、证据清单、思维导图转录、或者是通用的法律分析笔记。
+
+只需返回分类代码（pleading, precedent, provision, notebook_lm），不要包含任何其他说明文字。
+文档内容如下：
+${content.substring(0, 2000)}
+`;

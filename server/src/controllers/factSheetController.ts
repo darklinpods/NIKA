@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { aiService } from '../services/aiService';
 import fs from 'fs';
 import path from 'path';
+import { getFactSheetExtractionPrompt } from '../prompts/extractionPrompts';
 
 const prisma = new PrismaClient();
 
@@ -129,39 +130,7 @@ export const extractFactSheet = async (req: Request, res: Response) => {
             }
         } catch { /* ignore */ }
 
-        const prompt = `你是一位资深交通事故赔偿律师助理。请从以下【案件证据材料】中提取案件关键信息，严格按照指定 JSON 格式输出。
-
-## 要求
-1. 所有字段从证据材料中精确提取，不要猜测或编造。
-2. 如果某字段在证据中找不到，留空字符串或0。
-3. claims 中的金额使用湖北省2025年赔偿标准计算：
-   - 城镇居民人均可支配收入：46,987元/年（残疾赔偿金）
-   - 农村年平均工资：54,553元/年（误工费）
-   - 居民服务业标准：52,532元/年（护理费）
-   - 住院伙食补助费：50元/天
-   - 营养费：50元/天
-4. 所有金额计算必须精确，保留两位小数。
-5. 只输出 JSON，不输出任何其他内容。
-
-## 输出格式
-\`\`\`json
-${FACT_SHEET_SCHEMA}
-\`\`\`
-
----
-
-【案件基本信息】
-案件标题：${currentCase?.title || ''}
-当事人信息：${currentCase?.parties || '暂无'}
-
----
-
-【案件证据材料】
-${documentsContent}
-
----
-
-请输出完整的 JSON：`;
+        const prompt = getFactSheetExtractionPrompt(documentsContent, currentCase?.title || '', currentCase?.parties || '', skillContent);
 
         const model = (req.body && req.body.model) || 'gemini-2.5-flash';
         const response = await aiService.generateContent({

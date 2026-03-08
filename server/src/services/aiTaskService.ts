@@ -2,6 +2,7 @@ import { Type } from "@google/genai";
 import { aiService } from './aiService';
 import { caseService } from './caseService';
 import { knowledgeService } from './knowledgeService';
+import { getTaskGenerationPrompt, getTaskImprovementPrompt, getTaskSummaryPrompt } from '../prompts/taskPrompts';
 
 export const aiTaskService = {
     async generateTasks(prompt: string, lang: string) {
@@ -33,10 +34,7 @@ export const aiTaskService = {
             model: "gemini-2.5-flash",
             contents: [{
                 role: "user", parts: [{
-                    text: `Generate a list of 3-5 structured legal cases for the following request: "${prompt}". 
-                 ${kContext}
-                 The response MUST be in ${languageName}.
-                 Each case must have a title, description, priority (low, medium, or high), 1-2 relevant tags, and a list of 3-5 procedural sub-tasks (as strings).` }]
+            text: getTaskGenerationPrompt(prompt, languageName, kContext) }]
             }],
             config: {
                 responseMimeType: "application/json",
@@ -72,11 +70,7 @@ export const aiTaskService = {
             model: "gemini-2.5-flash",
             contents: [{
                 role: "user", parts: [{
-                    text: `Improve and expand this task description for clarity and professionalism. 
-                 The response MUST be in ${languageName}.
-                 Task Title: ${taskTitle}
-                 Current Description: ${taskDesc}
-                 Output only the improved description text.` }]
+                    text: getTaskImprovementPrompt(taskTitle, taskDesc, languageName) }]
             }],
         });
         return response.text || taskDesc;
@@ -88,10 +82,7 @@ export const aiTaskService = {
             model: "gemini-2.5-flash",
             contents: [{
                 role: "user", parts: [{
-                    text: `As an expert legal assistant, summarize this legal case in under 80 words. Focus on the core conflict and key next step.
-                 Language: ${languageName}
-                 Title: ${title}
-                 Details: ${desc}`
+                    text: getTaskSummaryPrompt(title, desc, languageName)
                 }]
             }],
         });

@@ -201,6 +201,24 @@ xml = xml.replace(
 );
 
 // =========================================================
+// 13. 索赔清单列表 (循环表格支持)
+// docxtemplater 要求 {#claims} 和 {/claims} 在不同的 run 中。
+// 只需要在模板的表格行里放置对应的结构即可，这里用占位符标记整体替换
+// 注意：我们的实现是简单的文本替换，若直接支持 docxtemplater 的数组需要用其实例渲染
+// 由于之前是以裸文字替换实现，为兼容原架构并支持动态行表格，我们需要手写XML循环行逻辑
+// =========================================================
+
+// {claimsTablePlaceholder} 在模板的表格行 <w:tr> 内部或作为一行
+xml = xml.replace(/<w:tr[^>]*>[\s\S]*?<w:t>\{claimsTablePlaceholder\}<\/w:t>[\s\S]*?<\/w:tr>/, 
+    (m) => {
+        // Find the tr, and expand it statically for all claims later in the render pipeline
+        // For inject-template-vars.js, we will just leave a macro `{@_CLAIM_ROWS_}` 
+        // to tell docxtemplater to inject Raw XML here.
+        return '{@_CLAIM_ROWS_}';
+    }
+);
+
+// =========================================================
 // 校验输出
 // =========================================================
 const allVars = [...new Set((xml.match(/\{[a-zA-Z][^}]+\}/g) || []))].sort();
