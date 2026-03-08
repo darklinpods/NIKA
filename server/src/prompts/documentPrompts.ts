@@ -48,7 +48,7 @@ export const getComplaintElementsExtractionPrompt = (text: string, templateId: s
   "defendant2Id": "第二被告统一社会信用代码",
   "defendant2Type": "类型，如：有限责任公司、股份有限公司等"${
     templateId === 'traffic' ? `,
-  "claimsList": "【索赔清单】（具体的费用明细项目，如：医疗费XXX元、误工费XXX元、护理费XXX元等。每项费用单独列出，包含计算公式和金额。绝对不能包含诉讼请求的表述如'请求判令'等）",
+  "claimsList": "【索赔清单】（具体的费用明细项目，如：医疗费XXX元、误工费XXX元、护理费XXX元等。每项费用单独成行，包含计算公式和金额。绝对不能包含诉讼请求的表述如'请求判令'等）",
   "accidentFacts": "【交通事故发生情况】部分事实与理由",
   "liabilityDetermination": "【交通事故责任认定】部分（如交警认定书上的认定结论）",
   "insuranceStatus": "【机动车投保情况】部分（肇事车辆交强险、商业险分别在哪家保险公司投保等）",
