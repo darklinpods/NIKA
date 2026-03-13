@@ -49,38 +49,13 @@ export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ 
 
   // Editable Form Data (WYSIWYG Model)
   const [formData, setFormData] = useState<Record<string, any>>({
-    plaintiffName: '',
-    plaintiffGender: '',
-    plaintiffBirth: '',
-    plaintiffNation: '',
-    plaintiffJob: '',
-    plaintiffPosition: '',
-    plaintiffPhone: '',
-    plaintiffAddress: '',
-    plaintiffResidence: '',
-    plaintiffIdType: '身份证',
-    plaintiffId: '',
-    
-    defendantName: '',
-    defendantGender: '',
-    defendantBirth: '',
-    defendantNation: '',
-    defendantJob: '',
-    defendantPosition: '',
-    defendantPhone: '',
-    defendantAddress: '',
-    defendantResidence: '',
-    defendantIdType: '身份证',
-    defendantId: '',
-
-    defendant2Name: '',
-    defendant2Address: '',
-    defendant2RegAddress: '',
-    defendant2Rep: '',
-    defendant2Position: '',
-    defendant2Phone: '',
-    defendant2Id: '',
-    defendant2Type: '',
+    plaintiffs: [{
+      name: '', gender: '', birth: '', nation: '', job: '', position: '', phone: '', address: '', residence: '', idType: '身份证', id: ''
+    }],
+    defendants: [{
+      name: '', gender: '', birth: '', nation: '', job: '', position: '', phone: '', address: '', residence: '', idType: '身份证', id: '',
+      type: '自然人', regAddress: '', legalRep: ''
+    }],
     
     // Generic fallback
     requestsAndFacts: '',
@@ -131,9 +106,19 @@ export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ 
 
         const res = await extractComplaint(extractInput, selectedTemplate);
         if (res.success && res.data) {
+            const newFormData = { ...res.data };
+            // Ensure plaintiffs is a non-empty array
+            if (!newFormData.plaintiffs || !Array.isArray(newFormData.plaintiffs) || newFormData.plaintiffs.length === 0) {
+                newFormData.plaintiffs = [{ name: '', gender: '', birth: '', nation: '', job: '', position: '', phone: '', address: '', residence: '', idType: '身份证', id: '' }];
+            }
+            // Ensure defendants is a non-empty array
+            if (!newFormData.defendants || !Array.isArray(newFormData.defendants) || newFormData.defendants.length === 0) {
+                newFormData.defendants = [{ name: '', gender: '', birth: '', nation: '', job: '', position: '', phone: '', address: '', residence: '', idType: '身份证', id: '', type: '自然人', regAddress: '', legalRep: '' }];
+            }
+            
             setFormData(prev => ({
                 ...prev,
-                ...res.data
+                ...newFormData
             }));
             setHasExtracted(true);
         }
@@ -378,17 +363,51 @@ export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ 
 
                     <table className="w-full border-collapse border border-black mb-8 text-[14px] leading-tight pattern-paper-table">
                         <tbody>
-                            {/* Plaintiff */}
-                            <tr>
+                            {/* Plaintiffs */}
+                            {formData.plaintiffs.map((plaintiff: any, index: number) => (
+                            <tr key={`plaintiff-${index}`}>
                                 <td className="border border-black p-3 w-1/4 align-top">
                                     原告（自然人）
+                                    {index === 0 && (
+                                        <div className="mt-2 flex opacity-30 hover:opacity-100 transition-opacity justify-center">
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    const newPlaintiffs = [...formData.plaintiffs, { name: '', gender: '', birth: '', nation: '', job: '', position: '', phone: '', address: '', residence: '', idType: '身份证', id: '' }];
+                                                    setFormData({...formData, plaintiffs: newPlaintiffs});
+                                                }}
+                                                className="text-[10px] bg-slate-100 border border-slate-300 font-sans px-2 py-0.5 rounded shadow-sm hover:bg-slate-200"
+                                            >
+                                                + 添加原告
+                                            </button>
+                                        </div>
+                                    )}
+                                    {index > 0 && (
+                                        <div className="mt-2 flex opacity-30 hover:opacity-100 transition-opacity justify-center">
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    const newPlaintiffs = [...formData.plaintiffs];
+                                                    newPlaintiffs.splice(index, 1);
+                                                    setFormData({...formData, plaintiffs: newPlaintiffs});
+                                                }}
+                                                className="text-[10px] bg-red-50 text-red-600 border border-red-200 font-sans px-2 py-0.5 rounded shadow-sm hover:bg-red-100"
+                                            >
+                                                - 删除此人
+                                            </button>
+                                        </div>
+                                    )}
                                 </td>
                                 <td className="border border-black p-3 w-3/4 space-y-2.5 hover:bg-yellow-50/50 transition-colors">
                                     <div className="flex items-center">
                                         <span className="w-[88px] shrink-0">姓名：</span>
                                         <input 
-                                            value={formData.plaintiffName} 
-                                            onChange={e => setFormData({...formData, plaintiffName: e.target.value})} 
+                                            value={plaintiff.name} 
+                                            onChange={e => {
+                                                const newPlaintiffs = [...formData.plaintiffs];
+                                                newPlaintiffs[index].name = e.target.value;
+                                                setFormData({...formData, plaintiffs: newPlaintiffs});
+                                            }} 
                                             className="font-bold flex-1 border-b border-black outline-none bg-transparent px-1 focus:bg-blue-50/50 transition-colors" 
                                         />
                                     </div>
@@ -396,11 +415,19 @@ export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ 
                                         <span className="w-[88px] shrink-0">性别：</span>
                                         <div className="flex-1 flex gap-6 items-center">
                                             <label className="cursor-pointer flex items-center relative pl-5">
-                                                <input type="radio" name="plaintiffGender" checked={formData.plaintiffGender === '男'} onChange={() => setFormData({...formData, plaintiffGender: '男'})} className="peer sr-only" />
+                                                <input type="radio" name={`plaintiffGender-${index}`} checked={plaintiff.gender === '男'} onChange={() => {
+                                                    const newPlaintiffs = [...formData.plaintiffs];
+                                                    newPlaintiffs[index].gender = '男';
+                                                    setFormData({...formData, plaintiffs: newPlaintiffs});
+                                                }} className="peer sr-only" />
                                                 <div className="w-4 h-4 border border-black absolute left-0 flex items-center justify-center peer-checked:after:content-['✓'] after:text-sm font-bold"></div>男
                                             </label>
                                             <label className="cursor-pointer flex items-center relative pl-5">
-                                                <input type="radio" name="plaintiffGender" checked={formData.plaintiffGender === '女'} onChange={() => setFormData({...formData, plaintiffGender: '女'})} className="peer sr-only" />
+                                                <input type="radio" name={`plaintiffGender-${index}`} checked={plaintiff.gender === '女'} onChange={() => {
+                                                    const newPlaintiffs = [...formData.plaintiffs];
+                                                    newPlaintiffs[index].gender = '女';
+                                                    setFormData({...formData, plaintiffs: newPlaintiffs});
+                                                }} className="peer sr-only" />
                                                 <div className="w-4 h-4 border border-black absolute left-0 flex items-center justify-center peer-checked:after:content-['✓'] after:text-sm font-bold"></div>女
                                             </label>
                                         </div>
@@ -408,172 +435,315 @@ export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ 
                                     <div className="flex items-center gap-2">
                                         <div className="flex items-center flex-[3]">
                                             <span className="w-[88px] shrink-0">出生日期：</span>
-                                            <input value={formData.plaintiffBirth} onChange={e => setFormData({...formData, plaintiffBirth: e.target.value})} className="flex-1 border-b border-black outline-none bg-transparent px-1 min-w-0" />
+                                            <input value={plaintiff.birth} onChange={e => {
+                                                const newPlaintiffs = [...formData.plaintiffs];
+                                                newPlaintiffs[index].birth = e.target.value;
+                                                setFormData({...formData, plaintiffs: newPlaintiffs});
+                                            }} className="flex-1 border-b border-black outline-none bg-transparent px-1 min-w-0" />
                                         </div>
                                         <div className="flex items-center flex-[2]">
                                             <span className="w-12 shrink-0">民族：</span>
-                                            <input value={formData.plaintiffNation} onChange={e => setFormData({...formData, plaintiffNation: e.target.value})} className="flex-1 border-b border-black outline-none bg-transparent px-1 min-w-0" />
+                                            <input value={plaintiff.nation} onChange={e => {
+                                                const newPlaintiffs = [...formData.plaintiffs];
+                                                newPlaintiffs[index].nation = e.target.value;
+                                                setFormData({...formData, plaintiffs: newPlaintiffs});
+                                            }} className="flex-1 border-b border-black outline-none bg-transparent px-1 min-w-0" />
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <div className="flex items-center flex-[3]">
                                             <span className="w-[88px] shrink-0">工作单位：</span>
-                                            <input value={formData.plaintiffJob} onChange={e => setFormData({...formData, plaintiffJob: e.target.value})} className="flex-1 border-b border-black outline-none bg-transparent px-1 min-w-0" />
+                                            <input value={plaintiff.job} onChange={e => {
+                                                const newPlaintiffs = [...formData.plaintiffs];
+                                                newPlaintiffs[index].job = e.target.value;
+                                                setFormData({...formData, plaintiffs: newPlaintiffs});
+                                            }} className="flex-1 border-b border-black outline-none bg-transparent px-1 min-w-0" />
                                         </div>
                                         <div className="flex items-center flex-[2]">
                                             <span className="w-12 shrink-0">职务：</span>
-                                            <input value={formData.plaintiffPosition} onChange={e => setFormData({...formData, plaintiffPosition: e.target.value})} className="flex-1 border-b border-black outline-none bg-transparent px-1 min-w-0" />
+                                            <input value={plaintiff.position} onChange={e => {
+                                                const newPlaintiffs = [...formData.plaintiffs];
+                                                newPlaintiffs[index].position = e.target.value;
+                                                setFormData({...formData, plaintiffs: newPlaintiffs});
+                                            }} className="flex-1 border-b border-black outline-none bg-transparent px-1 min-w-0" />
                                         </div>
                                     </div>
                                     <div className="flex items-center">
                                         <span className="w-[88px] shrink-0">联系电话：</span>
-                                        <input value={formData.plaintiffPhone} onChange={e => setFormData({...formData, plaintiffPhone: e.target.value})} className="flex-1 border-b border-black outline-none bg-transparent px-1 font-sans" />
+                                        <input value={plaintiff.phone} onChange={e => {
+                                            const newPlaintiffs = [...formData.plaintiffs];
+                                            newPlaintiffs[index].phone = e.target.value;
+                                            setFormData({...formData, plaintiffs: newPlaintiffs});
+                                        }} className="flex-1 border-b border-black outline-none bg-transparent px-1 font-sans" />
                                     </div>
                                     <div className="flex items-center">
                                         <span className="w-[140px] shrink-0">住所地(户籍所在地)：</span>
-                                        <input value={formData.plaintiffAddress} onChange={e => setFormData({...formData, plaintiffAddress: e.target.value})} className="flex-1 border-b border-black outline-none bg-transparent px-1" />
+                                        <input value={plaintiff.address} onChange={e => {
+                                            const newPlaintiffs = [...formData.plaintiffs];
+                                            newPlaintiffs[index].address = e.target.value;
+                                            setFormData({...formData, plaintiffs: newPlaintiffs});
+                                        }} className="flex-1 border-b border-black outline-none bg-transparent px-1" />
                                     </div>
                                     <div className="flex items-center">
                                         <span className="w-[88px] shrink-0">经常居住地：</span>
-                                        <input value={formData.plaintiffResidence} onChange={e => setFormData({...formData, plaintiffResidence: e.target.value})} className="flex-1 border-b border-black outline-none bg-transparent px-1" />
-                                    </div>
-                                    <div className="flex items-center">
-                                        <span className="w-[88px] shrink-0">证件类型：</span>
-                                        <input value={formData.plaintiffIdType} onChange={e => setFormData({...formData, plaintiffIdType: e.target.value})} className="flex-1 border-b border-black outline-none bg-transparent px-1" />
-                                    </div>
-                                    <div className="flex items-center">
-                                        <span className="w-[88px] shrink-0">证件号码：</span>
-                                        <input value={formData.plaintiffId} onChange={e => setFormData({...formData, plaintiffId: e.target.value})} className="flex-1 border-b border-black outline-none bg-transparent px-1 font-sans tracking-widest" />
+                                        <input value={plaintiff.residence} onChange={e => {
+                                            const newPlaintiffs = [...formData.plaintiffs];
+                                            newPlaintiffs[index].residence = e.target.value;
+                                            setFormData({...formData, plaintiffs: newPlaintiffs});
+                                        }} className="flex-1 border-b border-black outline-none bg-transparent px-1" />
                                     </div>
                                 </td>
                             </tr>
-
-                            {/* Defendant (Natural Person) */}
-                            <tr>
-                                <td className="border border-black p-3 w-1/4 align-top">
-                                    被告（自然人）
-                                    <div className="mt-2 flex opacity-30 hover:opacity-100 transition-opacity justify-center">
-                                        <button className="text-[10px] bg-slate-100 border border-slate-300 font-sans px-2 py-0.5 rounded shadow-sm hover:bg-slate-200">+ 添加当事人</button>
-                                    </div>
-                                </td>
-                                <td className="border border-black p-3 w-3/4 space-y-2.5 hover:bg-yellow-50/50 transition-colors">
-                                    <div className="flex items-center">
-                                        <span className="w-[88px] shrink-0">姓名：</span>
-                                        <input value={formData.defendantName} onChange={e => setFormData({...formData, defendantName: e.target.value})} className="font-bold flex-1 border-b border-black outline-none bg-transparent px-1 focus:bg-blue-50/50 transition-colors" />
-                                    </div>
-                                    <div className="flex items-center">
-                                        <span className="w-[88px] shrink-0">性别：</span>
-                                        <div className="flex-1 flex gap-6 items-center">
-                                            <label className="cursor-pointer flex items-center relative pl-5">
-                                                <input type="radio" name="defendantGender" checked={formData.defendantGender === '男'} onChange={() => setFormData({...formData, defendantGender: '男'})} className="peer sr-only" />
-                                                <div className="w-4 h-4 border border-black absolute left-0 flex items-center justify-center peer-checked:after:content-['✓'] after:text-sm font-bold"></div>男
-                                            </label>
-                                            <label className="cursor-pointer flex items-center relative pl-5">
-                                                <input type="radio" name="defendantGender" checked={formData.defendantGender === '女'} onChange={() => setFormData({...formData, defendantGender: '女'})} className="peer sr-only" />
-                                                <div className="w-4 h-4 border border-black absolute left-0 flex items-center justify-center peer-checked:after:content-['✓'] after:text-sm font-bold"></div>女
-                                            </label>
+                            ))}
+                             {/* Defendants */}
+                            {formData.defendants.map((defendant: any, index: number) => {
+                                const isOrganization = defendant.type === '法人/非法人组织' || defendant.type === '法人' || defendant.type === '非法人组织';
+                                
+                                return (
+                                <tr key={`defendant-${index}`}>
+                                    <td className="border border-black p-3 w-1/4 align-top leading-relaxed relative">
+                                        <div className="flex flex-col gap-2">
+                                            <div className="font-bold flex items-center justify-between">
+                                                <span>被告 {index + 1}</span>
+                                                <select 
+                                                    value={isOrganization ? 'organization' : 'person'}
+                                                    onChange={e => {
+                                                        const newDefs = [...formData.defendants];
+                                                        if (e.target.value === 'organization') {
+                                                            newDefs[index] = { ...newDefs[index], type: '法人/非法人组织', birth: '', nation: '', gender: '' };
+                                                        } else {
+                                                            newDefs[index] = { ...newDefs[index], type: '自然人', regAddress: '', legalRep: '' };
+                                                        }
+                                                        setFormData({...formData, defendants: newDefs});
+                                                    }}
+                                                    className="p-1 border bg-white rounded text-xs outline-none"
+                                                >
+                                                    <option value="person">自然人</option>
+                                                    <option value="organization">法人/组织</option>
+                                                </select>
+                                            </div>
+                                            
+                                            {index === 0 && (
+                                                <div className="mt-4 flex opacity-30 hover:opacity-100 transition-opacity justify-center">
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            const newDefs = [...formData.defendants, { name: '', gender: '', birth: '', nation: '', job: '', position: '', phone: '', address: '', residence: '', idType: '身份证', id: '', type: '自然人', regAddress: '', legalRep: '' }];
+                                                            setFormData({...formData, defendants: newDefs});
+                                                        }}
+                                                        className="text-[10px] bg-slate-100 border border-slate-300 font-sans px-2 py-0.5 rounded shadow-sm hover:bg-slate-200"
+                                                    >
+                                                        + 添加被告
+                                                    </button>
+                                                </div>
+                                            )}
+                                            {index > 0 && (
+                                                <div className="mt-4 flex opacity-30 hover:opacity-100 transition-opacity justify-center">
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            const newDefs = [...formData.defendants];
+                                                            newDefs.splice(index, 1);
+                                                            setFormData({...formData, defendants: newDefs});
+                                                        }}
+                                                        className="text-[10px] bg-red-50 text-red-600 border border-red-200 font-sans px-2 py-0.5 rounded shadow-sm hover:bg-red-100"
+                                                    >
+                                                        - 删除此人
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex items-center flex-[3]">
-                                            <span className="w-[88px] shrink-0">出生日期：</span>
-                                            <input value={formData.defendantBirth} onChange={e => setFormData({...formData, defendantBirth: e.target.value})} className="flex-1 border-b border-black outline-none bg-transparent px-1 min-w-0" />
-                                        </div>
-                                        <div className="flex items-center flex-[2]">
-                                            <span className="w-12 shrink-0">民族：</span>
-                                            <input value={formData.defendantNation} onChange={e => setFormData({...formData, defendantNation: e.target.value})} className="flex-1 border-b border-black outline-none bg-transparent px-1 min-w-0" />
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex items-center flex-[3]">
-                                            <span className="w-[88px] shrink-0">工作单位：</span>
-                                            <input value={formData.defendantJob} onChange={e => setFormData({...formData, defendantJob: e.target.value})} className="flex-1 border-b border-black outline-none bg-transparent px-1 min-w-0" />
-                                        </div>
-                                        <div className="flex items-center flex-[2]">
-                                            <span className="w-12 shrink-0">职务：</span>
-                                            <input value={formData.defendantPosition} onChange={e => setFormData({...formData, defendantPosition: e.target.value})} className="flex-1 border-b border-black outline-none bg-transparent px-1 min-w-0" />
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <span className="w-[88px] shrink-0">联系电话：</span>
-                                        <input value={formData.defendantPhone} onChange={e => setFormData({...formData, defendantPhone: e.target.value})} className="flex-1 border-b border-black outline-none bg-transparent px-1 font-sans" />
-                                    </div>
-                                    <div className="flex items-center">
-                                        <span className="w-[140px] shrink-0">住所地(户籍所在地)：</span>
-                                        <input value={formData.defendantAddress} onChange={e => setFormData({...formData, defendantAddress: e.target.value})} className="flex-1 border-b border-black outline-none bg-transparent px-1" />
-                                    </div>
-                                    <div className="flex items-center">
-                                        <span className="w-[88px] shrink-0">经常居住地：</span>
-                                        <input value={formData.defendantResidence} onChange={e => setFormData({...formData, defendantResidence: e.target.value})} className="flex-1 border-b border-black outline-none bg-transparent px-1" />
-                                    </div>
-                                    <div className="flex items-center">
-                                        <span className="w-[88px] shrink-0">证件类型：</span>
-                                        <input value={formData.defendantIdType} onChange={e => setFormData({...formData, defendantIdType: e.target.value})} className="flex-1 border-b border-black outline-none bg-transparent px-1" />
-                                    </div>
-                                    <div className="flex items-center">
-                                        <span className="w-[88px] shrink-0">证件号码：</span>
-                                        <input value={formData.defendantId} onChange={e => setFormData({...formData, defendantId: e.target.value})} className="flex-1 border-b border-black outline-none bg-transparent px-1 font-sans tracking-widest" />
-                                    </div>
-                                </td>
-                            </tr>
-
-                            {/* Defendant (Organization) */}
-                            <tr>
-                                <td className="border border-black p-3 w-1/4 align-top leading-relaxed">
-                                    被告（法人、非法人组织）
-                                    <div className="mt-2 flex opacity-30 hover:opacity-100 transition-opacity justify-center text-center">
-                                        <span className="text-[10px] text-slate-500 font-sans italic block">(例如保险公司)</span>
-                                    </div>
-                                </td>
-                                <td className="border border-black p-3 w-3/4 space-y-2.5 hover:bg-yellow-50/50 transition-colors">
-                                    <div className="flex flex-col">
-                                        <div className="flex items-center">
-                                            <span className="shrink-0">名称：</span>
-                                            <input value={formData.defendant2Name} onChange={e => setFormData({...formData, defendant2Name: e.target.value})} className="font-bold flex-1 border-b border-dashed border-black outline-none bg-transparent px-1 focus:bg-blue-50/50 transition-colors" />
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <div className="flex items-center">
-                                            <span className="shrink-0">住所地（主要办事机构所在地）：</span>
-                                            <input value={formData.defendant2Address} onChange={e => setFormData({...formData, defendant2Address: e.target.value})} className="flex-1 border-b border-dashed border-black outline-none bg-transparent px-1" />
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <span className="shrink-0">注册地/登记地：</span>
-                                        <input value={formData.defendant2RegAddress} onChange={e => setFormData({...formData, defendant2RegAddress: e.target.value})} className="flex-1 border-b border-dashed border-black outline-none bg-transparent px-1" />
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex items-center flex-[3]">
-                                            <span className="shrink-0">法定代表人/主要负责人：</span>
-                                            <input value={formData.defendant2Rep} onChange={e => setFormData({...formData, defendant2Rep: e.target.value})} className="flex-1 border-b border-dashed border-black outline-none bg-transparent px-1 min-w-0" />
-                                        </div>
-                                        <div className="flex items-center flex-[1]">
-                                            <span className="shrink-0">职务：</span>
-                                            <input value={formData.defendant2Position} onChange={e => setFormData({...formData, defendant2Position: e.target.value})} className="flex-1 border-b border-dashed border-black outline-none bg-transparent px-1 min-w-0" />
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <span className="shrink-0">联系电话：</span>
-                                        <input value={formData.defendant2Phone} onChange={e => setFormData({...formData, defendant2Phone: e.target.value})} className="flex-1 border-b border-dashed border-black outline-none bg-transparent px-1 font-sans" />
-                                    </div>
-                                    <div className="flex items-center">
-                                        <span className="shrink-0">统一社会信用代码：</span>
-                                        <input value={formData.defendant2Id} onChange={e => setFormData({...formData, defendant2Id: e.target.value})} className="flex-1 border-b border-dashed border-black outline-none bg-transparent px-1 font-sans tracking-widest" />
-                                    </div>
-                                    <div className="flex text-sm mt-3 border-t border-dashed border-black pt-2">
-                                        <span className="shrink-0 mr-2 mt-0.5">类型：</span>
-                                        <div className="flex-1 flex flex-wrap gap-x-3 gap-y-2">
-                                            {['有限责任公司', '股份有限公司', '上市股份', '其他企业法人', '事业单位', '社会团体', '其他'].map(type => (
-                                                <label key={type} className="cursor-pointer flex items-center relative pl-5 tracking-tighter">
-                                                    <input type="radio" name="defendant2Type" checked={formData.defendant2Type === type} onChange={() => setFormData({...formData, defendant2Type: type})} className="peer sr-only" />
-                                                    <div className="w-3.5 h-3.5 border border-black absolute left-0 flex items-center justify-center peer-checked:after:content-['✓'] after:text-xs font-bold"></div>{type}
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            
+                                    </td>
+                                    
+                                    <td className="border border-black p-3 w-3/4 space-y-2.5 hover:bg-yellow-50/50 transition-colors">
+                                        {!isOrganization ? (
+                                            /* Natural Person Fields */
+                                            <>
+                                                <div className="flex items-center">
+                                                    <span className="w-[88px] shrink-0">姓名：</span>
+                                                    <input value={defendant.name} onChange={e => {
+                                                        const newDefs = [...formData.defendants];
+                                                        newDefs[index].name = e.target.value;
+                                                        setFormData({...formData, defendants: newDefs});
+                                                    }} className="font-bold flex-1 border-b border-black outline-none bg-transparent px-1 focus:bg-blue-50/50 transition-colors" />
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <span className="w-[88px] shrink-0">性别：</span>
+                                                    <div className="flex-1 flex gap-6 items-center">
+                                                        <label className="cursor-pointer flex items-center relative pl-5">
+                                                            <input type="radio" name={`defendantGender-${index}`} checked={defendant.gender === '男'} onChange={() => {
+                                                                const newDefs = [...formData.defendants];
+                                                                newDefs[index].gender = '男';
+                                                                setFormData({...formData, defendants: newDefs});
+                                                            }} className="peer sr-only" />
+                                                            <div className="w-4 h-4 border border-black absolute left-0 flex items-center justify-center peer-checked:after:content-['✓'] after:text-sm font-bold"></div>男
+                                                        </label>
+                                                        <label className="cursor-pointer flex items-center relative pl-5">
+                                                            <input type="radio" name={`defendantGender-${index}`} checked={defendant.gender === '女'} onChange={() => {
+                                                                const newDefs = [...formData.defendants];
+                                                                newDefs[index].gender = '女';
+                                                                setFormData({...formData, defendants: newDefs});
+                                                            }} className="peer sr-only" />
+                                                            <div className="w-4 h-4 border border-black absolute left-0 flex items-center justify-center peer-checked:after:content-['✓'] after:text-sm font-bold"></div>女
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex items-center flex-[3]">
+                                                        <span className="w-[88px] shrink-0">出生日期：</span>
+                                                        <input value={defendant.birth} onChange={e => {
+                                                            const newDefs = [...formData.defendants];
+                                                            newDefs[index].birth = e.target.value;
+                                                            setFormData({...formData, defendants: newDefs});
+                                                        }} className="flex-1 border-b border-black outline-none bg-transparent px-1 min-w-0" />
+                                                    </div>
+                                                    <div className="flex items-center flex-[2]">
+                                                        <span className="w-12 shrink-0">民族：</span>
+                                                        <input value={defendant.nation} onChange={e => {
+                                                            const newDefs = [...formData.defendants];
+                                                            newDefs[index].nation = e.target.value;
+                                                            setFormData({...formData, defendants: newDefs});
+                                                        }} className="flex-1 border-b border-black outline-none bg-transparent px-1 min-w-0" />
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex items-center flex-[3]">
+                                                        <span className="w-[88px] shrink-0">工作单位：</span>
+                                                        <input value={defendant.job} onChange={e => {
+                                                            const newDefs = [...formData.defendants];
+                                                            newDefs[index].job = e.target.value;
+                                                            setFormData({...formData, defendants: newDefs});
+                                                        }} className="flex-1 border-b border-black outline-none bg-transparent px-1 min-w-0" />
+                                                    </div>
+                                                    <div className="flex items-center flex-[2]">
+                                                        <span className="w-12 shrink-0">职务：</span>
+                                                        <input value={defendant.position} onChange={e => {
+                                                            const newDefs = [...formData.defendants];
+                                                            newDefs[index].position = e.target.value;
+                                                            setFormData({...formData, defendants: newDefs});
+                                                        }} className="flex-1 border-b border-black outline-none bg-transparent px-1 min-w-0" />
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <span className="w-[88px] shrink-0">联系电话：</span>
+                                                    <input value={defendant.phone} onChange={e => {
+                                                        const newDefs = [...formData.defendants];
+                                                        newDefs[index].phone = e.target.value;
+                                                        setFormData({...formData, defendants: newDefs});
+                                                    }} className="flex-1 border-b border-black outline-none bg-transparent px-1 font-sans" />
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <span className="w-[140px] shrink-0">住所地(户籍所在地)：</span>
+                                                    <input value={defendant.address} onChange={e => {
+                                                        const newDefs = [...formData.defendants];
+                                                        newDefs[index].address = e.target.value;
+                                                        setFormData({...formData, defendants: newDefs});
+                                                    }} className="flex-1 border-b border-black outline-none bg-transparent px-1" />
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <span className="w-[88px] shrink-0">经常居住地：</span>
+                                                    <input value={defendant.residence} onChange={e => {
+                                                        const newDefs = [...formData.defendants];
+                                                        newDefs[index].residence = e.target.value;
+                                                        setFormData({...formData, defendants: newDefs});
+                                                    }} className="flex-1 border-b border-black outline-none bg-transparent px-1" />
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <span className="w-[88px] shrink-0">证件类型：</span>
+                                                    <input value={defendant.idType} onChange={e => {
+                                                        const newDefs = [...formData.defendants];
+                                                        newDefs[index].idType = e.target.value;
+                                                        setFormData({...formData, defendants: newDefs});
+                                                    }} className="flex-1 border-b border-black outline-none bg-transparent px-1" />
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <span className="w-[88px] shrink-0">证件号码：</span>
+                                                    <input value={defendant.id} onChange={e => {
+                                                        const newDefs = [...formData.defendants];
+                                                        newDefs[index].id = e.target.value;
+                                                        setFormData({...formData, defendants: newDefs});
+                                                    }} className="flex-1 border-b border-black outline-none bg-transparent px-1 font-sans tracking-widest" />
+                                                </div>
+                                            </>
+                                        ) : (
+                                            /* Organization Fields */
+                                            <>
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center">
+                                                        <span className="shrink-0">名称：</span>
+                                                        <input value={defendant.name} onChange={e => {
+                                                            const newDefs = [...formData.defendants];
+                                                            newDefs[index].name = e.target.value;
+                                                            setFormData({...formData, defendants: newDefs});
+                                                        }} className="font-bold flex-1 border-b border-dashed border-black outline-none bg-transparent px-1 focus:bg-blue-50/50 transition-colors" />
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center">
+                                                        <span className="shrink-0">住所地：</span>
+                                                        <input value={defendant.address} onChange={e => {
+                                                            const newDefs = [...formData.defendants];
+                                                            newDefs[index].address = e.target.value;
+                                                            setFormData({...formData, defendants: newDefs});
+                                                        }} className="flex-1 border-b border-dashed border-black outline-none bg-transparent px-1" />
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <span className="shrink-0">注册地/登记地：</span>
+                                                    <input value={defendant.regAddress} onChange={e => {
+                                                        const newDefs = [...formData.defendants];
+                                                        newDefs[index].regAddress = e.target.value;
+                                                        setFormData({...formData, defendants: newDefs});
+                                                    }} className="flex-1 border-b border-dashed border-black outline-none bg-transparent px-1" />
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex items-center flex-[3]">
+                                                        <span className="shrink-0">法定代表人/主要负责人：</span>
+                                                        <input value={defendant.legalRep} onChange={e => {
+                                                            const newDefs = [...formData.defendants];
+                                                            newDefs[index].legalRep = e.target.value;
+                                                            setFormData({...formData, defendants: newDefs});
+                                                        }} className="flex-1 border-b border-dashed border-black outline-none bg-transparent px-1 min-w-0" />
+                                                    </div>
+                                                    <div className="flex items-center flex-[1]">
+                                                        <span className="shrink-0">职务：</span>
+                                                        <input value={defendant.position} onChange={e => {
+                                                            const newDefs = [...formData.defendants];
+                                                            newDefs[index].position = e.target.value;
+                                                            setFormData({...formData, defendants: newDefs});
+                                                        }} className="flex-1 border-b border-dashed border-black outline-none bg-transparent px-1 min-w-0" />
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <span className="shrink-0">联系电话：</span>
+                                                    <input value={defendant.phone} onChange={e => {
+                                                        const newDefs = [...formData.defendants];
+                                                        newDefs[index].phone = e.target.value;
+                                                        setFormData({...formData, defendants: newDefs});
+                                                    }} className="flex-1 border-b border-dashed border-black outline-none bg-transparent px-1 font-sans" />
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <span className="shrink-0">统一社会信用代码：</span>
+                                                    <input value={defendant.id} onChange={e => {
+                                                        const newDefs = [...formData.defendants];
+                                                        newDefs[index].id = e.target.value;
+                                                        setFormData({...formData, defendants: newDefs});
+                                                    }} className="flex-1 border-b border-dashed border-black outline-none bg-transparent px-1 font-sans tracking-widest" />
+                                                </div>
+                                                <div className="flex items-center mt-3 border-t border-dashed border-black pt-2">
+                                                    <span className="shrink-0 mr-2">具体组织类型：</span>
+                                                    <input value={defendant.type} onChange={e => {
+                                                        const newDefs = [...formData.defendants];
+                                                        newDefs[index].type = e.target.value;
+                                                        setFormData({...formData, defendants: newDefs});
+                                                    }} className="flex-1 border-b border-dashed border-black outline-none bg-transparent px-1" placeholder="例如：有限责任公司、股份有限公司等" />
+                                                </div>
+                                            </>
+                                        )}
+                                    </td>
+                                </tr>
+                                );
+                            })}
                             {/* Facts and Requests Continued block */}
                             <tr>
                                 <td colSpan={2} className="border border-black p-0 border-t-2 border-b-2 bg-slate-50/50">
@@ -672,23 +842,7 @@ export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ 
                                 </td>
                             </tr>
 
-                            <tr>
-                                <td colSpan={2} className="border border-black p-6">
-                                    <div className="flex justify-end items-end mt-12 mb-8 px-12">
-                                        <div className="flex flex-col items-center">
-                                            <div className="flex items-end gap-2 text-lg mb-6">
-                                                <span>起诉人：</span>
-                                                <div className="w-32 border-b-2 border-black"></div>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <span className="w-12 border-b-2 border-black inline-block"></span>年
-                                                <span className="w-8 border-b-2 border-black inline-block"></span>月
-                                                <span className="w-8 border-b-2 border-black inline-block"></span>日
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
+
                         </tbody>
                     </table>
                 </div>

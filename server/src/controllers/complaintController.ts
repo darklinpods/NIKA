@@ -19,38 +19,39 @@ export const extractComplaintElements = async (req: Request, res: Response) => {
         }
 
         const jsonSchemaStr = `{
-  "plaintiffName": "原告姓名或名称",
-  "plaintiffGender": "原告性别，仅填男或女（若原告是公司则留空）",
-  "plaintiffBirth": "原告出生日期，格式如1990年12月10日。如果没有则填无",
-  "plaintiffNation": "原告民族，例如汉族",
-  "plaintiffJob": "原告工作单位",
-  "plaintiffPosition": "原告职务",
-  "plaintiffPhone": "原告联系电话",
-  "plaintiffAddress": "原告住所地（户籍所在地/主要办事机构）",
-  "plaintiffResidence": "原告经常居住地",
-  "plaintiffIdType": "原告证件类型，如身份证或统一社会信用代码",
-  "plaintiffId": "原告证件号码",
-  
-  "defendantName": "第一被告（自然人）姓名。若只有法人被告，此处留空",
-  "defendantGender": "被告性别",
-  "defendantBirth": "被告出生日期",
-  "defendantNation": "被告民族",
-  "defendantJob": "被告工作单位",
-  "defendantPosition": "被告职务",
-  "defendantPhone": "被告联系电话",
-  "defendantAddress": "被告住所地",
-  "defendantResidence": "被告经常居住地",
-  "defendantIdType": "被告证件类型",
-  "defendantId": "被告证件号码",
-
-  "defendant2Name": "第二被告（法人/非法人组织，例如保险公司、有限公司等）。若无留空",
-  "defendant2Address": "第二被告住所地",
-  "defendant2RegAddress": "第二被告注册地/登记地",
-  "defendant2Rep": "第二被告法定代表人/主要负责人",
-  "defendant2Position": "第二被告职务",
-  "defendant2Phone": "第二被告联系电话",
-  "defendant2Id": "第二被告统一社会信用代码",
-  "defendant2Type": "类型，如：有限责任公司、股份有限公司等"` +
+  "plaintiffs": [
+    {
+      "name": "原告姓名",
+      "gender": "原告性别，仅填男或女",
+      "birth": "原告出生日期，格式如1990年12月10日",
+      "nation": "原告民族，例如汉族",
+      "job": "原告工作单位",
+      "position": "原告职务",
+      "phone": "原告联系电话",
+      "address": "原告住所地（户籍所在地）",
+      "residence": "原告经常居住地",
+      "idType": "原告证件类型，如身份证",
+      "id": "原告证件号码"
+    }
+  ],
+  "defendants": [
+    {
+      "name": "被告姓名或名称",
+      "type": "被告类型：自然人 或 法人/非法人组织",
+      "gender": "被告性别（仅自然人）",
+      "birth": "被告出生日期（仅自然人）",
+      "nation": "被告民族（仅自然人）",
+      "job": "被告工作单位",
+      "position": "被告职务",
+      "phone": "被告联系电话",
+      "address": "被告住所地",
+      "residence": "被告经常居住地",
+      "idType": "证件类型（身份证或统一社会信用代码）",
+      "id": "证件号码",
+      "regAddress": "法人的注册地/登记地（仅法人）",
+      "legalRep": "法人的法定代表人/主要负责人（仅法人）"
+    }
+  ]` +
 
   (templateId === 'traffic' ? `,
   "claimsList": "【索赔清单】（具体的费用明细项目，如：医疗费XXX元、误工费XXX元、护理费XXX元等。每项费用单独列出，包含计算公式和金额。绝对不能包含诉讼请求的表述如'请求判令'等）",
@@ -225,61 +226,62 @@ export const generateComplaintDocx = async (req: Request, res: Response) => {
             paragraphLoop: true,
             linebreaks: true,
             nullGetter: () => "", // Return empty string for undefined variables
+            delimiters: { start: '{', end: '}' } // MUST set single braces for this template!
          };
 
-         if (templateId === 'traffic') {
-             // We need raw xml support for the claims table
-             docOptions.delimiters = { start: '{', end: '}' };
-             // The raw xml tag will be {@_CLAIM_ROWS_} since docxtemplater natively uses {@var} for raw xml injection
-         }
-
          const doc = new Docxtemplater(zip, docOptions);
+         
+         // Add rawModule for handling {@_PLAINTIFF_ROWS_} and {@_CLAIM_ROWS_} raw XML injection
+         // Natively handled in docxtemplater v3 using {@var} syntax
 
-        // -- Add the Custom Table Expansion Logic for Claims List and Plaintiffs --
+        // -- Prepare data for Word template rendering --
         if (templateId === 'traffic') {
-            // Handle multiple plaintiffs
-            if (formData.plaintiffs && Array.isArray(formData.plaintiffs) && formData.plaintiffs.length > 1) {
-                let plaintiffRowsXml = '';
-                formData.plaintiffs.forEach((plaintiff: any, index: number) => {
-                    if (index > 0) { // Skip first plaintiff as it's already in template
-                        plaintiffRowsXml += `
-                            <w:tr>
-                                <w:tc><w:tcPr><w:tcW w:w="2000" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="微软雅黑" w:eastAsia="微软雅黑" w:hAnsi="微软雅黑"/><w:sz w:val="21"/></w:rPr><w:t>${plaintiff.name || ''}</w:t></w:r></w:p></w:tc>
-                                <w:tc><w:tcPr><w:tcW w:w="800" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="微软雅黑" w:eastAsia="微软雅黑" w:hAnsi="微软雅黑"/><w:sz w:val="21"/></w:rPr><w:t>${plaintiff.gender || ''}</w:t></w:r></w:p></w:tc>
-                                <w:tc><w:tcPr><w:tcW w:w="1200" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="微软雅黑" w:eastAsia="微软雅黑" w:hAnsi="微软雅黑"/><w:sz w:val="21"/></w:rPr><w:t>${plaintiff.birth || ''}</w:t></w:r></w:p></w:tc>
-                                <w:tc><w:tcPr><w:tcW w:w="800" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="微软雅黑" w:eastAsia="微软雅黑" w:hAnsi="微软雅黑"/><w:sz w:val="21"/></w:rPr><w:t>${plaintiff.nation || ''}</w:t></w:r></w:p></w:tc>
-                                <w:tc><w:tcPr><w:tcW w:w="1500" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="微软雅黑" w:eastAsia="微软雅黑" w:hAnsi="微软雅黑"/><w:sz w:val="21"/></w:rPr><w:t>${plaintiff.address || ''}</w:t></w:r></w:p></w:tc>
-                                <w:tc><w:tcPr><w:tcW w:w="2000" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="微软雅黑" w:eastAsia="微软雅黑" w:hAnsi="微软雅黑"/><w:sz w:val="21"/></w:rPr><w:t>${plaintiff.idType || ''} ${plaintiff.id || ''}</w:t></w:r></w:p></w:tc>
-                            </w:tr>
-                        `;
-                    }
-                });
-                formData._PLAINTIFF_ROWS_ = plaintiffRowsXml;
-            } else {
-                formData._PLAINTIFF_ROWS_ = '';
+            // Extract first plaintiff for main form fields
+            if (formData.plaintiffs && Array.isArray(formData.plaintiffs) && formData.plaintiffs.length > 0) {
+                const firstPlaintiff = formData.plaintiffs[0];
+                formData.plaintiffName = firstPlaintiff.name || '';
+                formData.plaintiffGender = firstPlaintiff.gender || '';
+                formData.plaintiffBirth = firstPlaintiff.birth || '';
+                formData.plaintiffNation = firstPlaintiff.nation || '';
+                formData.plaintiffJob = firstPlaintiff.job || '';
+                formData.plaintiffPosition = firstPlaintiff.position || '';
+                formData.plaintiffPhone = firstPlaintiff.phone || '';
+                formData.plaintiffAddress = firstPlaintiff.address || '';
+                formData.plaintiffResidence = firstPlaintiff.residence || '';
+                formData.plaintiffIdType = firstPlaintiff.idType || '';
+                formData.plaintiffId = firstPlaintiff.id || '';
             }
-
-            // Handle claims list
-            if (formData.claimsList && Array.isArray(formData.claimsList)) {
-                const claims = formData.claimsList;
-                if (claims.length > 0) {
-                    let rowsXml = '';
-                    claims.forEach((claim: any, index: number) => {
-                        // Create a Word table row <w:tr> with style for each claim
-                        rowsXml += `
-                            <w:tr>
-                                <w:tc><w:tcPr><w:tcW w:w="800" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="微软雅黑" w:eastAsia="微软雅黑" w:hAnsi="微软雅黑"/><w:sz w:val="21"/></w:rPr><w:t>${index + 1}</w:t></w:r></w:p></w:tc>
-                                <w:tc><w:tcPr><w:tcW w:w="2500" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="微软雅黑" w:eastAsia="微软雅黑" w:hAnsi="微软雅黑"/><w:sz w:val="21"/></w:rPr><w:t>${claim.category || ''}</w:t></w:r></w:p></w:tc>
-                                <w:tc><w:tcPr><w:tcW w:w="2000" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="微软雅黑" w:eastAsia="微软雅黑" w:hAnsi="微软雅黑"/><w:sz w:val="21"/></w:rPr><w:t>${claim.amount ? Number(claim.amount).toFixed(2) : '0.00'}</w:t></w:r></w:p></w:tc>
-                                <w:tc><w:tcPr><w:tcW w:w="3700" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="微软雅黑" w:eastAsia="微软雅黑" w:hAnsi="微软雅黑"/><w:sz w:val="21"/></w:rPr><w:t>${claim.description || ''}</w:t></w:r></w:p></w:tc>
-                            </w:tr>
-                        `;
-                    });
-                    
-                    // Provide the raw XML to docxtemplater using raw module logic, or simply pre-replace if template macro exists
-                    formData._CLAIM_ROWS_ = rowsXml;
-                } else {
-                     formData._CLAIM_ROWS_ = '';
+            
+            // Extract first defendant for main form fields (backward compatibility)
+            if (formData.defendants && Array.isArray(formData.defendants) && formData.defendants.length > 0) {
+                const firstDefendant = formData.defendants[0];
+                formData.defendantName = firstDefendant.name || '';
+                formData.defendantGender = firstDefendant.gender || '';
+                formData.defendantBirth = firstDefendant.birth || '';
+                formData.defendantNation = firstDefendant.nation || '';
+                formData.defendantJob = firstDefendant.job || '';
+                formData.defendantPosition = firstDefendant.position || '';
+                formData.defendantPhone = firstDefendant.phone || '';
+                formData.defendantAddress = firstDefendant.address || '';
+                formData.defendantResidence = firstDefendant.residence || '';
+                formData.defendantIdType = firstDefendant.idType || '';
+                formData.defendantId = firstDefendant.id || '';
+            }            // Handle claims list
+            if (formData.claimsList) {
+                let claims = formData.claimsList;
+                if (typeof claims === 'string') {
+                    // Try to parse it if it looks like JSON array, otherwise treat as single text description backward compatibility
+                    try {
+                        claims = JSON.parse(claims);
+                    } catch (e) {
+                         // It's just a raw text string, split by newline or keep as string
+                         formData.claimsList_text = claims; // fallback field for template
+                         claims = [];
+                    }
+                }
+                
+                if (Array.isArray(claims) && claims.length > 0) {
+                     formData.claims = claims;
                 }
             }
         }
