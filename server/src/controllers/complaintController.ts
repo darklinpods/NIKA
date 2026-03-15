@@ -1,19 +1,13 @@
 import { Request, Response } from 'express';
 import { aiService } from '../services/aiService';
-import PizZip from 'pizzip';
-import path from 'path';
-import fs from 'fs';
 import { getComplaintElementsExtractionPrompt } from '../prompts/documentPrompts';
 import { logExtraction } from '../utils/extractionLogger';
-
-// docxtemplater is CJS
-const Docxtemplater = require('docxtemplater');
 
 export const extractComplaintElements = async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
         const { text, templateId } = req.body;
-        
+
         if (!text) {
             return res.status(400).json({ error: 'Missing source text' });
         }
@@ -74,39 +68,39 @@ export const extractComplaintElements = async (req: Request, res: Response) => {
         });
 
         let dataStr = response.text || '{}';
-        
+
         // Multiple cleanup strategies
         // 1. Remove markdown code blocks
         dataStr = dataStr.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-        
+
         // 2. Try to extract JSON object if wrapped in text
         const jsonMatch = dataStr.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             dataStr = jsonMatch[0];
         }
-        
+
         // 3. Remove any leading/trailing whitespace or non-JSON characters
         dataStr = dataStr.trim();
-        
+
         try {
             const parsed = JSON.parse(dataStr);
             const processingTime = Date.now() - startTime;
-            
+
             // 记录成功的提取
             logExtraction({
                 templateId,
                 status: 'success',
                 processingTime
             }, text, parsed);
-            
+
             res.json({ success: true, data: parsed });
         } catch (e: any) {
             const processingTime = Date.now() - startTime;
-            
+
             console.error("Failed to parse gemini JSON. Error:", e.message);
             console.error("Raw response text:", response.text);
             console.error("Cleaned text:", dataStr);
-            
+
             // 记录失败的提取
             logExtraction({
                 templateId,
@@ -114,220 +108,23 @@ export const extractComplaintElements = async (req: Request, res: Response) => {
                 errorMessage: `JSON解析错误: ${e.message}`,
                 processingTime
             }, text);
-            
+
             res.status(500).json({ error: "Failed to parse extraction result", details: e.message });
         }
 
     } catch (error: any) {
         const processingTime = Date.now() - startTime;
-        
+
         console.error('[extractComplaintElements] Error:', error);
-        
+
         // 记录异常错误
         logExtraction({
             status: 'error',
             errorMessage: error.message,
             processingTime
         }, req.body?.text || '');
-        
+
         res.status(500).json({ error: error.message || 'Failed to extract text.' });
     }
 };
 
-function getTemplateFileName(templateId: string): string {
-    const map: Record<string, string> = {
-        'traffic': '民事起诉状（机动车交通事故责任纠纷）.docx',
-        'loan': '民事起诉状（民间借贷纠纷）.docx',
-        'labor': '民事起诉状（劳动争议纠纷）.docx',
-        'contract_buy': '民事起诉状（买卖合同纠纷）.docx',
-        'divorce': '民事起诉状（离婚纠纷）.docx',
-        'card': '民事起诉状（信用卡纠纷）.docx',
-    };
-    return map[templateId] || map['traffic'];
-}
-
-export const getTemplateFile = async (req: Request, res: Response) => {
-    try {
-        const { templateId } = req.query;
-        
-        if (!templateId || typeof templateId !== 'string') {
-            return res.status(400).json({ error: 'Missing or invalid templateId' });
-        }
-
-        const templateFileName = getTemplateFileName(templateId);
-        
-        // Find the template file
-        const candidates = [
-            path.resolve(process.cwd(), 'src/templates/docx', templateFileName),
-            path.resolve(__dirname, '..', '..', 'src/templates/docx', templateFileName),
-            path.resolve(__dirname, '..', 'templates', 'docx', templateFileName),
-        ];
-        
-        let templatePath = '';
-        for (const p of candidates) {
-            if (fs.existsSync(p)) {
-                templatePath = p;
-                break;
-            }
-        }
-        
-        if (!templatePath) {
-            console.error("Template not found in candidates:", candidates);
-            return res.status(404).json({ error: `模板文件未找到: ${templateFileName}` });
-        }
-        
-        // Send file for download
-        res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(templateFileName)}`);
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-        res.sendFile(templatePath);
-        
-    } catch (error: any) {
-        console.error('[getTemplateFile] Error:', error);
-        res.status(500).json({ error: error.message || 'Failed to get template file.' });
-    }
-};
-
-export const generateComplaintDocx = async (req: Request, res: Response) => {
-    try {
-        const { formData, templateId } = req.body;
-        
-        if (!formData || !templateId) {
-            return res.status(400).json({ error: 'Missing formData or templateId' });
-        }
-
-        const templateFileName = getTemplateFileName(templateId);
-        
-        // Find the accurate path.
-        const candidates = [
-            path.resolve(process.cwd(), 'src/templates/docx', templateFileName),
-            path.resolve(__dirname, '..', '..', 'src/templates/docx', templateFileName),
-            path.resolve(__dirname, '..', 'templates', 'docx', templateFileName),
-        ];
-        
-        let templatePath = '';
-        for (const p of candidates) {
-            if (fs.existsSync(p)) {
-                templatePath = p;
-                break;
-            }
-        }
-        
-        console.log("Using template: ", templatePath);
-
-        if (!templatePath) {
-             console.error("Template not found in candidates:", candidates);
-             return res.status(404).json({ error: `模板文件未找到: ${templateFileName}` });
-        }
-
-        const content = fs.readFileSync(templatePath, 'binary');
-        const zip = new PizZip(content);
-
-         const docOptions: any = {
-            paragraphLoop: true,
-            linebreaks: true,
-            nullGetter: () => "", // Return empty string for undefined variables
-            delimiters: { start: '{', end: '}' } // MUST set single braces for this template!
-         };
-
-         const doc = new Docxtemplater(zip, docOptions);
-         
-         // Add rawModule for handling {@_PLAINTIFF_ROWS_} and {@_CLAIM_ROWS_} raw XML injection
-         // Natively handled in docxtemplater v3 using {@var} syntax
-
-        // -- Prepare data for Word template rendering --
-        if (templateId === 'traffic') {
-            // Extract first plaintiff for main form fields
-            if (formData.plaintiffs && Array.isArray(formData.plaintiffs) && formData.plaintiffs.length > 0) {
-                const firstPlaintiff = formData.plaintiffs[0];
-                formData.plaintiffName = firstPlaintiff.name || '';
-                formData.plaintiffGender = firstPlaintiff.gender || '';
-                formData.plaintiffBirth = firstPlaintiff.birth || '';
-                formData.plaintiffNation = firstPlaintiff.nation || '';
-                formData.plaintiffJob = firstPlaintiff.job || '';
-                formData.plaintiffPosition = firstPlaintiff.position || '';
-                formData.plaintiffPhone = firstPlaintiff.phone || '';
-                formData.plaintiffAddress = firstPlaintiff.address || '';
-                formData.plaintiffResidence = firstPlaintiff.residence || '';
-                formData.plaintiffIdType = firstPlaintiff.idType || '';
-                formData.plaintiffId = firstPlaintiff.id || '';
-            }
-            
-            // Extract first defendant for main form fields (backward compatibility)
-            if (formData.defendants && Array.isArray(formData.defendants) && formData.defendants.length > 0) {
-                const firstDefendant = formData.defendants[0];
-                formData.defendantName = firstDefendant.name || '';
-                formData.defendantGender = firstDefendant.gender || '';
-                formData.defendantBirth = firstDefendant.birth || '';
-                formData.defendantNation = firstDefendant.nation || '';
-                formData.defendantJob = firstDefendant.job || '';
-                formData.defendantPosition = firstDefendant.position || '';
-                formData.defendantPhone = firstDefendant.phone || '';
-                formData.defendantAddress = firstDefendant.address || '';
-                formData.defendantResidence = firstDefendant.residence || '';
-                formData.defendantIdType = firstDefendant.idType || '';
-                formData.defendantId = firstDefendant.id || '';
-            }            // Handle claims list
-            if (formData.claimsList) {
-                let claims = formData.claimsList;
-                if (typeof claims === 'string') {
-                    // Try to parse it if it looks like JSON array, otherwise treat as single text description backward compatibility
-                    try {
-                        claims = JSON.parse(claims);
-                    } catch (e) {
-                         // It's just a raw text string, split by newline or keep as string
-                         formData.claimsList_text = claims; // fallback field for template
-                         claims = [];
-                    }
-                }
-                
-                if (Array.isArray(claims) && claims.length > 0) {
-                     formData.claims = claims;
-                }
-            }
-        }
-
-        // 绑定数据渲染
-        doc.render(formData);
-
-        const buf = doc.getZip().generate({
-            type: 'nodebuffer',
-            compression: 'DEFLATE',
-        });
-
-        const safeFileName = `${formData.plaintiffName || '生成'}_要素式起诉状_${Date.now()}.docx`;
-
-        res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(safeFileName)}`);
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-        res.setHeader('Content-Length', buf.length);
-        res.send(buf);
-
-    } catch (error: any) {
-        console.error('[generateComplaintDocx] Error:', error);
-        res.status(500).json({ error: error.message || 'Failed to generate Word document.' });
-    }
-};
-
-export const listTemplates = async (req: Request, res: Response) => {
-    try {
-        const templatesDir = path.resolve(__dirname, '..', 'templates', 'docx');
-        const altTemplatesDir = path.resolve(process.cwd(), 'src/templates/docx');
-        
-        let targetDir = '';
-        if (fs.existsSync(altTemplatesDir)) {
-            targetDir = altTemplatesDir;
-        } else if (fs.existsSync(templatesDir)) {
-            targetDir = templatesDir;
-        }
-        
-        if (!targetDir) {
-            return res.status(404).json({ error: '模板目录未找到' });
-        }
-        
-        const files = fs.readdirSync(targetDir).filter(f => f.endsWith('.docx'));
-        res.json({ success: true, templates: files });
-        
-    } catch (error: any) {
-        console.error('[listTemplates] Error:', error);
-        res.status(500).json({ error: error.message || 'Failed to list templates.' });
-    }
-};

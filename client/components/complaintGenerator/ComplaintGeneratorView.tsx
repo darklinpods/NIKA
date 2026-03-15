@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { translations } from '../../translations';
 import { 
   Scale, FileText, ChevronRight, Loader2, Sparkles, 
-  User, FileSignature, ShieldCheck, Download, 
-  FileSearch, CopyPlus, ArrowRight, Wand2, Printer
+  User, FileSignature, ShieldCheck,
+  FileSearch, CopyPlus, ArrowRight, Wand2
 } from 'lucide-react';
-import { extractComplaint, generateComplaintFile, fetchCases, downloadTemplate } from '../../services/api';
+import { extractComplaint, fetchCases } from '../../services/api';
 
 interface ComplaintGeneratorViewProps {
   theme: 'light' | 'dark';
@@ -40,8 +40,7 @@ export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ 
   // Generation State
   const [isExtracting, setIsExtracting] = useState<boolean>(false);
   const [hasExtracted, setHasExtracted] = useState<boolean>(false);
-  const [isGeneratingWord, setIsGeneratingWord] = useState<boolean>(false);
-  const [isDownloadingTemplate, setIsDownloadingTemplate] = useState<boolean>(false);
+  const [isCopied, setIsCopied] = useState<boolean>(false);
 
   // Cases state
   const [casesList, setCasesList] = useState<any[]>([]);
@@ -130,28 +129,61 @@ export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ 
     }
   };
 
-  const handleGenerateWord = async () => {
-    setIsGeneratingWord(true);
-    try {
-        await generateComplaintFile(formData, selectedTemplate);
-        alert('生成成功！如果浏览器没有自动下载，请检查拦截设置。');
-    } catch (e: any) {
-        console.error(e);
-        alert(e.message || '生成失败，请重试');
-    } finally {
-        setIsGeneratingWord(false);
+  const buildMarkdown = () => {
+    const lines: string[] = [];
+    lines.push('# 民事起诉状要素');
+    lines.push('');
+    lines.push('## 原告信息');
+    formData.plaintiffs.forEach((p: any, i: number) => {
+      lines.push(`\n### 原告 ${i + 1}`);
+      if (p.name) lines.push(`- 姓名：${p.name}`);
+      if (p.gender) lines.push(`- 性别：${p.gender}`);
+      if (p.birth) lines.push(`- 出生日期：${p.birth}`);
+      if (p.nation) lines.push(`- 民族：${p.nation}`);
+      if (p.job) lines.push(`- 工作单位：${p.job}`);
+      if (p.position) lines.push(`- 职务：${p.position}`);
+      if (p.phone) lines.push(`- 联系电话：${p.phone}`);
+      if (p.address) lines.push(`- 住所地：${p.address}`);
+      if (p.residence) lines.push(`- 经常居住地：${p.residence}`);
+      if (p.idType && p.id) lines.push(`- ${p.idType}：${p.id}`);
+    });
+    lines.push('');
+    lines.push('## 被告信息');
+    formData.defendants.forEach((d: any, i: number) => {
+      lines.push(`\n### 被告 ${i + 1}`);
+      if (d.name) lines.push(`- 名称/姓名：${d.name}`);
+      if (d.type) lines.push(`- 类型：${d.type}`);
+      if (d.gender) lines.push(`- 性别：${d.gender}`);
+      if (d.birth) lines.push(`- 出生日期：${d.birth}`);
+      if (d.nation) lines.push(`- 民族：${d.nation}`);
+      if (d.job) lines.push(`- 工作单位：${d.job}`);
+      if (d.position) lines.push(`- 职务：${d.position}`);
+      if (d.phone) lines.push(`- 联系电话：${d.phone}`);
+      if (d.address) lines.push(`- 住所地：${d.address}`);
+      if (d.residence) lines.push(`- 经常居住地：${d.residence}`);
+      if (d.regAddress) lines.push(`- 注册地/登记地：${d.regAddress}`);
+      if (d.legalRep) lines.push(`- 法定代表人：${d.legalRep}`);
+      if (d.idType && d.id) lines.push(`- ${d.idType}：${d.id}`);
+    });
+    if (selectedTemplate === 'traffic') {
+      if (formData.claimsList) { lines.push(''); lines.push('## 诉讼请求'); lines.push(formData.claimsList); }
+      if (formData.accidentFacts) { lines.push(''); lines.push('## 事实与理由 — 一、交通事故发生情况'); lines.push(formData.accidentFacts); }
+      if (formData.liabilityDetermination) { lines.push(''); lines.push('## 事实与理由 — 二、交通事故责任认定'); lines.push(formData.liabilityDetermination); }
+      if (formData.insuranceStatus) { lines.push(''); lines.push('## 事实与理由 — 三、机动车投保情况'); lines.push(formData.insuranceStatus); }
+      if (formData.otherFacts) { lines.push(''); lines.push('## 事实与理由 — 四、其他情况及法律依据'); lines.push(formData.otherFacts); }
+    } else {
+      if (formData.requestsAndFacts) { lines.push(''); lines.push('## 诉讼请求与事实理由'); lines.push(formData.requestsAndFacts); }
     }
+    return lines.join('\n');
   };
 
-  const handleDownloadTemplate = async () => {
-    setIsDownloadingTemplate(true);
+  const handleCopyMarkdown = async () => {
     try {
-        await downloadTemplate(selectedTemplate);
-    } catch (e: any) {
-        console.error(e);
-        alert(e.message || '下载模板失败，请重试');
-    } finally {
-        setIsDownloadingTemplate(false);
+      await navigator.clipboard.writeText(buildMarkdown());
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2500);
+    } catch (e) {
+      alert('复制失败，请手动复制。');
     }
   };
 
@@ -284,18 +316,6 @@ export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ 
                                     <><Wand2 size={18} /> 智能提取并进入预览</>
                                 )}
                             </button>
-                            <button
-                                onClick={handleDownloadTemplate}
-                                disabled={isDownloadingTemplate}
-                                className="px-8 py-3.5 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-xl shadow-lg shadow-slate-500/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="下载当前模板文件"
-                            >
-                                {isDownloadingTemplate ? (
-                                    <><Loader2 size={18} className="animate-spin" /> 下载中...</>
-                                ) : (
-                                    <><Download size={18} /> 下载模板</>
-                                )}
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -324,12 +344,14 @@ export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ 
                             放弃重试
                         </button>
                         <button
-                            onClick={handleGenerateWord}
-                            disabled={isGeneratingWord}
-                            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                            onClick={handleCopyMarkdown}
+                            className={`px-6 py-2.5 font-bold rounded-lg shadow-lg transition-all flex items-center gap-2 ${
+                                isCopied
+                                    ? 'bg-green-600 text-white shadow-green-600/20'
+                                    : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20'
+                            }`}
                         >
-                            {isGeneratingWord ? <Loader2 size={18} className="animate-spin" /> : <Printer size={18} />}
-                            确认并打印输出 (.docx)
+                            {isCopied ? <><ArrowRight size={18} /> 已复制到剪贴板！</> : <><FileText size={18} /> 复制为 Markdown</>}
                         </button>
                     </div>
                 </div>
