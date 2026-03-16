@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, MessageSquare, Loader, Sparkles, User, Bot } from 'lucide-react';
+import { Send, MessageSquare, Loader, Sparkles, User, Bot, FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { fetchChatHistory, sendChatMessage } from '../../services/api';
@@ -16,9 +16,11 @@ interface CaseChatPanelProps {
     caseId: string;
     theme: 'light' | 'dark';
     lang: 'zh' | 'en';
+    caseType?: string;
+    onSaveDocument?: (content: string, suggestedTitle: string) => void;
 }
 
-export const CaseChatPanel: React.FC<CaseChatPanelProps> = ({ caseId, theme, lang }) => {
+export const CaseChatPanel: React.FC<CaseChatPanelProps> = ({ caseId, theme, lang, caseType, onSaveDocument }) => {
     const t = translations[lang] as any;
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
@@ -142,6 +144,17 @@ export const CaseChatPanel: React.FC<CaseChatPanelProps> = ({ caseId, theme, lan
                                     {msg.content.replace(/\\n/g, '\n')}
                                 </ReactMarkdown>
                             </div>
+                            {msg.role === 'assistant' && onSaveDocument && (
+                                <div className="mt-3 flex justify-end">
+                                    <button 
+                                        onClick={() => onSaveDocument(msg.content, 'AI 生成文书')}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold rounded-lg transition-colors border ${theme === 'dark' ? 'bg-slate-700/50 border-white/5 hover:bg-slate-700 text-blue-400' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-blue-600'}`}
+                                    >
+                                        <FileText size={12} />
+                                        {t.saveAsDocument || '保存为案件文书'}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -161,7 +174,6 @@ export const CaseChatPanel: React.FC<CaseChatPanelProps> = ({ caseId, theme, lan
 
             {/* Input Area */}
             <div className="p-6 border-t border-slate-200 dark:border-white/5 space-y-4">
-                {/* Shortcuts */}
                 <div className="flex flex-wrap gap-2">
                     {shortcuts.map((s, idx) => (
                         <button
@@ -176,6 +188,35 @@ export const CaseChatPanel: React.FC<CaseChatPanelProps> = ({ caseId, theme, lan
                             {s.label}
                         </button>
                     ))}
+                </div>
+
+                {/* Document Generation Action Buttons */}
+                <div className="flex flex-wrap gap-2 pb-1">
+                    <button
+                        onClick={() => handleSendMessage('请帮我起草一份起诉状草稿。要求结构完整，包含原被告信息、诉讼请求、事实与理由等部分。')}
+                        disabled={isLoading}
+                        className={`px-3 py-1.5 rounded-xl text-[10px] font-bold flex items-center gap-1.5 border transition-all ${theme === 'dark' ? 'border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-sm'}`}
+                    >
+                        📄 {t.complaintDraft || '起草起诉状草稿'}
+                    </button>
+                    <button
+                        onClick={() => handleSendMessage('基于当前案件的证据材料，请帮我生成一份证据目录。')}
+                        disabled={isLoading}
+                        className={`px-3 py-1.5 rounded-xl text-[10px] font-bold flex items-center gap-1.5 border transition-all ${theme === 'dark' ? 'border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-sm'}`}
+                    >
+                        📊 {t.evidenceList || '生成证据目录'}
+                    </button>
+                    
+                    {caseType === 'traffic_accident' && (
+                        <button
+                            onClick={() => handleSendMessage('基于当前交通事故案件信息，请帮我详细草拟一份交通事故损害赔偿相关的文书。')}
+                            disabled={isLoading}
+                            className={`px-3 py-1.5 rounded-xl text-[10px] font-bold flex items-center gap-1.5 border transition-all ${theme === 'dark' ? 'border-indigo-500/30 bg-indigo-900/20 text-indigo-300' : 'border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm'}`}
+                        >
+                            <Sparkles size={12} />
+                            {t.trafficDocx || '交通类专属文书生成'}
+                        </button>
+                    )}
                 </div>
 
                 <div className="relative group">
