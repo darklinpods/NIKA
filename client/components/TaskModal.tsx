@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Case, CaseDocument } from '../types';
 import { CaseChatPanel, CaseChatPanelHandle } from './taskModal/CaseChatPanel';
 import { LoadingOverlay } from './LoadingOverlay';
-import { translations } from '../translations';
+import { t } from '../translations';
 import { ClaimListGenerator } from './claimList/ClaimListGenerator';
 import { uploadCaseEvidence } from '../services/api';
 import {
@@ -150,7 +150,6 @@ const DOC_CATEGORY_LABEL: Record<string, string> = {
 interface TaskModalProps {
     task: Case;
     theme: 'light' | 'dark';
-    lang: 'zh' | 'en';
     isSaving: boolean;
     onTaskChange: (task: Case) => void;
     onToggleSubTask: (subTaskId: string) => void;
@@ -168,7 +167,6 @@ interface TaskModalProps {
 export const TaskModal: React.FC<TaskModalProps> = ({
     task,
     theme,
-    lang,
     isSaving,
     onTaskChange,
     onToggleSubTask,
@@ -182,7 +180,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     onSave,
     onClose,
 }) => {
-    const t = translations[lang] as any;
     const isDark = theme === 'dark';
 
     const chatRef = useRef<CaseChatPanelHandle>(null);
@@ -311,7 +308,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                         ref={chatRef}
                         caseId={task.id}
                         theme={theme}
-                        lang={lang}
                         caseType={task.caseType}
                         onRefreshCase={onRefreshCase}
                         onSaveDocument={(content, suggestedTitle) => {
@@ -356,7 +352,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                                     onChange={(e) => onTaskChange({ ...task, caseType: e.target.value })}
                                 >
                                     {CASE_TYPES.map(ct => (
-                                        <option key={ct.value} value={ct.value}>{lang === 'zh' ? ct.labelZh : ct.labelEn}</option>
+                                        <option key={ct.value} value={ct.value}>{ct.label}</option>
                                     ))}
                                 </select>
                             </div>
@@ -367,9 +363,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                                     value={task.status || 'todo'}
                                     onChange={(e) => onTaskChange({ ...task, status: e.target.value as any })}
                                 >
-                                    <option value="todo">{lang === 'zh' ? '调查/取证' : 'Investigation'}</option>
-                                    <option value="in-progress">{lang === 'zh' ? '审理/庭审' : 'Litigation'}</option>
-                                    <option value="done">{lang === 'zh' ? '执行/结案' : 'Execution/Closed'}</option>
+                                    <option value="todo">调查/取证</option>
+                                    <option value="in-progress">审理/庭审</option>
+                                    <option value="done">执行/结案</option>
                                 </select>
                             </div>
                             <div className={`flex gap-3 pt-1 border-t ${isDark ? 'border-white/5' : 'border-slate-200'}`}>
@@ -456,7 +452,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 />
             )}
             {showClaimGenerator && (
-                <ClaimListGenerator task={task} theme={theme} lang={lang} onClose={() => setShowClaimGenerator(false)} />
+                <ClaimListGenerator task={task} theme={theme} onClose={() => setShowClaimGenerator(false)} />
             )}
         </div>
     );

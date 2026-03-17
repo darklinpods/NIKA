@@ -1,38 +1,28 @@
 import React from 'react';
 import { Search, Moon, Sun, Monitor } from 'lucide-react';
-import { translations } from '../translations';
+import { t } from '../translations';
 import { ThemeMode } from '../hooks/useTheme';
 
 interface HeaderProps {
   theme: 'light' | 'dark';
   themeMode: ThemeMode;
-  lang: 'zh' | 'en';
   searchQuery: string;
   onSearchChange: (value: string) => void;
   onThemeToggle: () => void;
-  onLangToggle: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   theme,
   themeMode,
-  lang,
   searchQuery,
   onSearchChange,
   onThemeToggle,
-  onLangToggle,
 }) => {
-  const t = translations[lang];
-
-  // 获取主题图标
   const getThemeIcon = () => {
     switch (themeMode) {
-      case 'light':
-        return <Sun size={20} />;
-      case 'dark':
-        return <Moon size={20} className="text-amber-400" />;
-      case 'system':
-        return <Monitor size={20} />;
+      case 'light': return <Sun size={20} />;
+      case 'dark': return <Moon size={20} className="text-amber-400" />;
+      case 'system': return <Monitor size={20} />;
     }
   };
 
@@ -51,7 +41,6 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
       <div className="flex items-center gap-4">
-        <button onClick={onLangToggle} className="p-2 text-xs font-bold uppercase tracking-tighter hover:text-indigo-500">{lang}</button>
         <button onClick={onThemeToggle} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg" title={themeMode === 'system' ? t.systemTheme : (themeMode === 'light' ? t.lightTheme : t.darkTheme)}>
           {getThemeIcon()}
         </button>

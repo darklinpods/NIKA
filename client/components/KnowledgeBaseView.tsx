@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchKnowledgeDocs, uploadKnowledgeDoc, deleteKnowledgeDoc, updateKnowledgeDoc } from '../services/api';
 import { FileText, Upload, Trash2, Library, Zap, Loader2, Calendar } from 'lucide-react';
-import { translations } from '../translations';
+import { t } from '../translations';
 import { formatDateOptional } from '../utils/dateUtils';
 
 interface KnowledgeBaseViewProps {
     theme: 'light' | 'dark';
-    lang: 'en' | 'zh';
 }
 
 interface KnowledgeDoc {
@@ -16,14 +15,13 @@ interface KnowledgeDoc {
     createdAt: string;
 }
 
-export const KnowledgeBaseView: React.FC<KnowledgeBaseViewProps> = ({ theme, lang }) => {
+export const KnowledgeBaseView: React.FC<KnowledgeBaseViewProps> = ({ theme }) => {
     const [docs, setDocs] = useState<KnowledgeDoc[]>([]);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>('auto');
     const [isLoading, setIsLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const t = translations[lang];
 
     const categoryMap: Record<string, string> = {
         'auto': t.autoCategory,

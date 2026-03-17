@@ -2,15 +2,11 @@ import React, { useRef, useEffect } from 'react';
 import { CheckCircle2, Circle, Calendar as CalendarIcon, X } from 'lucide-react';
 import { SubTask } from '../../types';
 import { isApproaching } from '../../utils/dateUtils';
-import { translations } from '../../translations';
+import { t } from '../../translations';
 
-/**
- * 子任务项组件属性
- */
 interface SubTaskItemProps {
   subTask: SubTask;
   theme: 'light' | 'dark';
-  lang: 'zh' | 'en';
   onToggle: () => void;
   onTitleChange: (title: string) => void;
   onDateChange: (date: string) => void;
@@ -23,7 +19,6 @@ interface SubTaskItemProps {
 export const SubTaskItem: React.FC<SubTaskItemProps> = ({
   subTask,
   theme,
-  lang,
   onToggle,
   onTitleChange,
   onDateChange,
@@ -31,7 +26,6 @@ export const SubTaskItem: React.FC<SubTaskItemProps> = ({
   onEnterPress,
   autoFocus,
 }) => {
-  const t = translations[lang] as any;
   const approaching = isApproaching(subTask.dueDate);
   const inputRef = useRef<HTMLInputElement>(null);
 

@@ -7,11 +7,10 @@ import ReactMarkdown from 'react-markdown';
 interface ClaimListGeneratorProps {
     task: Case;
     theme: 'light' | 'dark';
-    lang: 'zh' | 'en';
     onClose: () => void;
 }
 
-export const ClaimListGenerator: React.FC<ClaimListGeneratorProps> = ({ task, theme, lang, onClose }) => {
+export const ClaimListGenerator: React.FC<ClaimListGeneratorProps> = ({ task, theme, onClose }) => {
     const [loading, setLoading] = useState(false);
     const [generating, setGenerating] = useState(false);
     const [saving, setSaving] = useState(false);

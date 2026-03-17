@@ -5,7 +5,7 @@ import { useDragAndDrop } from './useDragAndDrop';
 import { useAIFeatures } from './useAIFeatures';
 import { useConfirm } from '../providers/ConfirmProvider';
 
-export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
+export const useApp = (theme: 'light' | 'dark') => {
   // 1. Core Data
   const { data, setData, isLoading, loadData } = useBoardData();
 
@@ -25,7 +25,7 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     handleUpdatePriority,
     handleMoveStage,
     handleUpdateCaseType
-  } = useTaskOperations(data, setData, loadData, confirm, lang);
+  } = useTaskOperations(data, setData, loadData, confirm);
 
   // 3b. Real-time subtask CRUD (with debounced auto-save)
   const {
@@ -43,7 +43,7 @@ export const useApp = (lang: 'zh' | 'en', theme: 'light' | 'dark') => {
     isOverviewGenerating,
     handleGeneratePlan,
     handleGenerateAiOverview
-  } = useAIFeatures(data, loadData, editingTask, setEditingTask, lang);
+  } = useAIFeatures(data, loadData, editingTask, setEditingTask);
 
   return {
     data,

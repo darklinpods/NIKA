@@ -12,8 +12,7 @@ export const useAIFeatures = (
     data: BoardData,
     loadData: () => Promise<void>,
     editingTask: Case | null,
-    setEditingTask: React.Dispatch<React.SetStateAction<Case | null>>,
-    lang: 'zh' | 'en'
+    setEditingTask: React.Dispatch<React.SetStateAction<Case | null>>
 ) => {
     // 追踪 AI 摘要是否正在生成中
     const [isOverviewGenerating, setIsOverviewGenerating] = useState(false);
@@ -27,7 +26,7 @@ export const useAIFeatures = (
         const currentCase = data.tasks[caseId];
         if (!currentCase) return;
         try {
-            const result = await generateCasePlan(currentCase.title, currentCase.description, lang);
+            const result = await generateCasePlan(currentCase.title, currentCase.description);
 
             // 为 AI 生成的每条计划创建新的子任务对象
             const newSubTasks: SubTask[] = result.subTasks.map(title => ({
@@ -46,7 +45,7 @@ export const useAIFeatures = (
         } catch (err) {
             logError(err, 'handleGeneratePlan');
         }
-    }, [data.tasks, lang, loadData]);
+    }, [data.tasks, loadData]);
 
     /**
      * 调用 AI 自动生成案件的智能摘要
@@ -56,14 +55,14 @@ export const useAIFeatures = (
         if (!editingTask) return;
         setIsOverviewGenerating(true);
         try {
-            const summary = await summarizeTask(editingTask.title, editingTask.description, lang);
+            const summary = await summarizeTask(editingTask.title, editingTask.description);
             setEditingTask({ ...editingTask, aiSummary: summary });
         } catch (err) {
             logError(err, 'handleGenerateAiOverview');
         } finally {
             setIsOverviewGenerating(false);
         }
-    }, [editingTask, lang, setEditingTask]);
+    }, [editingTask, setEditingTask]);
 
     return {
         isOverviewGenerating,

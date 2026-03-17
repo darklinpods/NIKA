@@ -1,13 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { CheckSquare, Plus } from 'lucide-react';
 import { Case, SubTask } from '../../types';
-import { translations } from '../../translations';
+import { t } from '../../translations';
 import { SubTaskItem } from './SubTaskItem';
 
 interface TaskModalSubTasksPanelProps {
   task: Case;
   theme: 'light' | 'dark';
-  lang: 'zh' | 'en';
   onToggleSubTask: (subTaskId: string) => void;
   onUpdateSubTaskTitle: (subTaskId: string, newTitle: string) => void;
   onUpdateSubTaskDate: (subTaskId: string, newDate: string) => void;
@@ -18,14 +17,12 @@ interface TaskModalSubTasksPanelProps {
 export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
   task,
   theme,
-  lang,
   onToggleSubTask,
   onUpdateSubTaskTitle,
   onUpdateSubTaskDate,
   onDeleteSubTask,
   onAddSubTask,
 }) => {
-  const t = translations[lang] as any;
   const subTasksLength = task.subTasks.length;
   const prevLengthRef = useRef(subTasksLength);
   // 用 ref 存储最新添加的任务 ID，避免重复触发聚焦
@@ -93,7 +90,6 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
                 key={subTask.id}
                 subTask={subTask}
                 theme={theme}
-                lang={lang}
                 autoFocus={subTask.id === focusTargetId}
                 onToggle={() => onToggleSubTask(subTask.id)}
                 onTitleChange={(title) => onUpdateSubTaskTitle(subTask.id, title)}

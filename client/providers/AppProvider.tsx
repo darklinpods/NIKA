@@ -21,16 +21,11 @@ export const useAppContext = () => {
 
 interface AppProviderProps {
     children: ReactNode;
-    lang: 'zh' | 'en';
     theme: 'light' | 'dark';
 }
 
-/**
- * 全局状态的上下文 Provider
- * 封装了所有通过 useApp 提取出来的最新聚合状态和操作方法，并将其广播到整棵 React 组件树下
- */
-export const AppProvider: React.FC<AppProviderProps> = ({ children, lang, theme }) => {
-    const appState = useApp(lang, theme);
+export const AppProvider: React.FC<AppProviderProps> = ({ children, theme }) => {
+    const appState = useApp(theme);
 
     return (
         <AppContext.Provider value={appState}>

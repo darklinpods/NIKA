@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FileText, Plus, Database, Wand2, Loader, Scan, Users, Eye, Download, Trash2, X, Edit2, Check, AlignLeft, Receipt } from 'lucide-react';
 import { Case, CaseDocument, InvoiceItem } from '../../../types';
-import { translations } from '../../../translations';
+import { t } from '../../../translations';
 import { uploadCaseEvidence, api } from '../../../services/api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -11,7 +11,6 @@ import MDEditor from '@uiw/react-md-editor';
 interface PanelEvidenceProps {
     task: Case;
     theme: 'light' | 'dark';
-    lang: 'zh' | 'en';
     onTaskChange: (task: Case) => void;
     onAddDocument: (doc: CaseDocument) => void;
     onDeleteDocument: (docId: string) => void;
@@ -122,9 +121,8 @@ const PartyCard: React.FC<{ party: any; theme: 'light' | 'dark'; t: any }> = ({ 
 
 // ─── Main Panel ───────────────────────────────────────────────────────────────
 export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
-    task, theme, lang, onTaskChange, onAddDocument, onDeleteDocument
+    task, theme, onTaskChange, onAddDocument, onDeleteDocument
 }) => {
-    const t = translations[lang] as any;
     const isDark = theme === 'dark';
 
     const [isUploading, setIsUploading] = useState(false);

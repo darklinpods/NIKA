@@ -1,14 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { translations } from '../translations';
+import { t } from '../translations';
 
-/**
- * useAuth 钩子用于管理应用程序的身份验证状态。
- * 它处理登录、登出逻辑，并持久化登录状态到本地存储。
- * 
- * @param lang 当前选择的语言 ('zh' | 'en')，用于获取翻译后的错误消息。
- */
-export const useAuth = (lang: 'zh' | 'en') => {
-  const t = translations[lang];
+export const useAuth = () => {
 
   // 身份验证状态，初始值从 localStorage 获取以实现持久化登录
   const [isAuthenticated, setIsAuthenticated] = useState(() => {

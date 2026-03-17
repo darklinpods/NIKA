@@ -6,12 +6,11 @@ import { ClaimListGenerator } from '../../claimList/ClaimListGenerator';
 import { generateCaseDocument } from '../../../services/geminiService';
 import { api } from '../../../services/api';
 import { Case, CaseDocument, DocumentCategory } from '../../../types';
-import { translations } from '../../../translations';
+import { t } from '../../../translations';
 
 interface PanelDocumentsProps {
     task: Case;
     theme: 'light' | 'dark';
-    lang: 'zh' | 'en';
     onToggleSubTask: (subTaskId: string) => void;
     onUpdateSubTaskTitle: (subTaskId: string, newTitle: string) => void;
     onUpdateSubTaskDate: (subTaskId: string, newDate: string) => void;
@@ -24,7 +23,6 @@ interface PanelDocumentsProps {
 export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
     task,
     theme,
-    lang,
     onToggleSubTask,
     onUpdateSubTaskTitle,
     onUpdateSubTaskDate,
@@ -33,7 +31,6 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
     onAddDocument,
     onDeleteDocument
 }) => {
-    const t = translations[lang] as any;
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSmartGenerating, setIsSmartGenerating] = useState(false);
     const [selectedDoc, setSelectedDoc] = useState<CaseDocument | null>(null);
@@ -45,17 +42,17 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
     const handleGenerateValues = async (category: 'analysis' | 'strategy' | 'offical_doc' | 'evidence_list') => {
         setIsGenerating(true);
         try {
-            const content = await generateCaseDocument(category, task.title, task.description, lang);
-            const titles: Record<string, { zh: string; en: string }> = {
-                analysis: { zh: '案件分析报告', en: 'Case Analysis Report' },
-                strategy: { zh: '诉讼策略建议', en: 'Litigation Strategy' },
-                evidence_list: { zh: '证据目录', en: 'Evidence List' },
-                offical_doc: { zh: '正式文书', en: 'Official Document' }
+            const content = await generateCaseDocument(category, task.title, task.description);
+            const titles: Record<string, string> = {
+                analysis: '案件分析报告',
+                strategy: '诉讼策略建议',
+                evidence_list: '证据目录',
+                offical_doc: '正式文书'
             };
 
             const newDoc: CaseDocument = {
                 id: `doc-${Date.now()}`,
-                title: titles[category]?.[lang] || 'New Document',
+                title: titles[category] || '新文书',
                 content: content,
                 category: category,
                 createdAt: new Date().toISOString(),
@@ -136,7 +133,6 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
                         <TaskModalSubTasksPanel
                             task={task}
                             theme={theme}
-                            lang={lang}
                             onToggleSubTask={onToggleSubTask}
                             onUpdateSubTaskTitle={onUpdateSubTaskTitle}
                             onUpdateSubTaskDate={onUpdateSubTaskDate}
@@ -310,7 +306,6 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
                 <ClaimListGenerator
                     task={task}
                     theme={theme}
-                    lang={lang}
                     onClose={() => setShowClaimGenerator(false)}
                 />
             )}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Case, Priority } from '../../../types';
-import { translations } from '../../../translations';
+import { t } from '../../../translations';
 import { getPriorityLabel } from '../../../constants/priorities';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -10,7 +10,6 @@ import { CASE_TYPES } from '../../../constants/caseTypes';
 interface PanelBasicInfoProps {
     task: Case;
     theme: 'light' | 'dark';
-    lang: 'zh' | 'en';
     onTaskChange: (task: Case) => void;
     onGenerateOverview: () => void;
     isOverviewGenerating: boolean;
@@ -19,12 +18,10 @@ interface PanelBasicInfoProps {
 export const PanelBasicInfo: React.FC<PanelBasicInfoProps> = ({
     task,
     theme,
-    lang,
     onTaskChange,
     onGenerateOverview,
     isOverviewGenerating
 }) => {
-    const t = translations[lang] as any;
     const [isEditingFacts, setIsEditingFacts] = useState(false);
 
     return (
@@ -82,7 +79,7 @@ export const PanelBasicInfo: React.FC<PanelBasicInfoProps> = ({
                             >
                                 {CASE_TYPES.map(ct => (
                                     <option key={ct.value} value={ct.value}>
-                                        {lang === 'zh' ? ct.labelZh : ct.labelEn}
+                                        {ct.label}
                                     </option>
                                 ))}
                             </select>
@@ -100,9 +97,9 @@ export const PanelBasicInfo: React.FC<PanelBasicInfoProps> = ({
                                 value={task.priority}
                                 onChange={(e) => onTaskChange({ ...task, priority: e.target.value as Priority })}
                             >
-                                <option value="low">{getPriorityLabel('low', lang)}</option>
-                                <option value="medium">{getPriorityLabel('medium', lang)}</option>
-                                <option value="high">{getPriorityLabel('high', lang)}</option>
+                                <option value="low">{getPriorityLabel('low')}</option>
+                                <option value="medium">{getPriorityLabel('medium')}</option>
+                                <option value="high">{getPriorityLabel('high')}</option>
                             </select>
                         </div>
 

@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { BoardData, Case, SubTask } from '../types';
 import { createCase, updateCase, deleteCase } from '../services/api';
 import { logError } from '../utils/errorHandler';
-import { translations } from '../translations';
+import { t } from '../translations';
 
 /**
  * 案件核心操作专属 Hook
@@ -13,8 +13,7 @@ export const useTaskOperations = (
     data: BoardData,
     setData: React.Dispatch<React.SetStateAction<BoardData>>,
     loadData: () => Promise<void>,
-    confirm: (options: any) => Promise<boolean>,
-    lang: 'zh' | 'en'
+    confirm: (options: any) => Promise<boolean>
 ) => {
     // 当前正在模态框中编辑的案件对象，如果为 null 则说明模态框关闭
     const [editingTask, setEditingTask] = useState<Case | null>(null);
@@ -127,7 +126,6 @@ export const useTaskOperations = (
      * 提供带危险提醒的自定义全局确认弹窗（ConfirmProvider)
      */
     const handleDeleteCase = useCallback(async (caseId: string) => {
-        const t = (translations[lang] as any) || (translations['en'] as any);
         const isConfirmed = await confirm({
             title: t.confirmDeleteTitle,
             message: t.confirmDeleteDesc,
@@ -144,7 +142,7 @@ export const useTaskOperations = (
         } catch (err) {
             logError(err, 'handleDeleteCase');
         }
-    }, [loadData, lang, confirm]);
+    }, [loadData, confirm]);
 
     // 快捷调整案件的优先级，并同步后端
     const handleUpdatePriority = useCallback(async (caseId: string, priority: string) => {

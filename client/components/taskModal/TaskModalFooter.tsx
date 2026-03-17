@@ -1,27 +1,15 @@
 import React from 'react';
-import { translations } from '../../translations';
+import { t } from '../../translations';
 
-/**
- * 任务模态框底部组件属性
- */
 interface TaskModalFooterProps {
-  /** 主题模式 */
   theme: 'light' | 'dark';
-  /** 语言设置 */
-  lang: 'zh' | 'en';
-  /** 保存回调 */
   onSave: () => void;
-  /** 取消回调 */
   onCancel: () => void;
 }
 
 export const TaskModalFooter: React.FC<TaskModalFooterProps> = ({
-  theme,
-  lang,
-  onSave,
-  onCancel,
+  theme, onSave, onCancel,
 }) => {
-  const t = translations[lang];
 
   /**
    * 任务模态框底部组件

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Scale, ChevronDown } from 'lucide-react';
 import { CASE_TYPES, getCaseTypeLabel } from '../../constants/caseTypes';
-import { translations } from '../../translations';
+import { t } from '../../translations';
 
 interface TaskFooterProps {
   progress: number;
@@ -11,13 +11,11 @@ interface TaskFooterProps {
   taskId: string;
   onUpdateCaseType: (caseId: string, caseType: string) => Promise<void>;
   theme: 'light' | 'dark';
-  lang: 'en' | 'zh';
 }
 
 export const TaskFooter: React.FC<TaskFooterProps> = ({
-  progress, clientName, tags, caseType, taskId, onUpdateCaseType, theme, lang
+  progress, clientName, tags, caseType, taskId, onUpdateCaseType, theme
 }) => {
-  const t = translations[lang];
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -41,7 +39,7 @@ export const TaskFooter: React.FC<TaskFooterProps> = ({
     }
   }, [caseType, taskId, onUpdateCaseType]);
 
-  const currentLabel = getCaseTypeLabel(caseType || 'general', lang);
+  const currentLabel = getCaseTypeLabel(caseType || 'general');
   const isGeneral = !caseType || caseType === 'general';
 
   return (
@@ -95,7 +93,7 @@ export const TaskFooter: React.FC<TaskFooterProps> = ({
                 >
                   {isActive && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />}
                   {!isActive && <span className="w-1.5 h-1.5 shrink-0" />}
-                  {lang === 'zh' ? ct.labelZh : ct.labelEn}
+                  {ct.label}
                 </button>
               );
             })}

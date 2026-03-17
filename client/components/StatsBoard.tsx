@@ -1,22 +1,19 @@
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
-// Fixed import: changed 'Task' to 'Case' to match types.ts
 import { Case } from '../types';
-import { translations } from '../translations';
+import { t } from '../translations';
 import { useAppContext } from '../providers/AppProvider';
 
 interface StatsBoardProps {
   theme: 'light' | 'dark';
-  lang: 'en' | 'zh';
 }
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444'];
 
-const StatsBoard: React.FC<StatsBoardProps> = ({ theme, lang }) => {
+const StatsBoard: React.FC<StatsBoardProps> = ({ theme }) => {
   const { data } = useAppContext();
-  const t = translations[lang];
   const chartData = data.columnOrder.map((colId) => ({
-    name: t[data.columns[colId].id.replace('column-', 'backlog')] || data.columns[colId].title,
+    name: t[data.columns[colId].id.replace('column-', 'backlog') as keyof typeof t] || data.columns[colId].title,
     value: data.columns[colId].taskIds.length,
   }));
 
@@ -27,7 +24,7 @@ const StatsBoard: React.FC<StatsBoardProps> = ({ theme, lang }) => {
   }, {} as Record<string, number>);
 
   const priorityData = Object.entries(priorityStats).map(([name, value]) => ({
-    name: t[name as keyof typeof t] || name,
+    name: t[name as keyof typeof t] as string || name,
     value
   }));
 
@@ -87,7 +84,7 @@ const StatsBoard: React.FC<StatsBoardProps> = ({ theme, lang }) => {
               />
               <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                 {priorityData.map((entry, index) => {
-                  const pKey = Object.keys(t).find(key => t[key as keyof typeof t] === entry.name);
+                  const pKey = Object.keys(t).find(key => (t as any)[key] === entry.name);
                   let fill = '#3b82f6';
                   if (pKey === 'high') fill = '#ef4444';
                   if (pKey === 'medium') fill = '#f59e0b';

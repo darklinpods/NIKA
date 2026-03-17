@@ -1,229 +1,4 @@
-
-export const translations = {
-  en: {
-    title: "LawCase Pro",
-    sprintBoard: "Litigation Board",
-    analytics: "Practice Analytics",
-    myBoards: "Active Files",
-    taskView: "Daily Tasks",
-    knowledgeBase: "Knowledge Base",
-    complaintGen: "Smart Generator",
-    settings: "Settings",
-    logout: "Log out",
-    searchPlaceholder: "Search case title, client or keywords...",
-    lawyerName: "Cheng Tengguang",
-    managingTasks: "{count} Open Cases",
-    addTask: "Register Case",
-    smartGenerator: "AI Case Planner",
-    generatorDesc: "Describe the case to generate a complete procedural plan.",
-    generatorPlaceholder: "e.g., Client injured in a construction site accident...",
-    generate: "Plan Case",
-    editTask: "Case Dossier",
-    taskTitle: "Case Title",
-    description: "Case Description & Strategy",
-    magicImprove: "AI Legal Analysis",
-    priority: "Urgency Level",
-    createdAt: "Registration Date",
-    cancel: "Close",
-    saveChanges: "Save Changes",
-    taskDistribution: "Case Stage Distribution",
-    priorityBreakdown: "Urgency Levels",
-    backlog: "Investigation",
-    inProgress: "Litigation",
-    review: "Decision",
-    done: "Execution/Closed",
-    low: "Routine",
-    medium: "Standard",
-    high: "Urgent",
-    filterByType: "Case Type",
-    filterByPriority: "Urgency",
-    all: "All",
-    clientName: "Client Name",
-    courtName: "Presiding Court",
-    subTasks: "Procedural Steps",
-    progress: "Progress",
-    aiSummary: "AI Case Brief",
-    moveNext: "Advance Stage",
-    movePrev: "Previous Stage",
-    generatePlan: "AI Plan",
-    copyCaseId: "Copy ID",
-    archiveCase: "Close File",
-    deleteCase: "Delete Case",
-    summarizing: "Analyzing Dossier...",
-    summaryTitle: "AI Legal Briefing",
-    addTaskItem: "Add Task Item",
-    legalResearch: "AI Law Search",
-    evidenceCheck: "Evidence Audit",
-    overdue: "Overdue",
-    today: "Due Today",
-    upcoming: "Upcoming",
-    completed: "Completed",
-    noTasks: "No tasks scheduled for this period.",
-    taskBelongsTo: "From Case",
-    tags: "Tags & Metadata",
-    aiOverview: "AI Case Overview",
-    generateOverview: "Generate Overview",
-    approaching: "Due Soon!",
-    deleteTask: "Delete Task",
-    taskTitlePlaceholder: "Task name...",
-    // Login Screen
-    welcomeBack: "Welcome Back",
-    loginSubtitle: "Sign in to access your cases",
-    usernameLabel: "Username",
-    usernamePlaceholder: "Enter your username",
-    passwordLabel: "Password",
-    passwordPlaceholder: "Enter your password",
-    loginBtn: "Sign In",
-    loginError: "Invalid username or password.",
-    currentStage: "Current Stage",
-    overviewTab: "Overview",
-    tasksTab: "Tasks",
-    docsTab: "Documents",
-    cat_pleading: "Pleadings",
-    cat_precedent: "Precedents",
-    cat_provision: "Law/Provisions",
-    cat_note: "Logic/Notes",
-    // New Keys
-    basicInfo: "Basic Information",
-    caseType: "Case Type",
-    editDesc: "Edit Description",
-    editFacts: "Edit Facts",
-    doneEditing: "Done",
-    noDesc: "No description provided",
-    noFacts: "No basic facts provided",
-    aiGenerateTip: "Click generate to summarize the case...",
-    enterCaseTitle: "Enter case title...",
-    enterClientName: "Enter client name...",
-    enterTaskTitle: "To-do item...",
-    proceduralSteps: "Procedural Steps",
-    addProceduralStep: "Add item",
-    allDone: "All done!",
-    subTaskHint: "Enter to add · Backspace to remove empty item",
-    delete: "Delete",
-    markdownSupport: "Supports Markdown...",
-    add: "Add",
-    chatFailed: "Failed to send message",
-    startBrainstorming: "Start Brainstorming",
-    chatWelcomeText: "Ask me about evidence, parties, or legal strategies for this case.",
-    chatPlaceholder: "Ask about this case...",
-    chatWarning: "AI Assistant provides reference based on case knowledge base. Please verify key facts.",
-    sc_timeline: "🔍 Timeline",
-    sc_timelinePrompt: "Please help me organize the key timeline of this case.",
-    sc_focus: "⚖️ Dispute Focus",
-    sc_focusPrompt: "Based on existing evidence, what are the core dispute points?",
-    sc_strategy: "🛡️ Strategy",
-    sc_strategyPrompt: "As a lawyer, what litigation or defense strategy would you suggest?",
-    sc_evidence: "📋 Evidence Check",
-    sc_evidencePrompt: "Are there any obvious gaps or contradictions in the current evidence chain?",
-    clickToGenerateOverview: "Click button above to generate case overview...",
-    clickToEditHint: "Click task name or date to edit. Red indicates approaching deadline.",
-    saving: "Saving...",
-
-    // TaskModal Tabs
-    tabBasicInfo: "Basic Info",
-    tabFactsEvidence: "Facts & Evidence",
-    tabLawAnalysis: "Law & Analysis",
-    tabDocuments: "Documents",
-
-    // PanelDocuments
-    workflowTasks: "Workflow Tasks",
-    docGenerator: "Document Generator",
-    docGeneratorDesc: "Generate final documents based on agreed facts and evidence.",
-    complaintDraft: "Generic Complaint",
-    complaintDraftDesc: "First draft based on facts",
-    evidenceList: "Evidence List",
-    evidenceListDesc: "Organize evidence items",
-    trafficDocx: "Traffic Docx Template",
-    trafficDocxDesc: "Official DOCX format",
-    compCalc: "Compensation Calc",
-    compCalcDesc: "Detail list for claims",
-    finalVault: "Final Dossier Vault",
-    finalVaultDesc: "All finalized generated documents ready for submission",
-    bundleDossier: "Bundle Dossier",
-    noGenDoc: "No generated case files yet",
-    generateDocHint: "Use the generator above to create documents",
-    genDocFailed: "Failed to generate document",
-    genDocFailedDetail: "Generation failed. Check console.",
-    docxGeneratedSuccess: "Document successfully generated on Server at:\n{path}\n\n(Feature complete in future version)",
-
-    // TaskModalInfoPanel
-    partiesExtractionFailed: "Failed to extract parties, please retry.",
-    evidenceUploadFailed: "Failed to upload and parse evidence, please try again.",
-    partiesDetails: "Parties Details",
-    rescanEvidenceTitle: "Re-scan uploaded evidence",
-    rescanEvidence: "Re-scan Evidence",
-    importEvidence: "Import Evidence",
-    idNum: "ID",
-    contact: "Contact",
-    address: "Address",
-    noStructuredParties: "No structured parties data. Upload evidence to extract automatically.",
-
-    // PanelEvidence
-    rawEvidence: "Raw Evidence",
-    uploadClientMaterials: "Upload client materials",
-    importFile: "Import",
-    noRawEvidence: "No raw evidence",
-    extractedDetails: "Extracted Details",
-    autoExtracted: "Auto-extracted from evidence",
-    rescanEvidenceBtn: "Rescan Evidence",
-    noStructuredData: "No structured data",
-    uploadEvidenceToExtract: "Upload evidence to extract automatically",
-
-    // TaskModalDocumentsPanel
-    caseDocuments: "Case Documents",
-    analysisBtn: "Analysis",
-    strategyBtn: "Strategy",
-    templateGenTooltip: "Guided template generation",
-    templateGenBtn: "Template Gen",
-    skillTrafficTooltip: "Skill: Traffic Accident Complaint",
-    skillTrafficBtn: "Skill (Traffic Accident)",
-    noDocsYet: "No documents yet",
-    clickToGenerateDocs: "Click buttons above to generate",
-
-    // PanelAnalysis
-    smartReferences: "Smart References",
-    autoRetrievedTips: "Auto-retrieved from Knowledge Base",
-    legalProvisions: "Legal Provisions",
-    similarCaseNotes: "Similar Case Notes",
-    analysisStrategyTitle: "Analysis & Strategy",
-    analysisStrategyDesc: "Deep legal analysis workspace",
-
-    // useTaskOperations
-    confirmDeleteTitle: "Confirm Delete",
-    confirmDeleteDesc: "Are you sure you want to permanently delete this case and all related data? This action cannot be undone.",
-    deleteOption: "Delete",
-
-    // KnowledgeBaseView
-    autoCategory: "✨ AI Auto Category",
-    uploadFailed: "Upload failed",
-    deleteFailed: "Delete failed",
-    updateCatFailed: "Update category failed",
-    globalKnowledgeBase: "Global Knowledge Base",
-    globalKnowledgeBaseDesc: "Upload NotebookLM notes or prior case analysis. AI will reference these guidelines automatically.",
-    uploading: "Uploading...",
-    clickToUpload: "Upload",
-    availableReferences: "Available References",
-    emptyKnowledgeBase: "Knowledge base is empty",
-    uploadNotesTip: "Upload case summaries or guidelines to build your personal AI.",
-    confirmDeleteOption: "Delete",
-
-    // BoardView
-    smartImportFailed: "Smart Import failed. Please try again later.",
-    aiParsing: "Parsing...",
-    smartImport: "Smart Import",
-
-    // TaskFooter
-    setCaseTypeShortcut: "Set case type",
-
-    // Header
-    systemTheme: "Follow System",
-    lightTheme: "Light Mode",
-    darkTheme: "Dark Mode",
-    caseTypeGeneral: "General",
-    newCase: "New Case",
-    newClient: "New Client"
-  },
-  zh: {
+export const t = {
     title: "律政先锋 - 办案系统",
     sprintBoard: "案件流转看板",
     analytics: "办案效能",
@@ -288,7 +63,6 @@ export const translations = {
     approaching: "任务即刻到期！",
     deleteTask: "删除任务",
     taskTitlePlaceholder: "输入任务名称...",
-    // Login Screen
     welcomeBack: "欢迎回来",
     loginSubtitle: "登录律政先锋办案系统",
     usernameLabel: "用户名",
@@ -305,7 +79,6 @@ export const translations = {
     cat_precedent: "法院判例参考",
     cat_provision: "相关法条/规定",
     cat_note: "办案心得/笔记",
-    // New Keys
     basicInfo: "案件基本信息",
     caseType: "案件类型 / 案由",
     editDesc: "编辑描述",
@@ -340,14 +113,10 @@ export const translations = {
     clickToGenerateOverview: "点击上方按钮生成案件深度概况...",
     clickToEditHint: "点击任务名称或日期即可修改，红色标签表示即刻到期",
     saving: "正在保存...",
-
-    // TaskModal Tabs
     tabBasicInfo: "案件基本信息",
     tabFactsEvidence: "事实与证据",
     tabLawAnalysis: "法律与分析",
     tabDocuments: "文档与生成",
-
-    // PanelDocuments
     workflowTasks: "案件推进流程",
     docGenerator: "智能文书生成台",
     docGeneratorDesc: "基于事实与证据板块认定的结论，一键生成结案所需材料。",
@@ -367,8 +136,6 @@ export const translations = {
     genDocFailed: "生成文书失败",
     genDocFailedDetail: "生成失败，请查看控制台日志",
     docxGeneratedSuccess: "文档已在服务器生成:\n{path}\n\n(后续版本提供直接导出功能)",
-
-    // TaskModalInfoPanel
     partiesExtractionFailed: "提取当事人失败，请重试",
     evidenceUploadFailed: "上传或解析证据失败，请重试",
     partiesDetails: "当事人详情",
@@ -379,8 +146,6 @@ export const translations = {
     contact: "联系方式",
     address: "地址",
     noStructuredParties: "暂无结构化的当事人信息，可上传证据以自动提取。",
-
-    // PanelEvidence
     rawEvidence: "原始证据材料",
     uploadClientMaterials: "上传当事人提交的各类材料 (.pdf, .doc)",
     importFile: "导入文件",
@@ -390,8 +155,6 @@ export const translations = {
     rescanEvidenceBtn: "重新扫描案卷",
     noStructuredData: "暂无结构化的实体信息",
     uploadEvidenceToExtract: "上传证据后系统将自动进行抽取",
-
-    // TaskModalDocumentsPanel
     caseDocuments: "案件文书",
     analysisBtn: "分析",
     strategyBtn: "策略",
@@ -401,22 +164,16 @@ export const translations = {
     skillTrafficBtn: "交通事故诉状生成 (Skill)",
     noDocsYet: "暂无文书",
     clickToGenerateDocs: "点击上方按钮生成",
-
-    // PanelAnalysis
     smartReferences: "智能参考推荐",
     autoRetrievedTips: "基于案情从经验库自动检索的相关内容",
     legalProvisions: "适用法律法条",
     similarCaseNotes: "类案办案心得",
     analysisStrategyTitle: "案件推演与策略",
     analysisStrategyDesc: "您可以在这里对案件进行深度的法律对话推演",
-
-    // useTaskOperations
     confirmDeleteTitle: "删除确认",
     confirmDeleteDesc: "确定要永久删除此案件及其所有相关数据吗？此操作无法撤销。",
     deleteOption: "删除",
     cancel: "取消",
-
-    // KnowledgeBaseView
     autoCategory: "✨ AI 智能判断",
     uploadFailed: "上传失败",
     deleteFailed: "删除失败",
@@ -429,21 +186,14 @@ export const translations = {
     emptyKnowledgeBase: "暂无经验储备",
     uploadNotesTip: "点击右上角上传历史案件总结或办案指南，打造您的个人 AI。",
     confirmDeleteOption: "确认删除",
-
-    // BoardView
     smartImportFailed: "智能导入失败，请稍后重试。",
     aiParsing: "AI解析中...",
     smartImport: "智能导入",
-
-    // TaskFooter
     setCaseTypeShortcut: "快捷设置案由",
-
-    // Header
     systemTheme: "跟随系统",
     lightTheme: "浅色模式",
     darkTheme: "深色模式",
     caseTypeGeneral: "一般案件",
     newCase: "新案件",
     newClient: "新客户"
-  }
 };

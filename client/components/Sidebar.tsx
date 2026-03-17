@@ -1,17 +1,15 @@
 import React from 'react';
 import { Scale, BrainCircuit, ListTodo, BarChart3, Settings, LogOut, Library } from 'lucide-react';
-import { translations } from '../translations';
+import { t } from '../translations';
 
 interface SidebarProps {
   theme: 'light' | 'dark';
-  lang: 'zh' | 'en';
   activeTab: 'board' | 'stats' | 'tasks' | 'knowledge' | 'complaint';
   onTabChange: (tab: 'board' | 'stats' | 'tasks' | 'knowledge' | 'complaint') => void;
   onLogout: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ theme, lang, activeTab, onTabChange, onLogout }) => {
-  const t = translations[lang];
+export const Sidebar: React.FC<SidebarProps> = ({ theme, activeTab, onTabChange, onLogout }) => {
 
   return (
     <aside className={`w-64 lg:w-80 flex flex-col p-6 hidden sm:flex border-r transition-all duration-300 ${theme === 'dark' ? 'bg-slate-950 border-slate-900 text-slate-400' : 'bg-white border-slate-200 text-slate-600'

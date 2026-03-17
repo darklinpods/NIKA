@@ -3,7 +3,7 @@ import { Send, MessageSquare, Loader, User, Bot, FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { fetchChatHistory, sendChatMessage } from '../../services/api';
-import { translations } from '../../translations';
+import { t } from '../../translations';
 
 interface Message {
     id: string;
@@ -19,14 +19,12 @@ export interface CaseChatPanelHandle {
 interface CaseChatPanelProps {
     caseId: string;
     theme: 'light' | 'dark';
-    lang: 'zh' | 'en';
     caseType?: string;
     onRefreshCase?: () => void;
     onSaveDocument?: (content: string, suggestedTitle: string) => void;
 }
 
-export const CaseChatPanel = forwardRef<CaseChatPanelHandle, CaseChatPanelProps>(({ caseId, theme, lang, caseType, onRefreshCase, onSaveDocument }, ref) => {
-    const t = translations[lang] as any;
+export const CaseChatPanel = forwardRef<CaseChatPanelHandle, CaseChatPanelProps>(({ caseId, theme, caseType, onRefreshCase, onSaveDocument }, ref) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -83,7 +81,7 @@ export const CaseChatPanel = forwardRef<CaseChatPanelHandle, CaseChatPanelProps>
         setMessages(prev => [...prev, tempUserMsg]);
 
         try {
-            const res = await sendChatMessage(caseId, text, lang);
+            const res = await sendChatMessage(caseId, text);
             if (res.success) {
                 // Replace temp and add real one + AI response
                 setMessages(prev => {

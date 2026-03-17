@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { translations } from '../../translations';
 import { 
   Scale, FileText, ChevronRight, Loader2, Sparkles, 
   User, FileSignature, ShieldCheck,
@@ -9,7 +8,6 @@ import { extractComplaint, fetchCases } from '../../services/api';
 
 interface ComplaintGeneratorViewProps {
   theme: 'light' | 'dark';
-  lang: 'zh' | 'en';
 }
 
 interface TemplateOption {
@@ -27,7 +25,7 @@ const TEMPLATES: TemplateOption[] = [
   { id: 'card', name: '信用卡纠纷', icon: <FileText size={18} /> },
 ];
 
-export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ theme, lang }) => {
+export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ theme }) => {
   const isDark = theme === 'dark';
 
   const [selectedTemplate, setSelectedTemplate] = useState<string>('traffic');

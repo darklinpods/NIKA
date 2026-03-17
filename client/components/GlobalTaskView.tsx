@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Case, SubTask } from '../types';
-import { translations } from '../translations';
+import { t } from '../translations';
 import { CheckCircle2, Circle, Clock, AlertCircle, Calendar, Briefcase, ChevronRight, Zap } from 'lucide-react';
 import { formatDateOptional, isApproaching, isOverdue } from '../utils/dateUtils';
 import { useAppContext } from '../providers/AppProvider';
@@ -12,13 +12,10 @@ interface TaskWithParent {
 
 interface GlobalTaskViewProps {
   theme: 'light' | 'dark';
-  lang: 'en' | 'zh';
 }
 
-
-const GlobalTaskView: React.FC<GlobalTaskViewProps> = ({ theme, lang }) => {
+const GlobalTaskView: React.FC<GlobalTaskViewProps> = ({ theme }) => {
   const { data, toggleSubTask, setEditingTask } = useAppContext();
-  const t = translations[lang];
   const now = new Date();
   const todayStart = new Date(now.setHours(0, 0, 0, 0));
   const todayEnd = new Date(now.setHours(23, 59, 59, 999));

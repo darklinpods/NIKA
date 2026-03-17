@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { Case } from '../types';
-import { getPriorityBorderColor } from '../constants/priorities';
+import { PRIORITY_CONFIG } from '../constants/priorities';
 import { MoreVertical } from 'lucide-react';
-import { translations } from '../translations';
+import { t } from '../translations';
 import { summarizeTask } from '../services/geminiService';
 import { TaskTitle } from './taskCard/TaskTitle';
 import { ProgressBar } from './taskCard/ProgressBar';
@@ -16,11 +16,10 @@ interface TaskCardProps {
   task: Case;
   index: number;
   theme: 'light' | 'dark';
-  lang: 'en' | 'zh';
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({
-  task, index, theme, lang
+  task, index, theme
 }) => {
   const {
     setEditingTask, handleDeleteCase, handleGeneratePlan, handleUpdatePriority, handleMoveStage, handleUpdateCaseType
@@ -29,8 +28,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
   const menuWrapperRef = useRef<HTMLDivElement>(null);
-  const t = translations[lang];
-
   // 点击卡片外部关闭菜单
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -57,14 +54,14 @@ const TaskCard: React.FC<TaskCardProps> = ({
     setIsMenuOpen(false);
     setIsSummarizing(true);
     try {
-      const res = await summarizeTask(task.title, task.description, lang);
+      const res = await summarizeTask(task.title, task.description);
       setSummary(res);
     } catch (err) {
       console.error(err);
     } finally {
       setIsSummarizing(false);
     }
-  }, [task.title, task.description, lang]);
+  }, [task.title, task.description]);
 
   // 复制 ID 处理
   const handleCopyId = useCallback((e: React.MouseEvent) => {
@@ -111,7 +108,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           onClick={() => setEditingTask(task)}
-          className={`group relative border rounded-xl p-4 flex flex-col justify-between min-w-[240px] max-w-[240px] transition-all duration-300 cursor-pointer border-l-[4px] shrink-0 ${getPriorityBorderColor(task.priority)
+          className={`group relative border rounded-xl p-4 flex flex-col justify-between min-w-[240px] max-w-[240px] transition-all duration-300 cursor-pointer border-l-[4px] shrink-0 ${PRIORITY_CONFIG[task.priority].borderColor
             } ${theme === 'dark'
               ? 'bg-slate-900 border-white/5 hover:border-indigo-500/50 hover:shadow-[0_10px_30px_-10px_rgba(99,102,241,0.25)]'
               : 'bg-white border-slate-200 hover:border-indigo-200 shadow-sm hover:shadow-md'
@@ -156,7 +153,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
             taskId={task.id}
             onUpdateCaseType={handleUpdateCaseType}
             theme={theme}
-            lang={lang}
           />
 
           {summary && (

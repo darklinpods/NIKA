@@ -85,8 +85,8 @@ export const uploadCaseEvidence = (id: string, formData: FormData): Promise<{ su
 
 // Chat API
 export const fetchChatHistory = (caseId: string): Promise<{ success: boolean; data: any[] }> => api.get<{ success: boolean; data: any[] }>(`/cases/${caseId}/chat`);
-export const sendChatMessage = (caseId: string, content: string, lang: string): Promise<{ success: boolean; userMessage: any; aiMessage: any }> =>
-    api.post<{ success: boolean; userMessage: any; aiMessage: any }>(`/cases/${caseId}/chat`, { content, lang });
+export const sendChatMessage = (caseId: string, content: string): Promise<{ success: boolean; userMessage: any; aiMessage: any }> =>
+    api.post<{ success: boolean; userMessage: any; aiMessage: any }>(`/cases/${caseId}/chat`, { content, lang: 'zh' });
 
 export const fetchKnowledgeDocs = (): Promise<any[]> => api.get<any[]>('/knowledge');
 export const uploadKnowledgeDoc = (formData: FormData): Promise<any> => api.post<any>('/knowledge/upload', formData);

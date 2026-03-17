@@ -1,18 +1,16 @@
 import React, { useState } from 'react';
 import { Scale, BookOpen, MessageSquare, Lightbulb, Edit2, Check, X, Plus, Trash2 } from 'lucide-react';
 import { CaseChatPanel } from '../CaseChatPanel';
-import { translations } from '../../../translations';
+import { t } from '../../../translations';
 import { ClaimItem, InvoiceItem, Case } from '../../../types';
 
 interface PanelAnalysisProps {
     task: Case;
     theme: 'light' | 'dark';
-    lang: 'zh' | 'en';
     onTaskChange?: (task: Case) => void;
 }
 
-export const PanelAnalysis: React.FC<PanelAnalysisProps> = ({ task, theme, lang, onTaskChange }) => {
-    const t = translations[lang] as any;
+export const PanelAnalysis: React.FC<PanelAnalysisProps> = ({ task, theme, onTaskChange }) => {
     
     // Retrieve claims/invoices from caseFactSheet
     let claims: ClaimItem[] = [];
@@ -255,7 +253,6 @@ export const PanelAnalysis: React.FC<PanelAnalysisProps> = ({ task, theme, lang,
                     <CaseChatPanel
                         caseId={task.id}
                         theme={theme}
-                        lang={lang}
                     />
                 </div>
             </div>

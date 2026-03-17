@@ -3,12 +3,11 @@ import { LoginScreen, Sidebar, Header, TaskModal, BoardView, StatsBoard, GlobalT
 import { useTheme, useAuth, ThemeMode } from './hooks';
 import { AppProvider, useAppContext } from './providers/AppProvider';
 import { Case } from './types';
-import { translations } from './translations';
+import { t } from './translations';
 
 const App: React.FC = () => {
-  const { isAuthenticated, username, password, error, setUsername, setPassword, handleLogin, handleLogout } = useAuth('zh');
+  const { isAuthenticated, username, password, error, setUsername, setPassword, handleLogin, handleLogout } = useAuth();
   const { themeMode, actualTheme, toggleTheme } = useTheme();
-  const [lang, setLang] = useState<'zh' | 'en'>('zh');
 
   if (!isAuthenticated) {
     return (
@@ -17,25 +16,21 @@ const App: React.FC = () => {
         password={password}
         error={error}
         theme={actualTheme}
-        lang={lang}
         onUsernameChange={setUsername}
         onPasswordChange={setPassword}
         onSubmit={handleLogin}
         onThemeToggle={toggleTheme}
-        onLangToggle={() => setLang(lang === 'zh' ? 'en' : 'zh')}
       />
     );
   }
 
   return (
-    <AppProvider lang={lang} theme={actualTheme}>
+    <AppProvider theme={actualTheme}>
       <AppLayout
         theme={actualTheme}
         themeMode={themeMode}
-        lang={lang}
         onLogout={handleLogout}
         onThemeToggle={toggleTheme}
-        onLangToggle={() => setLang(lang === 'zh' ? 'en' : 'zh')}
       />
     </AppProvider>
   );
@@ -44,11 +39,9 @@ const App: React.FC = () => {
 const AppLayout: React.FC<{
   theme: 'light' | 'dark';
   themeMode: ThemeMode;
-  lang: 'zh' | 'en';
   onLogout: () => void;
   onThemeToggle: () => void;
-  onLangToggle: () => void;
-}> = ({ theme, themeMode, lang, onLogout, onThemeToggle, onLangToggle }) => {
+}> = ({ theme, themeMode, onLogout, onThemeToggle }) => {
   const { data, setData, editingTask, isOverviewGenerating, isSaving, setEditingTask, toggleSubTask, updateSubTaskTitle, updateSubTaskDate, deleteSubTask, addEmptySubTask, addCaseDocument, deleteCaseDocument, handleGenerateAiOverview, saveEditedTask } = useAppContext();
   const [activeTab, setActiveTab] = useState<'board' | 'stats' | 'tasks' | 'knowledge' | 'complaint'>('board');
   const [searchQuery, setSearchQuery] = useState('');
@@ -63,12 +56,12 @@ const AppLayout: React.FC<{
   const handleAddTask = (initialData: Partial<Case> = {}) => {
     setEditingTask({
       id: `task-${Date.now()}`,
-      title: initialData.title || translations[lang].newCase,
+      title: initialData.title || t.newCase,
       description: initialData.description || '',
       priority: initialData.priority || 'medium',
       status: 'todo',
       caseType: initialData.caseType || 'general',
-      clientName: initialData.clientName || translations[lang].newClient,
+      clientName: initialData.clientName || t.newClient,
       tags: initialData.tags || [],
       subTasks: [],
       order: 0,
@@ -77,7 +70,6 @@ const AppLayout: React.FC<{
   };
 
   const handleSmartImportSuccess = (importedCase: Case) => {
-    // Add the newly-created case to the board state (col-1 = todo)
     setData((prev: any) => {
       const newTasks = { ...prev.tasks, [importedCase.id]: importedCase };
       const newColumns = { ...prev.columns };
@@ -90,10 +82,8 @@ const AppLayout: React.FC<{
       }
       return { ...prev, tasks: newTasks, columns: newColumns };
     });
-    // Open the case immediately in the TaskModal for review / editing
     setEditingTask(importedCase);
   };
-
 
   if (editingTask) {
     return (
@@ -101,7 +91,6 @@ const AppLayout: React.FC<{
         <TaskModal
           task={editingTask}
           theme={theme}
-          lang={lang}
           isSaving={isSaving}
           onTaskChange={setEditingTask}
           onToggleSubTask={(subTaskId) => toggleSubTask(editingTask.id, subTaskId)}
@@ -138,18 +127,17 @@ const AppLayout: React.FC<{
   const renderContent = () => {
     switch (activeTab) {
       case 'stats':
-        return <StatsBoard theme={theme} lang={lang} />;
+        return <StatsBoard theme={theme} />;
       case 'tasks':
-        return <GlobalTaskView theme={theme} lang={lang} />;
+        return <GlobalTaskView theme={theme} />;
       case 'knowledge':
-        return <KnowledgeBaseView theme={theme} lang={lang} />;
+        return <KnowledgeBaseView theme={theme} />;
       case 'complaint':
-        return <ComplaintGeneratorView theme={theme} lang={lang} />;
+        return <ComplaintGeneratorView theme={theme} />;
       default:
         return (
           <BoardView
             theme={theme}
-            lang={lang}
             searchQuery={searchQuery}
             collapsedColumns={collapsedColumns}
             onToggleColumn={toggleColumn}
@@ -164,7 +152,6 @@ const AppLayout: React.FC<{
     <div className={`flex h-screen overflow-hidden ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
       <Sidebar
         theme={theme}
-        lang={lang}
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onLogout={onLogout}
@@ -173,11 +160,9 @@ const AppLayout: React.FC<{
         <Header
           theme={theme}
           themeMode={themeMode}
-          lang={lang}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onThemeToggle={onThemeToggle}
-          onLangToggle={onLangToggle}
         />
         <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
           <div className="max-w-[1600px] mx-auto">

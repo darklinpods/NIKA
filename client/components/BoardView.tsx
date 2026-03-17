@@ -2,7 +2,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Plus, ChevronDown, ChevronRight, Zap, Loader2 } from 'lucide-react';
 import { Column } from '../types';
-import { translations } from '../translations';
+import { t } from '../translations';
 import TaskCard from './TaskCard';
 import { useAppContext } from '../providers/AppProvider';
 import { smartImportCase } from '../services/api';
@@ -11,23 +11,15 @@ interface BoardColumnProps {
   columnId: string;
   column: Column;
   theme: 'light' | 'dark';
-  lang: 'zh' | 'en';
   searchQuery: string;
   collapsedColumns: Set<string>;
   onToggleColumn: (id: string) => void;
 }
 
 const BoardColumn: React.FC<BoardColumnProps> = ({
-  columnId,
-  column,
-  theme,
-  lang,
-  searchQuery,
-  collapsedColumns,
-  onToggleColumn,
+  columnId, column, theme, searchQuery, collapsedColumns, onToggleColumn,
 }) => {
   const { data } = useAppContext();
-  const t = translations[lang];
   const isCollapsed = collapsedColumns.has(columnId);
 
   const tasks = useMemo(() => {
@@ -50,13 +42,7 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
           {(provided) => (
             <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-wrap gap-5 min-h-[160px]">
               {tasks.map((task, index) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  index={index}
-                  theme={theme}
-                  lang={lang}
-                />
+                <TaskCard key={task.id} task={task} index={index} theme={theme} />
               ))}
               {provided.placeholder}
             </div>
@@ -69,7 +55,6 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
 
 interface BoardViewProps {
   theme: 'light' | 'dark';
-  lang: 'zh' | 'en';
   searchQuery: string;
   collapsedColumns: Set<string>;
   onToggleColumn: (id: string) => void;
@@ -79,7 +64,6 @@ interface BoardViewProps {
 
 export const BoardView: React.FC<BoardViewProps> = ({
   theme,
-  lang,
   searchQuery,
   collapsedColumns,
   onToggleColumn,
@@ -87,7 +71,6 @@ export const BoardView: React.FC<BoardViewProps> = ({
   onSmartImportSuccess,
 }) => {
   const { data, onDragEnd } = useAppContext();
-  const t = translations[lang];
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -166,7 +149,6 @@ export const BoardView: React.FC<BoardViewProps> = ({
                 columnId={columnId}
                 column={data.columns[columnId]}
                 theme={theme}
-                lang={lang}
                 searchQuery={searchQuery}
                 collapsedColumns={collapsedColumns}
                 onToggleColumn={onToggleColumn}
