@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { executeExtractParties } from '../utils/toolExecutor';
 // @ts-ignore
 import multer from 'multer';
 import { caseService } from '../services/caseService';
@@ -156,32 +157,11 @@ export const uploadEvidence = async (req: Request, res: Response) => {
             category: "Evidence"
         });
 
-        // 取前15000字提取当事人
-        const textToAnalyze = extractedText.substring(0, 15000);
-        const newParties = await aiAnalysisService.extractParties(textToAnalyze);
+        // Full FactAgent extraction: parties + caseType + facts narrative
+        const extractResult = await executeExtractParties(caseId);
 
-        // 合并 Parties
-        const currentCase = await caseService.getCaseById(caseId);
-        if (!currentCase) return res.status(404).json({ error: 'Case not found' });
-
-        let existingParties: any[] = [];
-        if ((currentCase as any).parties) {
-            try { existingParties = JSON.parse((currentCase as any).parties); } catch { }
-        }
-
-        const combinedParties = [...existingParties];
-        for (const np of newParties) {
-            if (!combinedParties.find(p => p.name === np.name)) {
-                combinedParties.push(np);
-            }
-        }
-
-        const updatedCase = await caseService.updateCase(caseId, {
-            ...currentCase,
-            parties: JSON.stringify(combinedParties)
-        } as any);
-
-        res.json({ success: true, data: updatedCase, importedParties: newParties });
+        const updatedCase = await caseService.getCaseById(caseId);
+        res.json({ success: true, data: updatedCase, importedParties: (extractResult as any).parties ?? [] });
 
     } catch (error: any) {
         console.error("Upload Evidence Error:", error);

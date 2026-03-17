@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { aiService } from '../services/aiService';
 import { getComplaintElementsExtractionPrompt } from '../prompts/documentPrompts';
 import { logExtraction } from '../utils/extractionLogger';
+import { cleanAndParseJsonObject } from '../utils/aiJsonParser';
 
 export const extractComplaintElements = async (req: Request, res: Response) => {
     const startTime = Date.now();
@@ -67,25 +68,21 @@ export const extractComplaintElements = async (req: Request, res: Response) => {
             }]
         });
 
-        let dataStr = response.text || '{}';
+        // Parse AI response using unified JSON parser
+        const parsed = cleanAndParseJsonObject(response.text || '{}');
+        const processingTime = Date.now() - startTime;
 
-        // Multiple cleanup strategies
-        // 1. Remove markdown code blocks
-        dataStr = dataStr.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+        if (Object.keys(parsed).length === 0) {
+            // 记录失败的提取
+            logExtraction({
+                templateId,
+                status: 'error',
+                errorMessage: `JSON解析错误: AI 返回格式有误`,
+                processingTime
+            }, text);
 
-        // 2. Try to extract JSON object if wrapped in text
-        const jsonMatch = dataStr.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            dataStr = jsonMatch[0];
-        }
-
-        // 3. Remove any leading/trailing whitespace or non-JSON characters
-        dataStr = dataStr.trim();
-
-        try {
-            const parsed = JSON.parse(dataStr);
-            const processingTime = Date.now() - startTime;
-
+            res.status(500).json({ error: "Failed to parse extraction result", details: "AI returned malformed JSON" });
+        } else {
             // 记录成功的提取
             logExtraction({
                 templateId,
@@ -94,22 +91,6 @@ export const extractComplaintElements = async (req: Request, res: Response) => {
             }, text, parsed);
 
             res.json({ success: true, data: parsed });
-        } catch (e: any) {
-            const processingTime = Date.now() - startTime;
-
-            console.error("Failed to parse gemini JSON. Error:", e.message);
-            console.error("Raw response text:", response.text);
-            console.error("Cleaned text:", dataStr);
-
-            // 记录失败的提取
-            logExtraction({
-                templateId,
-                status: 'error',
-                errorMessage: `JSON解析错误: ${e.message}`,
-                processingTime
-            }, text);
-
-            res.status(500).json({ error: "Failed to parse extraction result", details: e.message });
         }
 
     } catch (error: any) {

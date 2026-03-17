@@ -1,22 +1,9 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../prisma';
 import { aiService } from '../services/aiService';
 import { getPartiesAndFactsExtractionPrompt } from '../prompts/extractionPrompts';
-
-const prisma = new PrismaClient();
-
-/**
- * 所有支持案由的枚举（须与前端 constants/caseTypes.ts 同步）
- */
-const SUPPORTED_CASE_TYPES = [
-    { value: 'traffic_accident', label: '机动车交通事故责任纠纷' },
-    { value: 'loan_dispute', label: '民间借贷' },
-    { value: 'unjust_enrichment', label: '不当得利' },
-    { value: 'sales_contract', label: '买卖合同纠纷' },
-    { value: 'labor_contract', label: '劳务合同纠纷' },
-    { value: 'divorce', label: '离婚' },
-    { value: 'general', label: '一般案件（无法判断时使用）' },
-];
+import { SUPPORTED_CASE_TYPES } from '../constants';
+import { cleanAndParseJsonObject } from '../utils/aiJsonParser';
 
 /**
  * [POST /api/cases/:id/extract-parties]
@@ -61,23 +48,9 @@ export const extractPartiesFromEvidence = async (req: Request, res: Response) =>
             contents: [{ role: 'user', parts: [{ text: prompt }] }]
         });
 
-        let rawResult = response.text || '{}';
-        rawResult = rawResult.replace(/```json/gi, '').replace(/```/g, '').trim();
-
-        // 鲁棒解析：截取第一个 { 到最后一个 }
-        const firstBrace = rawResult.indexOf('{');
-        const lastBrace = rawResult.lastIndexOf('}');
-        const cleanJsonStr = (firstBrace !== -1 && lastBrace !== -1)
-            ? rawResult.substring(firstBrace, lastBrace + 1)
-            : '{}';
-
-        let extractedData: any = {};
-        try {
-            extractedData = JSON.parse(cleanJsonStr);
-        } catch (e) {
-            console.error('[ExtractParties+Facts] JSON parse error:', e, 'Raw sample:', rawResult.substring(0, 800));
-            extractedData = { extractedParties: [], caseFactsNarrative: '', caseType: 'general' };
-        }
+        const extractedData = cleanAndParseJsonObject(response.text || '{}', {
+            extractedParties: [], caseFactsNarrative: '', caseType: 'general'
+        });
 
         const newParties = extractedData.extractedParties || [];
         const factsText = extractedData.caseFactsNarrative || '';

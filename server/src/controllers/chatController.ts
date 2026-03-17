@@ -1,11 +1,9 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../prisma';
 import { aiService } from '../services/aiService';
 import { getCaseCopilotSystemPrompt } from '../prompts/chatPrompts';
 import { handleToolCall } from '../utils/toolExecutor';
 import { RouterAgent } from '../agents/RouterAgent';
-
-const prisma = new PrismaClient();
 
 /**
  * 获取某个案件的聊天记录

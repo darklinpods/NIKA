@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../prisma';
 import { TrafficAccidentSkill } from '../skills/TrafficAccidentSkill';
 import PizZip from 'pizzip';
 import process from 'process';
@@ -8,8 +8,6 @@ import fs from 'fs';
 
 // docxtemplater via require (CJS compat)
 const Docxtemplater = require('docxtemplater');
-
-const prisma = new PrismaClient();
 
 /** 解析模板路径（尝试多种相对位置） */
 function resolveTemplatePath(relativePath: string): string {

@@ -3,32 +3,20 @@ import { aiService } from './aiService';
 import { caseService } from './caseService';
 import { knowledgeService } from './knowledgeService';
 import { getTaskGenerationPrompt, getTaskImprovementPrompt, getTaskSummaryPrompt } from '../prompts/taskPrompts';
+import { buildKnowledgeContext, CATEGORY_LABELS_EN } from '../utils/knowledgeContextBuilder';
+import { cleanAndParseJsonObject } from '../utils/aiJsonParser';
 
 export const aiTaskService = {
     async generateTasks(prompt: string, lang: string) {
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
         const kDocs = await knowledgeService.getAllDocuments();
-        let kContext = '';
-        if (kDocs && kDocs.length > 0) {
-            const cats: Record<string, string> = {
-                'pleading': 'Original Pleadings/Drafts',
-                'precedent': 'Court Precedents',
-                'provision': 'Legal Provisions',
-                'notebook_lm': 'Logic & Notes'
-            };
-            const grouped = kDocs.reduce((acc: any, doc: any) => {
-                const catName = cats[doc.category] || 'General Knowledge';
-                if (!acc[catName]) acc[catName] = [];
-                acc[catName].push(`Title: ${doc.title}\nContent: ${doc.content}`);
-                return acc;
-            }, {});
-
-            kContext = "\n[System Knowledge Base / Guidelines]:\n";
-            for (const [cat, items] of Object.entries(grouped)) {
-                kContext += `### ${cat} ###\n${(items as string[]).join('\n\n')}\n\n`;
-            }
-            kContext += "\nPlease analyze the current case based on these guidelines.\n";
-        }
+        const kContext = buildKnowledgeContext(
+            kDocs || [],
+            CATEGORY_LABELS_EN,
+            'General Knowledge',
+            '\n[System Knowledge Base / Guidelines]:',
+            '\nPlease analyze the current case based on these guidelines.'
+        );
 
         const response = await aiService.generateContent({
             model: "gemini-2.5-flash",
@@ -109,25 +97,18 @@ export const aiTaskService = {
         }
 
         const kDocs = await knowledgeService.getAllDocuments();
-        if (kDocs && kDocs.length > 0) {
-            const cats: Record<string, string> = {
+        const kContext = buildKnowledgeContext(
+            kDocs || [],
+            {
                 'pleading': 'Pleadings Reference',
                 'precedent': 'Case Precedents',
                 'provision': 'Legal Provisions',
-                'notebook_lm': 'Strategic Notes'
-            };
-            const grouped = kDocs.reduce((acc: any, doc: any) => {
-                const catName = cats[doc.category] || 'Knowledge Base';
-                if (!acc[catName]) acc[catName] = [];
-                acc[catName].push(`Title: ${doc.title}\nContent: ${doc.content}`);
-                return acc;
-            }, {});
-
-            ragContext += "\n[Global Knowledge Base / Firm Guidelines]:\n";
-            for (const [cat, items] of Object.entries(grouped)) {
-                ragContext += `### ${cat} ###\n${(items as string[]).join('\n\n')}\n\n`;
-            }
-        }
+                'notebook_lm': 'Strategic Notes',
+            },
+            'Knowledge Base',
+            '\n[Global Knowledge Base / Firm Guidelines]:'
+        );
+        ragContext += kContext;
 
         let prompt = "";
         switch (docType) {
@@ -185,27 +166,18 @@ export const aiTaskService = {
     async generateCasePlan(title: string, desc: string, lang: string) {
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
         const kDocs = await knowledgeService.getAllDocuments();
-        let kContext = '';
-        if (kDocs && kDocs.length > 0) {
-            const cats: Record<string, string> = {
+        const kContext = buildKnowledgeContext(
+            kDocs || [],
+            {
                 'pleading': 'Workflow from Pleadings',
                 'precedent': 'Procedural Precedents',
                 'provision': 'Procedural Requirements',
-                'notebook_lm': 'Internal Logic/Notes'
-            };
-            const grouped = kDocs.reduce((acc: any, doc: any) => {
-                const catName = cats[doc.category] || 'Guidelines';
-                if (!acc[catName]) acc[catName] = [];
-                acc[catName].push(`Title: ${doc.title}\nContent: ${doc.content}`);
-                return acc;
-            }, {});
-
-            kContext = "\n[System Knowledge Base / Guidelines]:\n";
-            for (const [cat, items] of Object.entries(grouped)) {
-                kContext += `### ${cat} ###\n${(items as string[]).join('\n\n')}\n\n`;
-            }
-            kContext += "\nPlease follow the workflows suggested in the guidelines above.\n";
-        }
+                'notebook_lm': 'Internal Logic/Notes',
+            },
+            'Guidelines',
+            '\n[System Knowledge Base / Guidelines]:',
+            '\nPlease follow the workflows suggested in the guidelines above.'
+        );
 
         const response = await aiService.generateContent({
             model: "gemini-2.5-flash",
@@ -223,8 +195,6 @@ export const aiTaskService = {
             }],
         });
 
-        const resultText = response.text || "";
-        const cleaned = resultText.replace(/```json/g, '').replace(/```/g, '').trim();
-        return JSON.parse(cleaned);
+        return cleanAndParseJsonObject(response.text || '{}');
     }
 };

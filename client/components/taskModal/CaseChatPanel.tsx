@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Send, MessageSquare, Loader, Sparkles, User, Bot, FileText } from 'lucide-react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { Send, MessageSquare, Loader, User, Bot, FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { fetchChatHistory, sendChatMessage } from '../../services/api';
@@ -12,6 +12,10 @@ interface Message {
     createdAt: string;
 }
 
+export interface CaseChatPanelHandle {
+    sendMessage: (text: string) => void;
+}
+
 interface CaseChatPanelProps {
     caseId: string;
     theme: 'light' | 'dark';
@@ -21,13 +25,15 @@ interface CaseChatPanelProps {
     onSaveDocument?: (content: string, suggestedTitle: string) => void;
 }
 
-export const CaseChatPanel: React.FC<CaseChatPanelProps> = ({ caseId, theme, lang, caseType, onRefreshCase, onSaveDocument }) => {
+export const CaseChatPanel = forwardRef<CaseChatPanelHandle, CaseChatPanelProps>(({ caseId, theme, lang, caseType, onRefreshCase, onSaveDocument }, ref) => {
     const t = translations[lang] as any;
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    useImperativeHandle(ref, () => ({ sendMessage: (text: string) => handleSendMessage(text) }));
 
     const shortcuts = [
         { label: t.sc_timeline, prompt: t.sc_timelinePrompt },
@@ -103,14 +109,7 @@ export const CaseChatPanel: React.FC<CaseChatPanelProps> = ({ caseId, theme, lan
     }
 
     return (
-        <div className={`flex flex-col h-full overflow-hidden ${theme === 'dark' ? 'bg-slate-900/30' : 'bg-slate-100/50'}`}>
-            {/* Header */}
-            <div className="px-6 py-4 border-b flex items-center gap-2 border-slate-200 dark:border-white/5">
-                <Sparkles className="text-blue-500" size={18} />
-                <h3 className="font-bold text-sm tracking-tight">Case Copilot</h3>
-                <span className="text-[10px] bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded border border-blue-500/20 uppercase font-bold">RAG Active</span>
-            </div>
-
+        <div className={`flex flex-col h-full overflow-hidden ${theme === 'dark' ? 'bg-slate-900' : 'bg-[#f5f5f7]'}`}>
             {/* Chat List */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                 {messages.length === 0 && (
@@ -148,7 +147,7 @@ export const CaseChatPanel: React.FC<CaseChatPanelProps> = ({ caseId, theme, lan
                             </div>
                             {msg.role === 'assistant' && onSaveDocument && (
                                 <div className="mt-3 flex justify-end">
-                                    <button 
+                                    <button
                                         onClick={() => onSaveDocument(msg.content, 'AI 生成文书')}
                                         className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold rounded-lg transition-colors border ${theme === 'dark' ? 'bg-slate-700/50 border-white/5 hover:bg-slate-700 text-blue-400' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-blue-600'}`}
                                     >
@@ -175,54 +174,10 @@ export const CaseChatPanel: React.FC<CaseChatPanelProps> = ({ caseId, theme, lan
             </div>
 
             {/* Input Area */}
-            <div className="p-6 border-t border-slate-200 dark:border-white/5 space-y-4">
-                <div className="flex flex-wrap gap-2">
-                    {shortcuts.map((s, idx) => (
-                        <button
-                            key={idx}
-                            onClick={() => handleSendMessage(s.prompt)}
-                            disabled={isLoading}
-                            className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${theme === 'dark'
-                                ? 'bg-slate-800/50 border-white/5 text-slate-400 hover:bg-slate-800 hover:text-blue-400'
-                                : 'bg-white border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600 shadow-sm'
-                                }`}
-                        >
-                            {s.label}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Document Generation Action Buttons */}
-                <div className="flex flex-wrap gap-2 pb-1">
-                    <button
-                        onClick={() => handleSendMessage('请帮我起草一份起诉状草稿。要求结构完整，包含原被告信息、诉讼请求、事实与理由等部分。')}
-                        disabled={isLoading}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] font-bold flex items-center gap-1.5 border transition-all ${theme === 'dark' ? 'border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-sm'}`}
-                    >
-                        📄 {t.complaintDraft || '起草起诉状草稿'}
-                    </button>
-                    <button
-                        onClick={() => handleSendMessage('基于当前案件的证据材料，请帮我生成一份证据目录。')}
-                        disabled={isLoading}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] font-bold flex items-center gap-1.5 border transition-all ${theme === 'dark' ? 'border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-sm'}`}
-                    >
-                        📊 {t.evidenceList || '生成证据目录'}
-                    </button>
-                    
-                    {caseType === 'traffic_accident' && (
-                        <button
-                            onClick={() => handleSendMessage('基于当前交通事故案件信息，请帮我详细草拟一份交通事故损害赔偿相关的文书。')}
-                            disabled={isLoading}
-                            className={`px-3 py-1.5 rounded-xl text-[10px] font-bold flex items-center gap-1.5 border transition-all ${theme === 'dark' ? 'border-indigo-500/30 bg-indigo-900/20 text-indigo-300' : 'border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm'}`}
-                        >
-                            <Sparkles size={12} />
-                            {t.trafficDocx || '交通类专属文书生成'}
-                        </button>
-                    )}
-                </div>
-
-                <div className="relative group">
-                    <textarea
+            <div className={`px-4 py-3 border-t shrink-0 ${theme === 'dark' ? 'border-white/10 bg-slate-900' : 'border-slate-200 bg-white'}`}>
+                <div className={`flex items-center gap-2 px-4 py-2.5 rounded-full border transition-all
+                    ${theme === 'dark' ? 'bg-slate-800 border-white/10 focus-within:border-blue-500/50' : 'bg-slate-50 border-slate-200 focus-within:border-blue-400'}`}>
+                    <input
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => {
@@ -231,27 +186,20 @@ export const CaseChatPanel: React.FC<CaseChatPanelProps> = ({ caseId, theme, lan
                                 handleSendMessage();
                             }
                         }}
-                        placeholder={t.chatPlaceholder}
-                        className={`w-full min-h-[100px] max-h-[200px] p-4 pr-12 rounded-2xl text-sm border outline-none transition-all resize-none custom-scrollbar ${theme === 'dark'
-                            ? 'bg-slate-900/50 border-white/10 text-slate-100 focus:border-blue-500 focus:bg-slate-900 shadow-xl'
-                            : 'bg-white border-slate-200 text-slate-800 focus:border-blue-400 focus:shadow-lg'
-                            }`}
+                        placeholder={t.chatPlaceholder || '向 AI 提问关于此案件的内容...'}
+                        className={`flex-1 bg-transparent text-sm outline-none ${theme === 'dark' ? 'text-slate-100 placeholder-slate-500' : 'text-slate-800 placeholder-slate-400'}`}
                     />
                     <button
                         onClick={() => handleSendMessage()}
                         disabled={!input.trim() || isLoading}
-                        className={`absolute right-3 bottom-3 w-8 h-8 rounded-xl flex items-center justify-center transition-all ${input.trim() && !isLoading
-                            ? 'bg-blue-500 text-white hover:bg-blue-600 shadow-md transform hover:scale-105 active:scale-95'
-                            : 'bg-slate-500/10 text-slate-500 cursor-not-allowed'
-                            }`}
+                        className={`w-7 h-7 rounded-full flex items-center justify-center transition-all shrink-0 ${input.trim() && !isLoading
+                            ? 'bg-blue-500 text-white hover:bg-blue-600'
+                            : 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700'}`}
                     >
-                        <Send size={16} />
+                        <Send size={13} />
                     </button>
                 </div>
-                <p className="text-[9px] text-center text-slate-500 font-medium">
-                    {t.chatWarning}
-                </p>
             </div>
         </div>
     );
-};
+});

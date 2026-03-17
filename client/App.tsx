@@ -102,7 +102,6 @@ const AppLayout: React.FC<{
           task={editingTask}
           theme={theme}
           lang={lang}
-          isOverviewGenerating={isOverviewGenerating}
           isSaving={isSaving}
           onTaskChange={setEditingTask}
           onToggleSubTask={(subTaskId) => toggleSubTask(editingTask.id, subTaskId)}
@@ -112,7 +111,6 @@ const AppLayout: React.FC<{
           onAddSubTask={addEmptySubTask}
           onAddDocument={addCaseDocument}
           onDeleteDocument={deleteCaseDocument}
-          onGenerateOverview={handleGenerateAiOverview}
           onRefreshCase={async () => {
             if (editingTask?.id) {
               try {

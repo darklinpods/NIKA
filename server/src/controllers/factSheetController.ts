@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../prisma';
 import { aiService } from '../services/aiService';
 import fs from 'fs';
 import path from 'path';
 import { getFactSheetExtractionPrompt } from '../prompts/extractionPrompts';
-
-const prisma = new PrismaClient();
+import { cleanAndParseJsonObject } from '../utils/aiJsonParser';
 
 // ======================================================================
 // 案件事实摘要 AI 提取的 JSON Schema 说明（注入进 Prompt）
@@ -138,16 +137,8 @@ export const extractFactSheet = async (req: Request, res: Response) => {
             contents: [{ role: 'user', parts: [{ text: prompt }] }]
         });
 
-        let raw = response.text || '{}';
-        raw = raw.replace(/^```json\n?/i, '').replace(/\n?```$/i, '').trim();
-        const start = raw.indexOf('{');
-        const end = raw.lastIndexOf('}');
-        if (start !== -1 && end !== -1) raw = raw.substring(start, end + 1);
-
-        let parsed: Record<string, any>;
-        try {
-            parsed = JSON.parse(raw);
-        } catch {
+        const parsed = cleanAndParseJsonObject<Record<string, any>>(response.text || '{}');
+        if (Object.keys(parsed).length === 0) {
             return res.status(500).json({ error: 'AI 返回的 JSON 格式有误，请重试。' });
         }
 

@@ -1,19 +1,14 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../prisma';
 import { aiService } from '../services/aiService';
 import { getPartiesAndFactsExtractionPrompt, getInvoiceExtractionPrompt } from '../prompts/extractionPrompts';
 import { generateDocument, getRequiredFieldsForTemplate } from './docxUtils';
+import { SUPPORTED_CASE_TYPES } from '../constants';
+import { loadSkill } from '../skills/SkillLoader';
+import { cleanAndParseJsonObject, cleanAndParseJsonArray } from './aiJsonParser';
 
-const prisma = new PrismaClient();
-
-const SUPPORTED_CASE_TYPES = [
-    { value: 'traffic_accident', label: '机动车交通事故责任纠纷' },
-    { value: 'loan_dispute', label: '民间借贷' },
-    { value: 'unjust_enrichment', label: '不当得利' },
-    { value: 'sales_contract', label: '买卖合同纠纷' },
-    { value: 'labor_contract', label: '劳务合同纠纷' },
-    { value: 'divorce', label: '离婚' },
-    { value: 'general', label: '一般案件（无法判断时使用）' },
-];
+// Re-export chatTools from the dedicated definitions file
+// so existing imports (e.g. agents) continue to work unchanged
+export { chatTools } from './toolDefinitions';
 
 export const executeExtractParties = async (caseId: string) => {
     try {
@@ -33,14 +28,7 @@ export const executeExtractParties = async (caseId: string) => {
             contents: [{ role: 'user', parts: [{ text: prompt }] }]
         });
 
-        let rawResult = response.text || '{}';
-        rawResult = rawResult.replace(/```json/gi, '').replace(/```/g, '').trim();
-        const firstBrace = rawResult.indexOf('{');
-        const lastBrace = rawResult.lastIndexOf('}');
-        const cleanJsonStr = (firstBrace !== -1 && lastBrace !== -1) ? rawResult.substring(firstBrace, lastBrace + 1) : '{}';
-
-        let extractedData: any = {};
-        try { extractedData = JSON.parse(cleanJsonStr); } catch (e) { extractedData = {}; }
+        const extractedData = cleanAndParseJsonObject(response.text || '{}');
 
         const newParties = extractedData.extractedParties || [];
         const factsText = extractedData.caseFactsNarrative || '';
@@ -82,18 +70,10 @@ export const executeExtractInvoices = async (caseId: string) => {
             contents: [{ role: 'user', parts: [{ text: prompt }] }]
         });
 
-        let rawResult = (response.text || '[]').trim();
-        rawResult = rawResult.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-        const firstBracket = rawResult.indexOf('[');
-        const lastBracket = rawResult.lastIndexOf(']');
-        const cleanJsonStr = (firstBracket !== -1 && lastBracket !== -1) ? rawResult.substring(firstBracket, lastBracket + 1) : '[]';
-
-        let invoices: any[] = [];
-        try {
-            invoices = JSON.parse(cleanJsonStr).map((inv: any) => ({
-                ...inv, amount: typeof inv.amount === 'string' ? parseFloat(inv.amount) || 0 : (inv.amount || 0),
-            }));
-        } catch (e) { invoices = []; }
+        let invoices: any[] = cleanAndParseJsonArray(response.text || '[]');
+        invoices = invoices.map((inv: any) => ({
+            ...inv, amount: typeof inv.amount === 'string' ? parseFloat(inv.amount) || 0 : (inv.amount || 0),
+        }));
 
         let existingFactSheet: Record<string, any> = {};
         try { if (caseRecord.caseFactSheet) existingFactSheet = JSON.parse(caseRecord.caseFactSheet); } catch { }
@@ -116,14 +96,16 @@ export const executeExtractInvoices = async (caseId: string) => {
     }
 };
 
-export const executeGenerateSmartDocument = async (caseId: string, templateName: string = 'traffic_accident_complaint.txt') => {
+export const executeGenerateSmartDocument = async (caseId: string, templateName?: string) => {
     try {
         const caseRecord = await prisma.case.findUnique({ where: { id: caseId } });
         if (!caseRecord) return { error: '案件不存在。' };
 
-        const requiredFields = getRequiredFieldsForTemplate(templateName);
+        const { templateName: skillTemplate } = loadSkill(caseRecord.caseType ?? 'general');
+        const resolvedTemplate = templateName || skillTemplate;
+        const requiredFields = getRequiredFieldsForTemplate(resolvedTemplate);
         const caseContext = `Title: ${caseRecord.title}\nDescription: ${caseRecord.description}\nParties: ${caseRecord.parties || ''}`;
-        
+
         console.log('[Tool: generate_smart_document] Extracting data with AI...');
         const response = await aiService.generateContent({
             model: "gemini-2.5-flash",
@@ -141,9 +123,7 @@ export const executeGenerateSmartDocument = async (caseId: string, templateName:
             }]
         });
 
-        let resultText = response.text || "{}";
-        resultText = resultText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const extractedData = JSON.parse(resultText.trim());
+        const extractedData = cleanAndParseJsonObject(response.text || '{}');
 
         const finalData: Record<string, any> = {};
         requiredFields.forEach(field => {
@@ -151,12 +131,12 @@ export const executeGenerateSmartDocument = async (caseId: string, templateName:
         });
 
         const outputFileName = `Generated_${Date.now()}.txt`;
-        const filePath = generateDocument(templateName, finalData, outputFileName);
-        
+        const filePath = generateDocument(resolvedTemplate, finalData, outputFileName);
+
         // Save to DB
         const newDoc = await prisma.caseDocument.create({
             data: {
-                title: templateName === 'traffic_accident_complaint.txt' ? '交通交通事故诉状(AI生成)' : '智能文书(AI生成)',
+                title: `${resolvedTemplate.replace('.docx', '')}(AI生成)`,
                 content: `该文书已成功生成并保存在服务器: ${filePath}\n\n此文书作为正式文书归档。`,
                 category: 'offical_doc',
                 caseId: caseId
@@ -166,7 +146,7 @@ export const executeGenerateSmartDocument = async (caseId: string, templateName:
         return {
             success: true,
             filePath,
-            message: `成功根据模板 ${templateName} 生成了文书，并已自动保存到案件的“已生成文档”中。`
+            message: `成功根据模板 ${resolvedTemplate} 生成了文书，并已自动保存到案件的"已生成文档"中。`
         };
 
     } catch (e: any) {
@@ -181,7 +161,7 @@ export const executeGenerateExecutionPlan = async (caseId: string) => {
         if (!caseRecord) return { error: '案件不存在。' };
 
         const caseContext = `Title: ${caseRecord.title}\nDescription: ${caseRecord.description}\nParties: ${caseRecord.parties || ''}`;
-        
+
         console.log('[Tool: generate_execution_plan] Generating plan with AI...');
         const response = await aiService.generateContent({
             model: "gemini-2.5-flash",
@@ -198,19 +178,7 @@ export const executeGenerateExecutionPlan = async (caseId: string) => {
             }]
         });
 
-        let resultText = response.text || "[]";
-        resultText = resultText.replace(/```json/gi, '').replace(/```/g, '').trim();
-        const firstBracket = resultText.indexOf('[');
-        const lastBracket = resultText.lastIndexOf(']');
-        const cleanJsonStr = (firstBracket !== -1 && lastBracket !== -1) ? resultText.substring(firstBracket, lastBracket + 1) : '[]';
-
-        let subTasks: any[] = [];
-        try {
-            subTasks = JSON.parse(cleanJsonStr);
-        } catch (e) {
-            console.error('Failed to parse generated tasks JSON', e);
-            subTasks = [];
-        }
+        const subTasks: any[] = cleanAndParseJsonArray(response.text || '[]');
 
         // Save to DB
         const createdTasks = [];
@@ -239,11 +207,20 @@ export const executeGenerateExecutionPlan = async (caseId: string) => {
     }
 };
 
+export const executeUpdateStrategyMap = async (caseId: string, strategyContent: string) => {
+    try {
+        await prisma.case.update({ where: { id: caseId }, data: { claimData: strategyContent } });
+        return { success: true, message: '诉讼策略已保存到案件记录中。' };
+    } catch (e: any) {
+        return { error: `保存策略失败: ${e.message}` };
+    }
+};
+
 export const executeUpdateSubtaskStatus = async (caseId: string, taskTitleSubstring: string, isCompleted: boolean) => {
     try {
         const subTasks = await prisma.subTask.findMany({ where: { caseId } });
         const targetTask = subTasks.find(st => st.title.toLowerCase().includes(taskTitleSubstring.toLowerCase()));
-        
+
         if (!targetTask) return { error: `未找到名称包含 "${taskTitleSubstring}" 的子任务。` };
 
         await prisma.subTask.update({
@@ -261,74 +238,6 @@ export const executeUpdateSubtaskStatus = async (caseId: string, taskTitleSubstr
     }
 };
 
-export const chatTools = [
-    {
-        functionDeclarations: [
-            {
-                name: "extract_parties",
-                description: "当用户要求提取、扫描或者梳理案件中的当事人信息、案由、案件事实时调用。此工具会自动读取案件证据，提取相关信息并更新案件资料。",
-                parameters: {
-                    type: "OBJECT",
-                    properties: {
-                        caseId: {
-                            type: "STRING",
-                            description: "当前案件的 ID，必须提供"
-                        }
-                    },
-                    required: ["caseId"]
-                }
-            },
-            {
-                name: "extract_invoices",
-                description: "当用户要求提取案件证据中的发票清单时调用，会自动清点发票种类和金额并合计。仅适用于交通事故类案件。",
-                parameters: {
-                    type: "OBJECT",
-                    properties: {
-                        caseId: { type: "STRING" }
-                    },
-                    required: ["caseId"]
-                }
-            },
-            {
-                name: "generate_smart_document",
-                description: "当用户要求生成诉状、智能文书、或者基于模板生成排版文书时调用此工具。",
-                parameters: {
-                    type: "OBJECT",
-                    properties: {
-                        caseId: { type: "STRING" },
-                        templateName: { type: "STRING", description: "默认填 'traffic_accident_complaint.txt'" }
-                    },
-                    required: ["caseId"]
-                }
-            },
-            {
-                name: "generate_execution_plan",
-                description: "Applies when the user asks for a plan, todo list, analysis, or next steps for the case. It analyzes the case facts and creates a list of SubTasks (execution plan).",
-                parameters: {
-                    type: "OBJECT",
-                    properties: {
-                        caseId: { type: "STRING" }
-                    },
-                    required: ["caseId"]
-                }
-            },
-            {
-                name: "update_subtask_status",
-                description: "Applies when the user says they have completed or undone a specific task in the execution plan.",
-                parameters: {
-                    type: "OBJECT",
-                    properties: {
-                        caseId: { type: "STRING" },
-                        taskTitleSubstring: { type: "STRING", description: "A substring of the task title to identify which task to update." },
-                        isCompleted: { type: "BOOLEAN", description: "True if the task is done, false if it is not done." }
-                    },
-                    required: ["caseId", "taskTitleSubstring", "isCompleted"]
-                }
-            }
-        ]
-    }
-];
-
 export const handleToolCall = async (functionCall: any, caseId: string) => {
     const { name, args } = functionCall;
     console.log(`[ToolExecutor] Executing ${name} with args:`, args);
@@ -337,7 +246,7 @@ export const handleToolCall = async (functionCall: any, caseId: string) => {
         const result = await executeExtractParties(caseId); // Force use context caseId
         return { name, response: result };
     }
-    
+
     if (name === 'extract_invoices') {
         const result = await executeExtractInvoices(caseId);
         return { name, response: result };
@@ -350,6 +259,11 @@ export const handleToolCall = async (functionCall: any, caseId: string) => {
 
     if (name === 'generate_execution_plan') {
         const result = await executeGenerateExecutionPlan(caseId);
+        return { name, response: result };
+    }
+
+    if (name === 'update_strategy_map') {
+        const result = await executeUpdateStrategyMap(caseId, args.strategyContent);
         return { name, response: result };
     }
 
