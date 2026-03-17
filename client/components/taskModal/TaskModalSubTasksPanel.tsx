@@ -51,25 +51,15 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <CheckSquare size={16} className={theme === 'dark' ? 'text-blue-400' : 'text-blue-500'} />
-          <h3 className={`text-sm font-semibold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-700'}`}>
-            {t.subTasks}
+          <h3 className={`text-sm font-semibold flex items-center gap-2 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-700'}`}>
+            案件执行计划 (AI Managed)
             {totalCount > 0 && (
-              <span className={`ml-2 text-xs font-normal ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+              <span className={`text-xs font-normal ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
                 {completedCount}/{totalCount}
               </span>
             )}
           </h3>
         </div>
-        <button
-          onClick={onAddSubTask}
-          className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-md transition-all ${theme === 'dark'
-            ? 'text-blue-400 hover:bg-blue-500/10'
-            : 'text-blue-500 hover:bg-blue-50'
-            }`}
-        >
-          <Plus size={13} />
-          {t.add}
-        </button>
       </div>
 
       {/* Progress Bar */}
@@ -92,13 +82,9 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
       {/* SubTasks List */}
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         {task.subTasks.length === 0 ? (
-          <div
-            className={`flex items-center gap-2 py-2 pl-1.5 cursor-pointer rounded-md transition-colors ${theme === 'dark' ? 'text-slate-600 hover:text-slate-400' : 'text-slate-400 hover:text-slate-500'
-              }`}
-            onClick={onAddSubTask}
-          >
-            <Plus size={14} />
-            <span className="text-sm">{t.addProceduralStep}</span>
+          <div className={`flex flex-col items-center justify-center h-full text-center gap-2 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+            <span className="text-sm">暂无执行计划</span>
+            <span className="text-xs">请在右侧与助理对话："帮我生成执行计划"</span>
           </div>
         ) : (
           <div className="flex flex-col">
@@ -117,22 +103,14 @@ export const TaskModalSubTasksPanel: React.FC<TaskModalSubTasksPanelProps> = ({
               />
             ))}
 
-            {/* Quick-add row at bottom */}
-            <div
-              className={`flex items-center gap-2 py-1 pl-1.5 mt-1 cursor-pointer rounded-md transition-colors opacity-0 hover:opacity-100 ${theme === 'dark' ? 'text-slate-600 hover:text-slate-400' : 'text-slate-400 hover:text-slate-500'
-                }`}
-              onClick={onAddSubTask}
-            >
-              <Plus size={13} />
-              <span className="text-xs">{t.addProceduralStep}</span>
-            </div>
           </div>
         )}
       </div>
 
       {/* Footer hint */}
-      <div className={`mt-4 pt-3 border-t text-xs ${theme === 'dark' ? 'border-white/5 text-slate-600' : 'border-slate-100 text-slate-400'}`}>
-        {t.subTaskHint}
+      <div className={`mt-4 pt-3 border-t text-xs flex flex-col gap-1 ${theme === 'dark' ? 'border-white/5 text-slate-500' : 'border-slate-100 text-slate-400'}`}>
+        <p>✨ 任务项由 StrategyAgent 自动生成与管理。</p>
+        <p>👉 如需推进进度，请告诉助理："我已经完成了第一项任务"。</p>
       </div>
     </div>
   );

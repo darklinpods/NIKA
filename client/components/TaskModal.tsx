@@ -12,7 +12,7 @@ import { uploadCaseEvidence, api } from '../services/api';
 import {
     Gavel, X, FileText, Plus, Database, Users, Scan, Eye, Download, Trash2,
     Loader, ChevronDown, ChevronUp, Settings2, FileOutput, Package,
-    FileSignature, Calculator, Loader2, Receipt, Wand2, AlignLeft, Check, Edit2
+    FileSignature, Calculator, Loader2, Receipt, Wand2, AlignLeft, Check, Edit2, Sparkles
 } from 'lucide-react';
 
 // ─── Compact Party Card ───────────────────────────────────────────────────────
@@ -133,6 +133,7 @@ interface TaskModalProps {
   onAddDocument: (doc: any) => void;
   onDeleteDocument: (docId: string) => void;
   onGenerateOverview: () => void;
+  onRefreshCase: () => void;
   onSave: () => void;
   onClose: () => void;
 }
@@ -152,6 +153,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   onAddDocument,
   onDeleteDocument,
   onGenerateOverview,
+  onRefreshCase,
   onSave,
   onClose,
 }) => {
@@ -159,10 +161,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const isDark = theme === 'dark';
 
   const [isUploading, setIsUploading] = useState(false);
-  const [isExtractingParties, setIsExtractingParties] = useState(false);
-  const [isExtractingInvoices, setIsExtractingInvoices] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isSmartGenerating, setIsSmartGenerating] = useState(false);
   const [viewingDoc, setViewingDoc] = useState<CaseDocument | null>(null);
   const [selectedDoc, setSelectedDoc] = useState<CaseDocument | null>(null);
   const [showClaimGenerator, setShowClaimGenerator] = useState(false);
@@ -192,48 +190,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       }
   };
 
-  const handleExtractPartiesFromEvidence = async () => {
-      try {
-          setIsExtractingParties(true);
-          const res = await api.post<{
-              success: boolean; parties: any[]; caseFactsNarrative: string; caseType: string; caseData: any;
-          }>(`/cases/${task.id}/extract-parties`, {});
-          if (res.success && res.caseData) {
-              onTaskChange({
-                  ...task,
-                  parties: res.caseData.parties,
-                  ...(res.caseData.caseType ? { caseType: res.caseData.caseType } : {}),
-                  ...(res.caseData.description ? { description: res.caseData.description } : {}),
-              });
-          }
-      } catch {
-          alert('当事人提取失败');
-      } finally {
-          setIsExtractingParties(false);
-      }
-  };
-
-  const handleExtractInvoices = async () => {
-      try {
-          setIsExtractingInvoices(true);
-          const res = await api.post<{ success: boolean; invoices: InvoiceItem[]; total: number }>(
-              `/cases/${task.id}/extract-invoices`, {}
-          );
-          if (res.success) {
-              // Merge returned invoices into local task state via caseFactSheet JSON
-              const existing = task.caseFactSheet ? JSON.parse(task.caseFactSheet) : {};
-              onTaskChange({
-                  ...task,
-                  caseFactSheet: JSON.stringify({ ...existing, invoices: res.invoices })
-              });
-          }
-      } catch (err: any) {
-          alert(err?.message || '提取发票清单失败，请稍后重试。');
-      } finally {
-          setIsExtractingInvoices(false);
-      }
-  };
-
   let partiesArray: any[] = [];
   try {
       partiesArray = typeof task.parties === 'string'
@@ -253,73 +209,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
   // --- Document Generator Local Logic ---
   const generatedDocs = task.documents?.filter(d => d.category !== 'Evidence') || [];
-
-  const handleGenerateValues = async (category: 'analysis' | 'strategy' | 'offical_doc' | 'evidence_list') => {
-      setIsGenerating(true);
-      try {
-          const content = await generateCaseDocument(category, task.title, task.description, lang);
-          const titles: Record<string, { zh: string; en: string }> = {
-              analysis: { zh: '案件分析报告', en: 'Case Analysis Report' },
-              strategy: { zh: '诉讼策略建议', en: 'Litigation Strategy' },
-              evidence_list: { zh: '证据目录', en: 'Evidence List' },
-              offical_doc: { zh: '正式文书', en: 'Official Document' }
-          };
-
-          const newDoc: CaseDocument = {
-              id: `doc-${Date.now()}`,
-              title: titles[category]?.[lang] || 'New Document',
-              content: content,
-              category: category,
-              createdAt: new Date().toISOString(),
-          };
-          onAddDocument(newDoc);
-      } catch (error) {
-          console.error('Failed to generate document:', error);
-          alert(t.genDocFailed || '生成文书失败');
-      } finally {
-          setIsGenerating(false);
-      }
-  };
-
-  const handleSmartDocxGenerate = async () => {
-      setIsSmartGenerating(true);
-      try {
-          const reqResponse = await api.get<{ fields: string[] }>('/templates/traffic_accident_complaint.txt/requirements');
-          const requiredFields = reqResponse.fields;
-
-          const caseContext = `Title: ${task.title}\nDescription: ${task.description}\nParties: ${task.parties || ''}`;
-          const extResponse = await api.post<{ extractedData: Record<string, any> }>('/templates/extract-data', {
-              caseDetails: caseContext,
-              requiredFields
-          });
-
-          const extractedData = extResponse.extractedData || {};
-
-          const finalData: Record<string, any> = {};
-          requiredFields.forEach(field => {
-              finalData[field] = extractedData[field] || `[待确认 ${field}]`;
-          });
-
-          const genResponse = await api.post<{ filePath: string, message: string }>('/templates/generate', {
-              templateName: 'traffic_accident_complaint.txt',
-              data: finalData
-          });
-
-          const newDoc: CaseDocument = {
-              id: `docx-${Date.now()}`,
-              title: t.trafficDocx || '交通类诉状',
-              content: (t.docxGeneratedSuccess || 'Generated at {path}').replace('{path}', genResponse.filePath),
-              category: 'offical_doc',
-              createdAt: new Date().toISOString(),
-          };
-          onAddDocument(newDoc);
-      } catch (error) {
-          console.error('Failed smart docx generation:', error);
-          alert(t.genDocFailedDetail || '智能生成排版失败');
-      } finally {
-          setIsSmartGenerating(false);
-      }
-  };
 
   const handleDownloadDoc = (doc: CaseDocument) => {
       const blob = new Blob([doc.content], { type: 'text/markdown' });
@@ -386,17 +275,21 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">
-                                    {t.description || '案件描述'}
+                                    动态战术板 (Dynamic Strategy Map)
                                 </label>
-                                <textarea
-                                    className={`w-full p-2 rounded-lg border text-xs outline-none transition-colors resize-none h-24 custom-scrollbar ${theme === 'dark'
-                                        ? 'bg-slate-800 border-white/10 text-slate-100 focus:border-blue-500'
-                                        : 'bg-slate-50 border-slate-200 focus:border-blue-500'
-                                        }`}
-                                    value={task.description || ''}
-                                    onChange={(e) => onTaskChange({ ...task, description: e.target.value })}
-                                    placeholder={t.noDesc || '暂无描述'}
-                                />
+                                <div className={`w-full p-3 rounded-lg border text-xs leading-relaxed custom-scrollbar max-h-48 overflow-y-auto ${theme === 'dark' 
+                                    ? 'bg-blue-900/10 border-blue-500/20 text-blue-100 shadow-[inset_0_0_20px_rgba(59,130,246,0.05)]' 
+                                    : 'bg-blue-50 border-blue-200/50 text-blue-900'}`}>
+                                    {task.description ? (
+                                        <div className="whitespace-pre-wrap">{task.description}</div>
+                                    ) : (
+                                        <div className="text-blue-400/60 italic flex flex-col items-center justify-center py-4 gap-2">
+                                            <Sparkles size={16} />
+                                            <span>AI 尚未总结案件策略重点</span>
+                                            <span className="text-[10px]">在右侧 Chat 中与助理探讨后自动生成</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">
@@ -432,7 +325,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                             <input type="file" accept=".pdf,.doc,.docx"
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                 onChange={handleUploadEvidence}
-                                disabled={isUploading || isExtractingParties} />
+                                disabled={isUploading} />
                             <button disabled={isUploading}
                                 className={`px-2 py-1 font-bold text-[10px] rounded flex items-center gap-1 transition-colors
                                     ${isUploading ? 'bg-slate-200 text-slate-400 dark:bg-slate-800' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
@@ -472,15 +365,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                             当事人
                             {showParties ? <ChevronUp size={14} className="text-slate-500" /> : <ChevronDown size={14} className="text-slate-500" />}
                         </button>
-                        <button onClick={handleExtractPartiesFromEvidence}
-                            disabled={isExtractingParties || isUploading}
-                            className={`px-2 py-1 font-bold text-[10px] rounded flex items-center gap-1 transition-colors shrink-0
-                                ${isExtractingParties
-                                    ? 'bg-slate-200 text-slate-400 dark:bg-slate-800'
-                                    : (isDark ? 'bg-purple-900/40 text-purple-300 hover:bg-purple-900/60 border border-purple-500/30' : 'bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-200')}`}>
-                            {isExtractingParties ? <Loader size={10} className="animate-spin" /> : <Scan size={10} />}
-                            扫描提取
-                        </button>
                     </div>
                     {showParties && (
                         <div className="space-y-2">
@@ -501,15 +385,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                                 <span className="bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 p-1 rounded"><Receipt size={12} /></span>
                                 发票清单
                                 {showInvoices ? <ChevronUp size={14} className="text-slate-500" /> : <ChevronDown size={14} className="text-slate-500" />}
-                            </button>
-                            <button onClick={handleExtractInvoices}
-                                disabled={isExtractingInvoices || isExtractingParties || isUploading}
-                                className={`px-2 py-1 font-bold text-[10px] rounded flex items-center gap-1 transition-colors shrink-0
-                                    ${isExtractingInvoices
-                                        ? 'bg-slate-200 text-slate-400 dark:bg-slate-800 cursor-not-allowed'
-                                        : (isDark ? 'bg-amber-900/40 text-amber-300 hover:bg-amber-900/60 border border-amber-500/30' : 'bg-amber-50 text-amber-700 border border-amber-300 hover:bg-amber-100')}`}>
-                                {isExtractingInvoices ? <Loader size={10} className="animate-spin" /> : <Receipt size={10} />}
-                                提取
                             </button>
                         </div>
                         {showInvoices && invoices.length > 0 && (
@@ -537,6 +412,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 theme={theme} 
                 lang={lang} 
                 caseType={task.caseType}
+                onRefreshCase={onRefreshCase}
                 onSaveDocument={(content, suggestedTitle) => {
                     const newDoc: CaseDocument = {
                         id: `doc-${Date.now()}`,

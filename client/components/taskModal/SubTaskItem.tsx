@@ -46,66 +46,43 @@ export const SubTaskItem: React.FC<SubTaskItemProps> = ({
 
   return (
     <div className="group relative py-1 pl-1.5 flex items-center gap-2 transition-all hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-md">
-      {/* Checkbox */}
+      {/* Checkbox (Read Only visual hint for user) */}
       <button
-        onClick={onToggle}
-        className={`relative z-10 shrink-0 transition-all flex items-center justify-center hover:scale-110 active:scale-95 ${subTask.isCompleted ? 'text-emerald-500' : 'text-slate-300 hover:text-blue-500 dark:text-slate-600 dark:hover:text-blue-400'
+        className={`relative z-10 shrink-0 transition-all flex items-center justify-center cursor-default ${subTask.isCompleted ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'
           }`}
       >
         {subTask.isCompleted ? <CheckCircle2 size={18} /> : <Circle size={18} />}
       </button>
 
       {/* Title */}
-      <input
-        ref={inputRef}
-        type="text"
-        value={subTask.title}
-        onChange={(e) => onTitleChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            onEnterPress?.();
-          } else if (e.key === 'Backspace' && subTask.title === '') {
-            e.preventDefault();
-            onDelete();
-          }
-        }}
-        placeholder={t.enterTaskTitle}
-        className={`flex-1 bg-transparent !border-none !ring-0 !shadow-none !outline-none text-[13px] transition-colors px-0 py-0.5 ${subTask.isCompleted
+      <span
+        className={`flex-1 bg-transparent text-[13px] px-0 py-0.5 ${subTask.isCompleted
           ? 'line-through text-slate-400 dark:text-slate-600'
           : theme === 'dark'
-            ? 'text-slate-200 placeholder-slate-600'
-            : 'text-slate-700 placeholder-slate-400'
+            ? 'text-slate-200'
+            : 'text-slate-700'
           }`}
-      />
+      >
+        {subTask.title || t.enterTaskTitle}
+      </span>
 
-      {/* Right side: date + delete */}
+      {/* Right side: date */}
       <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-        {/* Date picker */}
-        <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] cursor-pointer transition-colors ${approaching
-          ? 'text-rose-500 bg-rose-50 dark:bg-rose-500/10'
-          : 'text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700'
-          }`}
-          onClick={() => inputRef.current?.blur()}
-        >
-          <CalendarIcon size={11} />
-          <input
-            type="date"
-            value={subTask.dueDate ? subTask.dueDate.split('T')[0] : ''}
-            onChange={(e) => onDateChange(e.target.value)}
-            className={`bg-transparent !border-none !ring-0 !shadow-none !outline-none text-[11px] font-medium cursor-pointer w-[90px] px-0 py-0 ${approaching ? 'text-rose-500' : theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
-              }`}
-          />
-        </div>
-
-        {/* Delete */}
-        <button
-          onClick={onDelete}
-          title={t.delete}
-          className="p-0.5 rounded text-slate-300 hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
-        >
-          <X size={14} />
-        </button>
+        {/* Date picker display-only */}
+        {subTask.dueDate && (
+          <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] ${approaching
+            ? 'text-rose-500 bg-rose-50 dark:bg-rose-500/10'
+            : 'text-slate-400 bg-slate-100 dark:bg-slate-700'
+            }`}
+          >
+            <CalendarIcon size={11} />
+            <span
+              className={`text-[11px] font-medium w-[90px] px-0 py-0 ${approaching ? 'text-rose-500' : theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}
+            >
+              {subTask.dueDate.split('T')[0]}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Date badge when not hovering (if date set) */}

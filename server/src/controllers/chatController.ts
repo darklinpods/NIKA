@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { aiService } from '../services/aiService';
 import { getCaseCopilotSystemPrompt } from '../prompts/chatPrompts';
+import { handleToolCall } from '../utils/toolExecutor';
+import { RouterAgent } from '../agents/RouterAgent';
 
 const prisma = new PrismaClient();
 
@@ -61,29 +63,23 @@ export const sendMessage = async (req: Request, res: Response) => {
             take: 20 // 最近20条
         });
 
-        // 3. 构造系统提示词
-        const systemPrompt = getCaseCopilotSystemPrompt(ragContext, languageName);
+        // 3. Instantiate Router Agent and Context
+        const context = {
+            caseId: id,
+            caseRecord: targetCase,
+            ragContext: ragContext
+        };
 
-        // 4. 调用 Gemini (通过统一的 aiService)
+        const router = new RouterAgent();
+
+        // 4. Execute Route and Tools Logging
         const chatParts = history.map((msg: any) => ({
             role: msg.role === 'user' ? 'user' : 'model',
             parts: [{ text: msg.content }]
         }));
 
-        const fullPrompt = `[System Instructions]\n${systemPrompt}\n\n[User Question]\n${content}`;
-
-        const response = await aiService.generateContent({
-            model: "gemini-2.5-flash",
-            contents: chatParts.length > 0
-                ? [...chatParts, { role: 'user', parts: [{ text: fullPrompt }] }]
-                : [{ role: 'user', parts: [{ text: fullPrompt }] }]
-        });
-
-        const aiResponse = response.text;
-
-        if (!aiResponse) {
-            throw new Error("AI returned empty response");
-        }
+        const { responseText } = await router.routeAndExecute(context, chatParts, content, handleToolCall);
+        const finalAiResponse = responseText;
 
         // 5. 持久化对话记录
         const savedMessages = await prisma.$transaction([
@@ -96,7 +92,7 @@ export const sendMessage = async (req: Request, res: Response) => {
             }),
             (prisma as any).caseChatMessage.create({
                 data: {
-                    content: aiResponse,
+                    content: finalAiResponse,
                     role: 'assistant',
                     caseId: id
                 }

@@ -113,6 +113,23 @@ const AppLayout: React.FC<{
           onAddDocument={addCaseDocument}
           onDeleteDocument={deleteCaseDocument}
           onGenerateOverview={handleGenerateAiOverview}
+          onRefreshCase={async () => {
+            if (editingTask?.id) {
+              try {
+                const res = await fetch(`/api/cases/${editingTask.id}`);
+                const data = await res.json();
+                if (data.success && data.data) {
+                  setEditingTask(data.data);
+                  setData((prev: any) => ({
+                    ...prev,
+                    tasks: { ...prev.tasks, [data.data.id]: data.data }
+                  }));
+                }
+              } catch (e) {
+                console.error('Failed to refresh case', e);
+              }
+            }
+          }}
           onSave={saveEditedTask}
           onClose={() => setEditingTask(null)}
         />

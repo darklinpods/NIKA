@@ -17,10 +17,11 @@ interface CaseChatPanelProps {
     theme: 'light' | 'dark';
     lang: 'zh' | 'en';
     caseType?: string;
+    onRefreshCase?: () => void;
     onSaveDocument?: (content: string, suggestedTitle: string) => void;
 }
 
-export const CaseChatPanel: React.FC<CaseChatPanelProps> = ({ caseId, theme, lang, caseType, onSaveDocument }) => {
+export const CaseChatPanel: React.FC<CaseChatPanelProps> = ({ caseId, theme, lang, caseType, onRefreshCase, onSaveDocument }) => {
     const t = translations[lang] as any;
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
@@ -83,6 +84,7 @@ export const CaseChatPanel: React.FC<CaseChatPanelProps> = ({ caseId, theme, lan
                     const filtered = prev.filter(m => m.id !== 'temp-u');
                     return [...filtered, res.userMessage, res.aiMessage];
                 });
+                if (onRefreshCase) onRefreshCase();
             }
         } catch (err) {
             console.error("Chat Error:", err);
