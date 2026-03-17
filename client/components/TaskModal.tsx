@@ -167,6 +167,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [selectedDoc, setSelectedDoc] = useState<CaseDocument | null>(null);
   const [showClaimGenerator, setShowClaimGenerator] = useState(false);
   const [showSubTasks, setShowSubTasks] = useState(false);
+  const [showParties, setShowParties] = useState(true);
+  const [showBasicInfo, setShowBasicInfo] = useState(true);
+  const [showInvoices, setShowInvoices] = useState(true);
 
   // --- Evidence Local Logic ---
   const isTrafficAccident = task.caseType === 'traffic_accident';
@@ -341,49 +344,79 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             <div className="p-4 flex flex-col gap-4">
                 {/* 案件基本信息 */}
                 <div>
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">
-                        {t.taskTitle || '任务标题'}
-                    </label>
-                    <input
-                        className={`w-full p-2 rounded-lg border text-sm font-bold outline-none transition-colors ${theme === 'dark'
-                            ? 'bg-slate-800 border-white/10 text-slate-100 focus:border-blue-500'
-                            : 'bg-slate-50 border-slate-200 focus:border-blue-500'
-                            }`}
-                        value={task.title}
-                        onChange={(e) => onTaskChange({ ...task, title: e.target.value })}
-                        placeholder={t.enterCaseTitle || '输入案件标题'}
-                    />
-                </div>
-                <div>
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">
-                        {t.description || '案件描述'}
-                    </label>
-                    <textarea
-                        className={`w-full p-2 rounded-lg border text-xs outline-none transition-colors resize-none h-24 custom-scrollbar ${theme === 'dark'
-                            ? 'bg-slate-800 border-white/10 text-slate-100 focus:border-blue-500'
-                            : 'bg-slate-50 border-slate-200 focus:border-blue-500'
-                            }`}
-                        value={task.description || ''}
-                        onChange={(e) => onTaskChange({ ...task, description: e.target.value })}
-                        placeholder={t.noDesc || '暂无描述'}
-                    />
-                </div>
-                <div>
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">
-                        {t.currentStage || '当前阶段'}
-                    </label>
-                    <select
-                        className={`w-full p-2 rounded-lg border text-xs font-medium outline-none transition-colors ${theme === 'dark'
-                            ? 'bg-slate-800 border-white/10 text-slate-100 focus:border-blue-500'
-                            : 'bg-slate-50 border-slate-200 focus:border-blue-500'
-                            }`}
-                        value={task.status || 'todo'}
-                        onChange={(e) => onTaskChange({ ...task, status: e.target.value as any })}
+                    <button 
+                        className="text-xs font-bold flex items-center justify-between w-full hover:opacity-80 transition-opacity mb-2"
+                        onClick={() => setShowBasicInfo(!showBasicInfo)}
                     >
-                        <option value="todo">{t.backlog || '未开始'}</option>
-                        <option value="in-progress">{t.inProgress || '进行中'}</option>
-                        <option value="done">{t.done || '已完成'}</option>
-                    </select>
+                        <div className="flex items-center gap-1.5">
+                            <span className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 p-1 rounded"><FileText size={12} /></span>
+                            {t.basicInfo || '案件基本信息'}
+                        </div>
+                        {showBasicInfo ? <ChevronUp size={14} className="text-slate-500" /> : <ChevronDown size={14} className="text-slate-500" />}
+                    </button>
+                    {showBasicInfo && (
+                        <div className="flex flex-col gap-4">
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">
+                                    {t.taskTitle || '任务标题'}
+                                </label>
+                                <input
+                                    className={`w-full p-2 rounded-lg border text-sm font-bold outline-none transition-colors ${theme === 'dark'
+                                        ? 'bg-slate-800 border-white/10 text-slate-100 focus:border-blue-500'
+                                        : 'bg-slate-50 border-slate-200 focus:border-blue-500'
+                                        }`}
+                                    value={task.title}
+                                    onChange={(e) => onTaskChange({ ...task, title: e.target.value })}
+                                    placeholder={t.enterCaseTitle || '输入案件标题'}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">
+                                    案由
+                                </label>
+                                <input
+                                    className={`w-full p-2 rounded-lg border text-sm font-bold outline-none transition-colors ${theme === 'dark'
+                                        ? 'bg-slate-800 border-white/10 text-slate-100 focus:border-blue-500'
+                                        : 'bg-slate-50 border-slate-200 focus:border-blue-500'
+                                        }`}
+                                    value={task.caseReason || (task.caseType === 'traffic_accident' ? '机动车交通事故责任纠纷' : '')}
+                                    onChange={(e) => onTaskChange({ ...task, caseReason: e.target.value })}
+                                    placeholder={'输入案由'}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">
+                                    {t.description || '案件描述'}
+                                </label>
+                                <textarea
+                                    className={`w-full p-2 rounded-lg border text-xs outline-none transition-colors resize-none h-24 custom-scrollbar ${theme === 'dark'
+                                        ? 'bg-slate-800 border-white/10 text-slate-100 focus:border-blue-500'
+                                        : 'bg-slate-50 border-slate-200 focus:border-blue-500'
+                                        }`}
+                                    value={task.description || ''}
+                                    onChange={(e) => onTaskChange({ ...task, description: e.target.value })}
+                                    placeholder={t.noDesc || '暂无描述'}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">
+                                    {t.currentStage || '当前阶段'}
+                                </label>
+                                <select
+                                    className={`w-full p-2 rounded-lg border text-xs font-medium outline-none transition-colors ${theme === 'dark'
+                                        ? 'bg-slate-800 border-white/10 text-slate-100 focus:border-blue-500'
+                                        : 'bg-slate-50 border-slate-200 focus:border-blue-500'
+                                        }`}
+                                    value={task.status || 'todo'}
+                                    onChange={(e) => onTaskChange({ ...task, status: e.target.value as any })}
+                                >
+                                    <option value="todo">{t.backlog || '未开始'}</option>
+                                    <option value="in-progress">{t.inProgress || '进行中'}</option>
+                                    <option value="done">{t.done || '已完成'}</option>
+                                </select>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <hr className={`my-2 ${isDark ? 'border-white/10' : 'border-slate-200'}`} />
@@ -431,10 +464,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 {/* 当事人卡片区 */}
                 <div>
                     <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-xs font-bold flex items-center gap-1.5">
+                        <button 
+                            className="text-xs font-bold flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+                            onClick={() => setShowParties(!showParties)}
+                        >
                             <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 p-1 rounded"><Users size={12} /></span>
                             当事人
-                        </h3>
+                            {showParties ? <ChevronUp size={14} className="text-slate-500" /> : <ChevronDown size={14} className="text-slate-500" />}
+                        </button>
                         <button onClick={handleExtractPartiesFromEvidence}
                             disabled={isExtractingParties || isUploading}
                             className={`px-2 py-1 font-bold text-[10px] rounded flex items-center gap-1 transition-colors shrink-0
@@ -445,20 +482,26 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                             扫描提取
                         </button>
                     </div>
-                    <div className="space-y-2">
-                        {partiesArray.map((party, idx) => (
-                            <PartyCard key={idx} party={party} theme={theme} t={t} />
-                        ))}
-                    </div>
+                    {showParties && (
+                        <div className="space-y-2">
+                            {partiesArray.map((party, idx) => (
+                                <PartyCard key={idx} party={party} theme={theme} t={t} />
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {isTrafficAccident && (
                     <>
                         <div className="flex justify-between items-center mb-2 mt-4">
-                            <h3 className="text-xs font-bold flex items-center gap-1.5">
+                            <button 
+                                className="text-xs font-bold flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+                                onClick={() => setShowInvoices(!showInvoices)}
+                            >
                                 <span className="bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 p-1 rounded"><Receipt size={12} /></span>
                                 发票清单
-                            </h3>
+                                {showInvoices ? <ChevronUp size={14} className="text-slate-500" /> : <ChevronDown size={14} className="text-slate-500" />}
+                            </button>
                             <button onClick={handleExtractInvoices}
                                 disabled={isExtractingInvoices || isExtractingParties || isUploading}
                                 className={`px-2 py-1 font-bold text-[10px] rounded flex items-center gap-1 transition-colors shrink-0
@@ -469,7 +512,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                                 提取
                             </button>
                         </div>
-                        {invoices.length > 0 && (
+                        {showInvoices && invoices.length > 0 && (
                             <div className="space-y-1">
                                 {invoices.map((inv, idx) => (
                                     <div key={idx} className={`p-2 rounded-lg border text-[10px] flex justify-between ${isDark ? 'bg-slate-800 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
