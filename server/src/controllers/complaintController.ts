@@ -3,6 +3,7 @@ import { aiService } from '../services/aiService';
 import { getComplaintElementsExtractionPrompt } from '../prompts/documentPrompts';
 import { logExtraction } from '../utils/extractionLogger';
 import { cleanAndParseJsonObject } from '../utils/aiJsonParser';
+import { TrafficAccidentSkill } from '../skills/TrafficAccidentSkill';
 
 export const extractComplaintElements = async (req: Request, res: Response) => {
     const startTime = Date.now();
@@ -11,6 +12,19 @@ export const extractComplaintElements = async (req: Request, res: Response) => {
 
         if (!text) {
             return res.status(400).json({ error: 'Missing source text' });
+        }
+
+        // 交通事故：直接用 skill 生成完整 Markdown 诉状
+        if (templateId === 'traffic') {
+            const skill = new TrafficAccidentSkill();
+            const markdownText = await skill.generateClaimText({
+                documentsContent: text,
+                caseTitle: '',
+                caseDescription: '',
+                parties: ''
+            });
+            logExtraction({ templateId, status: 'success', processingTime: Date.now() - startTime }, text);
+            return res.json({ success: true, markdownText });
         }
 
         const jsonSchemaStr = `{

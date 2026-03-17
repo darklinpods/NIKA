@@ -94,4 +94,4 @@ export const deleteKnowledgeDoc = (id: string): Promise<void> => api.delete<void
 export const updateKnowledgeDoc = (id: string, data: { title?: string, category?: string }): Promise<any> => api.put<any>(`/knowledge/${id}`, data);
 
 // Complaint Generator API
-export const extractComplaint = (text: string, templateId: string): Promise<{ success: boolean; data: any }> => api.post<{ success: boolean; data: any }>('/complaints/extract', { text, templateId });
+export const extractComplaint = (text: string, templateId: string): Promise<{ success: boolean; data?: any; markdownText?: string }> => api.post('/complaints/extract', { text, templateId });

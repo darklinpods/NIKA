@@ -35,12 +35,11 @@ export const chatTools = [
             },
             {
                 name: "generate_smart_document",
-                description: "当用户要求生成诉状、智能文书、或者基于模板生成排版文书时调用此工具。",
+                description: "当用户要求生成诉状、智能文书时调用此工具，会根据案件证据自动生成 Markdown 格式的起诉状。",
                 parameters: {
                     type: "OBJECT",
                     properties: {
-                        caseId: { type: "STRING" },
-                        templateName: { type: "STRING", description: "默认填 'traffic_accident_complaint.txt'" }
+                        caseId: { type: "STRING" }
                     },
                     required: ["caseId"]
                 }

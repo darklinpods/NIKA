@@ -41,6 +41,7 @@ export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ 
   const [isExtracting, setIsExtracting] = useState<boolean>(false);
   const [hasExtracted, setHasExtracted] = useState<boolean>(false);
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  const [markdownResult, setMarkdownResult] = useState<string>('');
 
   // Cases state
   const [casesList, setCasesList] = useState<any[]>([]);
@@ -104,21 +105,19 @@ export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ 
         }
 
         const res = await extractComplaint(extractInput, selectedTemplate);
-        if (res.success && res.data) {
-            const newFormData = { ...res.data };
-            // Ensure plaintiffs is a non-empty array
-            if (!newFormData.plaintiffs || !Array.isArray(newFormData.plaintiffs) || newFormData.plaintiffs.length === 0) {
-                newFormData.plaintiffs = [{ name: '', gender: '', birth: '', nation: '', job: '', position: '', phone: '', address: '', residence: '', idType: '身份证', id: '' }];
+        if (res.success) {
+            if (res.markdownText) {
+                setMarkdownResult(res.markdownText);
+            } else if (res.data) {
+                const newFormData = { ...res.data };
+                if (!newFormData.plaintiffs || !Array.isArray(newFormData.plaintiffs) || newFormData.plaintiffs.length === 0) {
+                    newFormData.plaintiffs = [{ name: '', gender: '', birth: '', nation: '', job: '', position: '', phone: '', address: '', residence: '', idType: '身份证', id: '' }];
+                }
+                if (!newFormData.defendants || !Array.isArray(newFormData.defendants) || newFormData.defendants.length === 0) {
+                    newFormData.defendants = [{ name: '', gender: '', birth: '', nation: '', job: '', position: '', phone: '', address: '', residence: '', idType: '身份证', id: '', type: '自然人', regAddress: '', legalRep: '' }];
+                }
+                setFormData(prev => ({ ...prev, ...newFormData }));
             }
-            // Ensure defendants is a non-empty array
-            if (!newFormData.defendants || !Array.isArray(newFormData.defendants) || newFormData.defendants.length === 0) {
-                newFormData.defendants = [{ name: '', gender: '', birth: '', nation: '', job: '', position: '', phone: '', address: '', residence: '', idType: '身份证', id: '', type: '自然人', regAddress: '', legalRep: '' }];
-            }
-            
-            setFormData(prev => ({
-                ...prev,
-                ...newFormData
-            }));
             setHasExtracted(true);
         }
     } catch (e: any) {
@@ -177,18 +176,9 @@ export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ 
     return lines.join('\n');
   };
 
-  const handleCopyMarkdown = async () => {
-    try {
-      await navigator.clipboard.writeText(buildMarkdown());
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2500);
-    } catch (e) {
-      alert('复制失败，请手动复制。');
-    }
-  };
-
   const handleClear = () => {
     setHasExtracted(false);
+    setMarkdownResult('');
     setSourceText('');
     setSelectedCaseId('');
   };
@@ -321,40 +311,55 @@ export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ 
                 </div>
             )}
 
-            {/* WYSIWYG Editor View (Only visible after extraction) */}
-            <div className={`flex-1 overflow-y-auto ${hasExtracted ? 'opacity-100 block' : 'opacity-0 hidden'} custom-scrollbar p-8 transition-opacity duration-500`}>
-                
-                {/* Editor Toolbar (Sticky) */}
-                <div className="max-w-[900px] mx-auto mb-6 flex justify-between items-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-md p-4 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm sticky top-0 z-20">
+            {/* Result View (Only visible after extraction) */}
+            <div className={`flex-1 overflow-y-auto ${hasExtracted ? 'opacity-100 flex flex-col' : 'opacity-0 hidden'} custom-scrollbar transition-opacity duration-500`}>
+
+                {/* Toolbar (Sticky) */}
+                <div className={`shrink-0 flex justify-between items-center p-4 border-b sticky top-0 z-20 backdrop-blur-md ${isDark ? 'bg-slate-900/90 border-white/10' : 'bg-white/90 border-slate-200'}`}>
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-inner">
-                            <Sparkles size={20} />
+                        <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                            <Sparkles size={18} />
                         </div>
                         <div>
-                            <h4 className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>所见即所得 (WYSIWYG) - 智能编辑区</h4>
-                            <p className="text-xs text-slate-500">所有带下划线/边框的空白处均可直接点击修改。排版将如实打印。</p>
+                            <h4 className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                                {markdownResult ? 'Skill 生成完整诉状' : '所见即所得 (WYSIWYG) - 智能编辑区'}
+                            </h4>
+                            <p className="text-xs text-slate-500">
+                                {markdownResult ? '由 skills/traffic_accident.md 驱动生成，可直接复制到 Word 排版。' : '所有带下划线/边框的空白处均可直接点击修改。'}
+                            </p>
                         </div>
                     </div>
-
                     <div className="flex items-center gap-3">
-                        <button
-                            onClick={handleClear}
-                            className={`px-4 py-2 font-medium rounded-lg transition-colors ${isDark ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-200'}`}
-                        >
+                        <button onClick={handleClear} className={`px-4 py-2 font-medium rounded-lg transition-colors ${isDark ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-200'}`}>
                             放弃重试
                         </button>
                         <button
-                            onClick={handleCopyMarkdown}
-                            className={`px-6 py-2.5 font-bold rounded-lg shadow-lg transition-all flex items-center gap-2 ${
-                                isCopied
-                                    ? 'bg-green-600 text-white shadow-green-600/20'
-                                    : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20'
-                            }`}
+                            onClick={async () => {
+                                try {
+                                    await navigator.clipboard.writeText(markdownResult || buildMarkdown());
+                                    setIsCopied(true);
+                                    setTimeout(() => setIsCopied(false), 2500);
+                                } catch { alert('复制失败，请手动复制。'); }
+                            }}
+                            className={`px-6 py-2.5 font-bold rounded-lg shadow-lg transition-all flex items-center gap-2 ${isCopied ? 'bg-green-600 text-white shadow-green-600/20' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20'}`}
                         >
                             {isCopied ? <><ArrowRight size={18} /> 已复制到剪贴板！</> : <><FileText size={18} /> 复制为 Markdown</>}
                         </button>
                     </div>
                 </div>
+
+                {/* Markdown 全文预览（traffic skill 模式） */}
+                {markdownResult ? (
+                <div className="flex-1 p-8">
+                    <textarea
+                        value={markdownResult}
+                        onChange={e => setMarkdownResult(e.target.value)}
+                        className={`w-full h-full min-h-[600px] p-6 rounded-xl border text-sm leading-relaxed resize-none outline-none font-mono custom-scrollbar ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-800 focus:border-indigo-400'}`}
+                        style={{ fontFamily: '"SimSun", "Songti SC", monospace' }}
+                    />
+                </div>
+                ) : (
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
 
                 {/* The Paper Document Itself */}
                 <div 
@@ -868,6 +873,8 @@ export const ComplaintGeneratorView: React.FC<ComplaintGeneratorViewProps> = ({ 
                         </tbody>
                     </table>
                 </div>
+                </div>
+                )}
             </div>
         </div>
     </div>

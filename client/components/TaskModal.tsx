@@ -6,10 +6,12 @@ import { translations } from '../translations';
 import { ClaimListGenerator } from './claimList/ClaimListGenerator';
 import { uploadCaseEvidence } from '../services/api';
 import {
-    X, FileText, Plus, Eye, Download, Trash2,
+    X, FileText, Plus, Download, Trash2,
     Loader, Share2, FileOutput, Calculator,
-    FileSignature, AlignLeft, Clock, Sparkles, Settings
+    FileSignature, Clock, Sparkles, Settings, ClipboardList
 } from 'lucide-react';
+import { CASE_TYPES } from '../constants/caseTypes';
+import { getChecklist } from '../constants/printChecklist';
 
 // ─── Document Viewer Modal ────────────────────────────────────────────────────
 const DocViewer: React.FC<{ doc: CaseDocument; theme: 'light' | 'dark'; onClose: () => void }> = ({ doc, theme, onClose }) => {
@@ -227,15 +229,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={onSave}
+                    <button
                         className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border transition-colors
                             ${isDark ? 'border-white/10 text-slate-300 hover:bg-white/5' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
                         <FileOutput size={14} />
                         导出文书
                     </button>
-                    <button className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 transition-colors">
-                        <Share2 size={14} />
-                        分享案件
+                    <button onClick={onSave} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+                        保存
                     </button>
                 </div>
             </div>
@@ -337,16 +338,48 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
                     <div className="p-3 space-y-4">
                         {/* 案件概览卡片 */}
-                        <div className={`p-3 rounded-xl ${isDark ? 'bg-slate-800' : 'bg-slate-900'} text-white`}>
-                            <p className="text-[10px] font-bold text-slate-400 mb-2">案件概览</p>
-                            <div className="grid grid-cols-2 gap-2">
+                        <div className={`p-3 rounded-xl space-y-2 ${isDark ? 'bg-slate-800 border border-white/5' : 'bg-slate-50 border border-slate-200'}`}>
+                            <p className={`text-[10px] font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>案件基本信息</p>
+                            <div>
+                                <p className={`text-[10px] mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>案件标题</p>
+                                <input
+                                    className={`w-full px-2 py-1.5 rounded-lg border text-xs font-medium outline-none ${isDark ? 'bg-slate-900 border-white/10 text-slate-100 focus:border-blue-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-400'}`}
+                                    value={task.title}
+                                    onChange={(e) => onTaskChange({ ...task, title: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <p className={`text-[10px] mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>案由</p>
+                                <select
+                                    className={`w-full px-2 py-1.5 rounded-lg border text-xs font-medium outline-none ${isDark ? 'bg-slate-900 border-white/10 text-slate-100 focus:border-blue-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-400'}`}
+                                    value={task.caseType || 'general'}
+                                    onChange={(e) => onTaskChange({ ...task, caseType: e.target.value })}
+                                >
+                                    {CASE_TYPES.map(ct => (
+                                        <option key={ct.value} value={ct.value}>{lang === 'zh' ? ct.labelZh : ct.labelEn}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <p className={`text-[10px] mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>当前阶段</p>
+                                <select
+                                    className={`w-full px-2 py-1.5 rounded-lg border text-xs font-medium outline-none ${isDark ? 'bg-slate-900 border-white/10 text-slate-100 focus:border-blue-500' : 'bg-white border-slate-200 text-slate-800 focus:border-blue-400'}`}
+                                    value={task.status || 'todo'}
+                                    onChange={(e) => onTaskChange({ ...task, status: e.target.value as any })}
+                                >
+                                    <option value="todo">{lang === 'zh' ? '调查/取证' : 'Investigation'}</option>
+                                    <option value="in-progress">{lang === 'zh' ? '审理/庭审' : 'Litigation'}</option>
+                                    <option value="done">{lang === 'zh' ? '执行/结案' : 'Execution/Closed'}</option>
+                                </select>
+                            </div>
+                            <div className={`flex gap-3 pt-1 border-t ${isDark ? 'border-white/5' : 'border-slate-200'}`}>
                                 <div>
-                                    <p className="text-[10px] text-slate-400">证据数量</p>
-                                    <p className="text-xl font-black">{evidenceDocs.length}</p>
+                                    <p className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>证据数量</p>
+                                    <p className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{evidenceDocs.length}</p>
                                 </div>
                                 <div>
-                                    <p className="text-[10px] text-slate-400">生成文书</p>
-                                    <p className="text-xl font-black">{generatedDocs.length}</p>
+                                    <p className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>生成文书</p>
+                                    <p className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{generatedDocs.length}</p>
                                 </div>
                             </div>
                         </div>
@@ -357,6 +390,16 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                                 <QuickActionBtn key={a.label} theme={theme} icon={<FileSignature size={18} />} label={a.label}
                                     onClick={() => chatRef.current?.sendMessage(a.prompt)} />
                             ))}
+                            <QuickActionBtn theme={theme} icon={<ClipboardList size={18} />} label="打印材料清单"
+                                onClick={() => {
+                                    const checklist = getChecklist(task.caseType || 'general');
+                                    const rows = checklist.items.map(item =>
+                                        `<tr><td style="padding:8px 12px;border:1px solid #ddd;font-size:14px;">${item.required ? '★' : '☆'}</td><td style="padding:8px 12px;border:1px solid #ddd;font-size:14px;">${item.label}</td><td style="padding:8px 12px;border:1px solid #ddd;width:80px;"></td></tr>`
+                                    ).join('');
+                                    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${checklist.title}</title><style>body{font-family:sans-serif;padding:32px}h2{margin-bottom:8px}p{color:#666;font-size:13px;margin-bottom:16px}table{border-collapse:collapse;width:100%}th{background:#f5f5f5;padding:8px 12px;border:1px solid #ddd;text-align:left;font-size:13px}@media print{button{display:none}}</style></head><body><h2>${checklist.title}</h2><p>案件：${task.title} &nbsp;|&nbsp; 打印日期：${new Date().toLocaleDateString('zh-CN')}</p><table><thead><tr><th style="width:40px">必须</th><th>材料名称</th><th>已备妥 ✓</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
+                                    const w = window.open('', '_blank');
+                                    if (w) { w.document.write(html); w.document.close(); w.print(); }
+                                }} />
                             {isTrafficAccident && (
                                 <QuickActionBtn theme={theme} icon={<Calculator size={18} />} label="索赔计算器"
                                     onClick={() => setShowClaimGenerator(true)} />

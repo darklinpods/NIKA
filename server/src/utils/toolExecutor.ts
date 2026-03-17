@@ -1,9 +1,8 @@
 import prisma from '../prisma';
 import { aiService } from '../services/aiService';
 import { getPartiesAndFactsExtractionPrompt, getInvoiceExtractionPrompt } from '../prompts/extractionPrompts';
-import { generateDocument, getRequiredFieldsForTemplate } from './docxUtils';
 import { SUPPORTED_CASE_TYPES } from '../constants';
-import { loadSkill } from '../skills/SkillLoader';
+import { TrafficAccidentSkill } from '../skills/TrafficAccidentSkill';
 import { cleanAndParseJsonObject, cleanAndParseJsonArray } from './aiJsonParser';
 
 // Re-export chatTools from the dedicated definitions file
@@ -96,58 +95,27 @@ export const executeExtractInvoices = async (caseId: string) => {
     }
 };
 
-export const executeGenerateSmartDocument = async (caseId: string, templateName?: string) => {
+export const executeGenerateSmartDocument = async (caseId: string) => {
     try {
-        const caseRecord = await prisma.case.findUnique({ where: { id: caseId } });
+        const caseRecord = await prisma.case.findUnique({
+            where: { id: caseId },
+            include: { documents: true }
+        });
         if (!caseRecord) return { error: '案件不存在。' };
 
-        const { templateName: skillTemplate } = loadSkill(caseRecord.caseType ?? 'general');
-        const resolvedTemplate = templateName || skillTemplate;
-        const requiredFields = getRequiredFieldsForTemplate(resolvedTemplate);
-        const caseContext = `Title: ${caseRecord.title}\nDescription: ${caseRecord.description}\nParties: ${caseRecord.parties || ''}`;
+        const docsContent = (caseRecord.documents || [])
+            .map((d: any) => `=== [${d.title}] ===\n${d.content}`)
+            .join('\n\n');
 
-        console.log('[Tool: generate_smart_document] Extracting data with AI...');
-        const response = await aiService.generateContent({
-            model: "gemini-2.5-flash",
-            contents: [{
-                role: "user", parts: [{
-                    text: `Extract the following required fields from the case details. 
-                    If a field cannot be determined, return null for that field.
-                    Please return the data strictly in JSON object format.
-                    
-                    Required Fields: ${JSON.stringify(requiredFields)}
-                    
-                    Case Details:
-                    ${caseContext}`
-                }]
-            }]
+        const skill = new TrafficAccidentSkill();
+        const markdownText = await skill.generateClaimText({
+            documentsContent: docsContent,
+            caseTitle: caseRecord.title,
+            caseDescription: caseRecord.description || '',
+            parties: caseRecord.parties || ''
         });
 
-        const extractedData = cleanAndParseJsonObject(response.text || '{}');
-
-        const finalData: Record<string, any> = {};
-        requiredFields.forEach(field => {
-            finalData[field] = extractedData[field] || `[待确认 ${field}]`;
-        });
-
-        const outputFileName = `Generated_${Date.now()}.txt`;
-        const filePath = generateDocument(resolvedTemplate, finalData, outputFileName);
-
-        // Save to DB
-        const newDoc = await prisma.caseDocument.create({
-            data: {
-                title: `${resolvedTemplate.replace('.docx', '')}(AI生成)`,
-                content: `该文书已成功生成并保存在服务器: ${filePath}\n\n此文书作为正式文书归档。`,
-                category: 'offical_doc',
-                caseId: caseId
-            }
-        });
-
-        return {
-            success: true,
-            filePath,
-            message: `成功根据模板 ${resolvedTemplate} 生成了文书，并已自动保存到案件的"已生成文档"中。`
-        };
+        return { success: true, markdownText, message: '起诉状已生成，请查看下方内容。' };
 
     } catch (e: any) {
         console.error('[Tool: generate_smart_document] Error:', e);

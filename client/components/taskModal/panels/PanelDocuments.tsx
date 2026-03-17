@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Package, Download, CheckSquare, Settings2, FileOutput, Plus, Loader2, FileSignature, Calculator, FileText, Trash2 } from 'lucide-react';
+import { Package, Download, CheckSquare, Settings2, FileOutput, Plus, Loader2, FileSignature, Calculator, FileText, Trash2, ClipboardList } from 'lucide-react';
+import { getChecklist } from '../../../constants/printChecklist';
 import { TaskModalSubTasksPanel } from '../TaskModalSubTasksPanel';
 import { ClaimListGenerator } from '../../claimList/ClaimListGenerator';
 import { generateCaseDocument } from '../../../services/geminiService';
@@ -209,11 +210,27 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
                         </h3>
                         <p className="text-sm text-slate-500 mt-1">{t.finalVaultDesc}</p>
                     </div>
-                    {generatedDocs.length > 0 && (
-                        <button className="px-6 py-2.5 bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-bold text-sm rounded-xl hover:opacity-90 transition-all flex items-center gap-2 shadow-lg">
-                            <Package size={18} /> {t.bundleDossier}
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => {
+                                const checklist = getChecklist(task.caseType || 'general');
+                                const rows = checklist.items.map(item =>
+                                    `<tr><td style="padding:8px 12px;border:1px solid #ddd;font-size:14px;">${item.required ? '★' : '☆'}</td><td style="padding:8px 12px;border:1px solid #ddd;font-size:14px;">${item.label}</td><td style="padding:8px 12px;border:1px solid #ddd;width:80px;"></td></tr>`
+                                ).join('');
+                                const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${checklist.title}</title><style>body{font-family:sans-serif;padding:32px}h2{margin-bottom:8px}p{color:#666;font-size:13px;margin-bottom:16px}table{border-collapse:collapse;width:100%}th{background:#f5f5f5;padding:8px 12px;border:1px solid #ddd;text-align:left;font-size:13px}@media print{button{display:none}}</style></head><body><h2>${checklist.title}</h2><p>案件：${task.title} &nbsp;|&nbsp; 打印日期：${new Date().toLocaleDateString('zh-CN')}</p><table><thead><tr><th style="width:40px">必须</th><th>材料名称</th><th>已备妥 ✓</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
+                                const w = window.open('', '_blank');
+                                if (w) { w.document.write(html); w.document.close(); w.print(); }
+                            }}
+                            className={`px-4 py-2.5 font-bold text-sm rounded-xl hover:opacity-90 transition-all flex items-center gap-2 shadow-sm ${theme === 'dark' ? 'bg-amber-600/80 text-white hover:bg-amber-600' : 'bg-amber-500 text-white hover:bg-amber-600'}`}
+                        >
+                            <ClipboardList size={16} /> 打印材料清单
                         </button>
-                    )}
+                        {generatedDocs.length > 0 && (
+                            <button className="px-6 py-2.5 bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-bold text-sm rounded-xl hover:opacity-90 transition-all flex items-center gap-2 shadow-lg">
+                                <Package size={18} /> {t.bundleDossier}
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {generatedDocs.length > 0 ? (
