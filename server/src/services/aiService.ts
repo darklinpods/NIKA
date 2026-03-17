@@ -96,6 +96,7 @@ class AIService {
         model?: string; // 默认如果是 'gemini-2.5-flash', 并且 provider 是 openai, 会被 OPENAI_MODEL 环境变量覆盖或映射
         contents: any;
         config?: any;
+        tools?: any[];
     }) {
         let lastError: any = null;
 
@@ -140,19 +141,86 @@ class AIService {
 
             for (let attempt = 0; attempt < this.maxRetries; attempt++) {
                 try {
-                    console.log(`[AIService] Executing generation using Provider: [${effectiveProvider.toUpperCase()}] | Model: [${currentModel}]`);
-                    const response = await this.openaiClient.chat.completions.create({
+                    const requestBody: any = {
                         model: currentModel,
                         messages: messages,
                         response_format: params.config?.responseMimeType === 'application/json' ? { type: "json_object" } : undefined,
                         temperature: params.config?.temperature,
-                    });
+                    };
 
-                    const textResponse = response.choices[0]?.message?.content || "";
+                    if (params.tools && params.tools.length > 0) {
+                        const convertSchema = (schema: any): any => {
+                            if (!schema || typeof schema !== 'object') return schema;
+                            const res = { ...schema };
+                            if (typeof res.type === 'string') {
+                                res.type = res.type.toLowerCase();
+                            }
+                            if (res.properties) {
+                                for (const k in res.properties) {
+                                    res.properties[k] = convertSchema(res.properties[k]);
+                                }
+                            }
+                            if (res.items) {
+                                res.items = convertSchema(res.items);
+                            }
+                            return res;
+                        };
+
+                        requestBody.tools = params.tools.flatMap((t: any) => 
+                            (t.functionDeclarations || []).map((fd: any) => ({
+                                type: "function",
+                                function: {
+                                    name: fd.name,
+                                    description: fd.description,
+                                    parameters: convertSchema(fd.parameters)
+                                }
+                            }))
+                        );
+                    }
+
+                    console.log(`[AIService] Executing generation using Provider: [${effectiveProvider.toUpperCase()}] | Model: [${currentModel}]`);
+                    const response = await this.openaiClient.chat.completions.create(requestBody);
+
+                    const message = response.choices[0]?.message;
+                    let textResponse = message?.content || "";
+                    let functionCalls: any[] = [];
+
+                    // 1. Parse Native OpenAI tool_calls
+                    if (message?.tool_calls && message.tool_calls.length > 0) {
+                        functionCalls = message.tool_calls.map((tc: any) => {
+                            let args = {};
+                            try { args = JSON.parse(tc.function.arguments); } catch (e) {}
+                            return { name: tc.function.name, args };
+                        });
+                    }
+
+                    // 2. Fallback parse for Qwen/DeepSeek pseudo-XML function calls in text
+                    // Example: <|FunctionCallBegin|>[{"name":"route_to_agent","parameters":{"agent_name":"STRATEGY_AGENT"}}]<|FunctionCallEnd|>
+                    const toolCallRegex = /<\|FunctionCallBegin\|>(.*?)<\|FunctionCallEnd\|>/;
+                    const match = textResponse.match(toolCallRegex);
+                    if (match && functionCalls.length === 0) {
+                        try {
+                            const parsed = JSON.parse(match[1]);
+                            if (Array.isArray(parsed)) {
+                                parsed.forEach((p: any) => {
+                                    functionCalls.push({
+                                        name: p.name,
+                                        // Some models output 'parameters', some 'args'
+                                        args: p.parameters || p.args || {}
+                                    });
+                                });
+                            }
+                            // Strip it from text
+                            textResponse = textResponse.replace(toolCallRegex, '').trim();
+                        } catch (e) {
+                            console.error("[AIService] Failed to parse fallback XML tool calls", e);
+                        }
+                    }
 
                     // 构造兼容原 Gemini 接口的返回对象
                     return {
-                        text: textResponse
+                        text: textResponse,
+                        functionCalls: functionCalls.length > 0 ? functionCalls : undefined
                     };
 
                 } catch (error: any) {
@@ -172,10 +240,15 @@ class AIService {
             try {
                 const client = this.getGeminiClient();
                 console.log(`[AIService] Executing generation using Provider: [GEMINI] | Model: [${modelName}]`);
+                const configObj: any = { ...params.config };
+                if (params.tools) {
+                    configObj.tools = params.tools;
+                }
+
                 const result = await client.models.generateContent({
                     model: modelName,
                     contents: params.contents,
-                    config: params.config
+                    config: configObj
                 });
 
                 return result;
