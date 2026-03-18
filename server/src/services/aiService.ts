@@ -65,7 +65,12 @@ class AIService {
         }
         if (this.geminiKeys.length === 0) throw new Error("No Gemini API keys configured. Please check GEMINI_API_KEY in .env");
         const key = this.geminiKeys[this.currentGeminiIndex];
-        return new GoogleGenAI({ apiKey: key, apiVersion: 'v1' });
+        
+        const config: any = { apiKey: key, apiVersion: 'v1' };
+        if (process.env.GEMINI_BASE_URL) {
+            config.httpOptions = { baseUrl: process.env.GEMINI_BASE_URL };
+        }
+        return new GoogleGenAI(config);
     }
 
     /**

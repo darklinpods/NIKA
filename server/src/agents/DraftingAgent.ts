@@ -27,8 +27,8 @@ Current Case Info:
 ${context.ragContext}
 
 Instructions:
-1. When asked to generate a draft or smart document, ALWAYS call the \`generate_smart_document\` tool first to get the base structure and template.
-2. After the tool returns, review the generated file and summarize it.
+1. When asked to generate a draft or smart document, ALWAYS call the \`generate_smart_document\` tool first.
+2. After the tool returns, output the markdownText DIRECTLY as your final response. Do NOT call the tool again.
 3. If no specific action is needed, reply professionally as a legal assistant, outputting the text in well-formatted Markdown.
 ${skillSection}`;
     }

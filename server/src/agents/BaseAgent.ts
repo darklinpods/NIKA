@@ -48,6 +48,11 @@ export abstract class BaseAgent {
             // Execute the tool
             const functionResult = await handleToolCallFn(functionCall, context.caseId);
 
+            // If tool returns direct content, skip second AI round-trip
+            if (functionResult.response?.markdownText) {
+                return functionResult.response.markdownText;
+            }
+
             // Record model's function request
             currentChatParts.push({
                 role: 'model',

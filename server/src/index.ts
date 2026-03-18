@@ -41,7 +41,8 @@ apiRouter.use('/complaints', complaintRoutes);
 
 // Handle both with and without /api prefix for robustness on Vercel
 app.use('/api', apiRouter);
-app.use('/', apiRouter);
+// Only match non-/api paths to avoid double execution
+app.use(/^\/(?!api\/)/, apiRouter);
 
 // Global error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
