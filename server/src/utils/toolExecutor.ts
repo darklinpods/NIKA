@@ -95,6 +95,23 @@ export const executeExtractInvoices = async (caseId: string) => {
     }
 };
 
+export const executeGenerateTimeline = async (caseId: string) => {
+    try {
+        const docs = await prisma.caseDocument.findMany({ where: { caseId } });
+        if (!docs || docs.length === 0) return { error: '案件暂无上传的证据文件。' };
+
+        const allContent = docs.map(d => `=== [${d.title}] ===\n${d.content}`).join('\n\n');
+        const response = await aiService.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [{ role: 'user', parts: [{ text: `请从以下案件证据材料中提取所有关键时间节点，按时间顺序生成本案时间轴。格式要求：使用 Markdown，每个节点格式为"- **YYYY年MM月DD日**：事件描述"，无法确定具体日期的用大概时间描述。\n\n${allContent.substring(0, 25000)}` }] }]
+        });
+        const markdownText = `## 本案时间轴\n\n${response.text || ''}`;
+        return { success: true, markdownText };
+    } catch (e: any) {
+        return { error: `生成时间轴失败: ${e.message}` };
+    }
+};
+
 export const executeGenerateEvidenceList = async (caseId: string) => {
     try {
         const docs = await prisma.caseDocument.findMany({ where: { caseId }, select: { title: true } });
@@ -230,6 +247,11 @@ export const handleToolCall = async (functionCall: any, caseId: string) => {
 
     if (name === 'extract_invoices') {
         const result = await executeExtractInvoices(caseId);
+        return { name, response: result };
+    }
+
+    if (name === 'generate_timeline') {
+        const result = await executeGenerateTimeline(caseId);
         return { name, response: result };
     }
 

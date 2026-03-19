@@ -34,6 +34,17 @@ export const chatTools = [
                 }
             },
             {
+                name: "generate_timeline",
+                description: "当用户要求生成本案时间轴、事件时间线、案件经过时间顺序时调用。会从案件证据中提取关键时间节点并生成时间轴。",
+                parameters: {
+                    type: "OBJECT",
+                    properties: {
+                        caseId: { type: "STRING" }
+                    },
+                    required: ["caseId"]
+                }
+            },
+            {
                 name: "generate_evidence_list",
                 description: "当用户要求生成证据目录、证据清单、证据列表时调用此工具，会根据案件上传的证据文件自动生成编号证据目录。",
                 parameters: {
