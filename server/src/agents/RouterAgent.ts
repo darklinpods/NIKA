@@ -14,7 +14,7 @@ export class RouterAgent {
 
 可用 Agent：
 - FACT_AGENT：提取当事人、发票、事实、扫描证据数据。
-- DRAFTING_AGENT：生成文书、起诉状、证据清单、草稿。
+- DRAFTING_AGENT：生成文书、起诉状、法律意见书、律师函、答辩状、证据清单、草稿等各类法律文书。
 - STRATEGY_AGENT：法律咨询问题（如"需不需要起诉某人"、"某种情况怎么处理"）、诉讼策略分析、工作计划、下一步建议。
 
 当前案件摘要：
@@ -30,9 +30,9 @@ ${context.ragContext.substring(0, 1500)}
         console.log('[RouterAgent] Evaluating user request...');
         const routerPrompt = this.getRouterPrompt(context);
         const fullPrompt = `[System Instructions]\n${routerPrompt}\n\n[User Request]\n${userMessage}`;
-        
+
         const currentChatParts = [...historyParts, { role: 'user', parts: [{ text: fullPrompt }] }];
-        
+
         const routerTools = [{
             functionDeclarations: [{
                 name: "route_to_agent",
@@ -40,8 +40,8 @@ ${context.ragContext.substring(0, 1500)}
                 parameters: {
                     type: "OBJECT",
                     properties: {
-                        agent: { 
-                            type: "STRING", 
+                        agent: {
+                            type: "STRING",
                             enum: ["FACT_AGENT", "DRAFTING_AGENT", "STRATEGY_AGENT"],
                             description: "The agent to route to based on intent."
                         }

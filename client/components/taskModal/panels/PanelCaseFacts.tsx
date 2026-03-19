@@ -56,9 +56,16 @@ export const PanelCaseFacts: React.FC<Props> = ({ task, theme, onTaskChange }) =
             {/* Header */}
             <div className={`px-4 py-3 border-b flex items-center justify-between shrink-0
                 ${isDark ? 'border-white/10 bg-slate-900' : 'border-slate-200 bg-white'}`}>
-                <div className="flex items-center gap-2">
-                    <FileSearch size={15} className="text-blue-500" />
-                    <span className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>案件详情</span>
+                <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-2">
+                        <FileSearch size={15} className="text-blue-500" />
+                        <span className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>案件详情</span>
+                    </div>
+                    {task.factSheetUpdatedAt && (
+                        <span className={`text-xs ${isDark ? 'text-amber-400/70' : 'text-amber-600/80'}`}>
+                            🕐 最后更新：{new Date(task.factSheetUpdatedAt).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                    )}
                 </div>
                 <div className="flex items-center gap-2">
                     <button onClick={handleAnalyze} disabled={isAnalyzing}

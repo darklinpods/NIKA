@@ -40,6 +40,7 @@ export interface Case {
   caseType: string;
   caseReason?: string; // 案由
   caseFactSheet?: string;   // JSON string with structured case facts
+  factSheetUpdatedAt?: string;
   priority: Priority;
   status: 'todo' | 'in-progress' | 'done';
   tags: string[];

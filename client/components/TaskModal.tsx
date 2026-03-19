@@ -328,6 +328,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                             caseId={task.id}
                             theme={theme}
                             caseType={task.caseType}
+                            factSheetUpdatedAt={task.factSheetUpdatedAt}
                             onRefreshCase={onRefreshCase}
                             onSaveDocument={(content, suggestedTitle) => {
                                 const newDoc: CaseDocument = {

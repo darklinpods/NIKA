@@ -11,7 +11,7 @@ interface PanelAnalysisProps {
 }
 
 export const PanelAnalysis: React.FC<PanelAnalysisProps> = ({ task, theme, onTaskChange }) => {
-    
+
     // Retrieve claims/invoices from caseFactSheet
     let claims: ClaimItem[] = [];
     let invoices: InvoiceItem[] = [];
@@ -21,9 +21,9 @@ export const PanelAnalysis: React.FC<PanelAnalysisProps> = ({ task, theme, onTas
             claims = Array.isArray(sheet.claimsList) ? sheet.claimsList : [];
             invoices = Array.isArray(sheet.invoices) ? sheet.invoices : [];
         }
-    } catch { 
+    } catch {
         claims = [];
-        invoices = []; 
+        invoices = [];
     }
 
     const totalClaimAmount = claims.reduce((sum, c) => sum + (c.amount || 0), 0);
@@ -45,7 +45,7 @@ export const PanelAnalysis: React.FC<PanelAnalysisProps> = ({ task, theme, onTas
 
     const handleAggregateInvoices = () => {
         if (!hasInvoices) return;
-        
+
         // Group invoices by category and sum amounts
         const categoryMap = new Map<string, { amount: number, invoices: string[] }>();
         invoices.forEach(inv => {
@@ -61,8 +61,8 @@ export const PanelAnalysis: React.FC<PanelAnalysisProps> = ({ task, theme, onTas
             id: `claim-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
             category: cat,
             amount: parseFloat(data.amount.toFixed(2)),
-            description: data.invoices.length > 0 
-                ? `由 ${data.invoices.length} 张发票汇总 (包含发票号: ${data.invoices.slice(0, 3).join(', ')}${data.invoices.length > 3 ? '等' : ''})` 
+            description: data.invoices.length > 0
+                ? `由 ${data.invoices.length} 张发票汇总 (包含发票号: ${data.invoices.slice(0, 3).join(', ')}${data.invoices.length > 3 ? '等' : ''})`
                 : '系统自动汇总'
         }));
 
@@ -128,15 +128,15 @@ export const PanelAnalysis: React.FC<PanelAnalysisProps> = ({ task, theme, onTas
                         <div className="mt-8">
                             <div className="flex items-center justify-between mb-3">
                                 <h4 className="font-bold text-sm flex items-center gap-2">
-                                    <Scale size={16} className="text-amber-500" /> 
+                                    <Scale size={16} className="text-amber-500" />
                                     诉讼请求明细 (索赔试算)
                                 </h4>
                                 {hasInvoices && (
-                                    <button 
+                                    <button
                                         onClick={handleAggregateInvoices}
                                         className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors border
-                                            ${theme === 'dark' 
-                                                ? 'bg-amber-900/40 text-amber-300 border-amber-500/30 hover:bg-amber-900/60' 
+                                            ${theme === 'dark'
+                                                ? 'bg-amber-900/40 text-amber-300 border-amber-500/30 hover:bg-amber-900/60'
                                                 : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'}`}
                                     >
                                         基于发票重新生成明细
@@ -148,7 +148,7 @@ export const PanelAnalysis: React.FC<PanelAnalysisProps> = ({ task, theme, onTas
                                     <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">费用合计</span>
                                     <div className="flex items-center gap-4">
                                         <button onClick={handleAddBlankClaim} className="flex items-center gap-1 text-[10px] text-blue-500 hover:text-blue-600 transition-colors">
-                                            <Plus size={12}/> 添加一项
+                                            <Plus size={12} /> 添加一项
                                         </button>
                                         <span className="text-sm font-bold text-amber-600 dark:text-amber-400">¥ {totalClaimAmount.toFixed(2)}</span>
                                     </div>
@@ -169,33 +169,33 @@ export const PanelAnalysis: React.FC<PanelAnalysisProps> = ({ task, theme, onTas
                                                         <td colSpan={3} className="px-3 py-2">
                                                             <div className="flex flex-col gap-2">
                                                                 <div className="flex gap-2">
-                                                                    <input 
-                                                                        type="text" 
-                                                                        value={editForm.category || ''} 
-                                                                        onChange={e => setEditForm({...editForm, category: e.target.value})}
+                                                                    <input
+                                                                        type="text"
+                                                                        value={editForm.category || ''}
+                                                                        onChange={e => setEditForm({ ...editForm, category: e.target.value })}
                                                                         placeholder="费用类别"
                                                                         className={`flex-1 px-2 py-1 text-xs rounded border ${theme === 'dark' ? 'bg-slate-900 border-white/20 text-white' : 'bg-white border-slate-300 text-slate-900'}`}
                                                                     />
                                                                     <div className="relative w-32">
                                                                         <span className="absolute left-2 top-1.5 text-slate-400">¥</span>
-                                                                        <input 
-                                                                            type="number" 
-                                                                            value={editForm.amount || 0} 
-                                                                            onChange={e => setEditForm({...editForm, amount: parseFloat(e.target.value) || 0})}
+                                                                        <input
+                                                                            type="number"
+                                                                            value={editForm.amount || 0}
+                                                                            onChange={e => setEditForm({ ...editForm, amount: parseFloat(e.target.value) || 0 })}
                                                                             className={`w-full pl-6 pr-2 py-1 text-xs rounded border text-right ${theme === 'dark' ? 'bg-slate-900 border-white/20 text-white' : 'bg-white border-slate-300 text-slate-900'}`}
                                                                         />
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex gap-2 items-center">
-                                                                    <input 
-                                                                        type="text" 
-                                                                        value={editForm.description || ''} 
-                                                                        onChange={e => setEditForm({...editForm, description: e.target.value})}
+                                                                    <input
+                                                                        type="text"
+                                                                        value={editForm.description || ''}
+                                                                        onChange={e => setEditForm({ ...editForm, description: e.target.value })}
                                                                         placeholder="备注说明，如发票票号..."
                                                                         className={`flex-1 px-2 py-1 text-xs rounded border ${theme === 'dark' ? 'bg-slate-900 border-white/20 text-white' : 'bg-white border-slate-300 text-slate-900'}`}
                                                                     />
-                                                                    <button onClick={handleEditSave} className="p-1.5 bg-green-500/10 text-green-600 rounded hover:bg-green-500/20"><Check size={14}/></button>
-                                                                    <button onClick={() => setEditingClaimId(null)} className="p-1.5 bg-slate-500/10 text-slate-600 rounded hover:bg-slate-500/20"><X size={14}/></button>
+                                                                    <button onClick={handleEditSave} className="p-1.5 bg-green-500/10 text-green-600 rounded hover:bg-green-500/20"><Check size={14} /></button>
+                                                                    <button onClick={() => setEditingClaimId(null)} className="p-1.5 bg-slate-500/10 text-slate-600 rounded hover:bg-slate-500/20"><X size={14} /></button>
                                                                 </div>
                                                             </div>
                                                         </td>
@@ -212,8 +212,8 @@ export const PanelAnalysis: React.FC<PanelAnalysisProps> = ({ task, theme, onTas
                                                             </td>
                                                             <td className="px-3 py-2 text-center">
                                                                 <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                    <button onClick={() => handleEditStart(claim)} className="p-1 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"><Edit2 size={13}/></button>
-                                                                    <button onClick={() => handleDeleteClaim(claim.id)} className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"><Trash2 size={13}/></button>
+                                                                    <button onClick={() => handleEditStart(claim)} className="p-1 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"><Edit2 size={13} /></button>
+                                                                    <button onClick={() => handleDeleteClaim(claim.id)} className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"><Trash2 size={13} /></button>
                                                                 </div>
                                                             </td>
                                                         </>
@@ -253,6 +253,7 @@ export const PanelAnalysis: React.FC<PanelAnalysisProps> = ({ task, theme, onTas
                     <CaseChatPanel
                         caseId={task.id}
                         theme={theme}
+                        factSheetUpdatedAt={task.factSheetUpdatedAt}
                     />
                 </div>
             </div>

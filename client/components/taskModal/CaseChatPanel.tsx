@@ -20,11 +20,12 @@ interface CaseChatPanelProps {
     caseId: string;
     theme: 'light' | 'dark';
     caseType?: string;
+    factSheetUpdatedAt?: string;
     onRefreshCase?: () => void;
     onSaveDocument?: (content: string, suggestedTitle: string) => void;
 }
 
-export const CaseChatPanel = forwardRef<CaseChatPanelHandle, CaseChatPanelProps>(({ caseId, theme, caseType, onRefreshCase, onSaveDocument }, ref) => {
+export const CaseChatPanel = forwardRef<CaseChatPanelHandle, CaseChatPanelProps>(({ caseId, theme, caseType, factSheetUpdatedAt, onRefreshCase, onSaveDocument }, ref) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
     const [dislikedIds, setDislikedIds] = useState<Set<string>>(new Set());
@@ -133,6 +134,12 @@ export const CaseChatPanel = forwardRef<CaseChatPanelHandle, CaseChatPanelProps>
 
     return (
         <div className={`flex flex-col h-full overflow-hidden ${theme === 'dark' ? 'bg-slate-900' : 'bg-[#f5f5f7]'}`}>
+            {/* Fact Sheet Timestamp Banner */}
+            {factSheetUpdatedAt && (
+                <div className={`px-4 py-1.5 text-xs border-b ${theme === 'dark' ? 'bg-amber-900/20 border-amber-700/30 text-amber-300' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>
+                    🕐 当前分析基于 <strong>{new Date(factSheetUpdatedAt).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</strong> 的案件详情
+                </div>
+            )}
             {/* Toolbar */}
             {messages.length > 0 && (
                 <div className={`flex justify-end px-4 py-1.5 border-b ${theme === 'dark' ? 'border-white/10' : 'border-slate-200'}`}>

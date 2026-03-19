@@ -27,10 +27,10 @@ Current Case Info:
 ${context.ragContext}
 
 Instructions:
-1. When asked to generate a complaint or legal document (起诉状/诉状), call the \`generate_smart_document\` tool.
-2. When asked to generate an evidence list or evidence directory (证据目录/证据清单), call the \`generate_evidence_list\` tool.
-3. After the tool returns, output the markdownText DIRECTLY as your final response. Do NOT call the tool again.
-3. If no specific action is needed, reply professionally as a legal assistant, outputting the text in well-formatted Markdown.
+1. When asked to generate a complaint/pleading (起诉状/诉状), call the \`generate_smart_document\` tool.
+2. When asked to generate an evidence list (证据目录/证据清单), call the \`generate_evidence_list\` tool.
+3. When asked to generate any OTHER type of legal document (e.g. 法律意见书, 律师函, 答辩状, 合同, etc.), write it DIRECTLY in well-formatted Markdown WITHOUT calling any tool.
+4. After a tool returns, output the markdownText DIRECTLY as your final response. Do NOT call the tool again.
 ${skillSection}`;
     }
 }

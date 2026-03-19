@@ -163,6 +163,11 @@ export const FactSheetEditor: React.FC<Props> = ({ task, theme, onSaved }) => {
                     <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                         AI 从证据中提取案件关键信息 → 律师审核修改 → 保存作为诉状生成的权威数据源
                     </p>
+                    {task.factSheetUpdatedAt && (
+                        <p className={`text-xs mt-0.5 ${isDark ? 'text-amber-400/70' : 'text-amber-600/80'}`}>
+                            🕐 案件详情最后更新：{new Date(task.factSheetUpdatedAt).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                    )}
                 </div>
                 <button
                     onClick={handleExtract}
@@ -180,7 +185,7 @@ export const FactSheetEditor: React.FC<Props> = ({ task, theme, onSaved }) => {
                     {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : status === 'saved' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
                     {saving ? '保存中…' : status === 'saved' ? '已保存' : '保存'}
                 </button>
-                {status === 'error' && <AlertCircle className="w-4 h-4 text-red-500"  />}
+                {status === 'error' && <AlertCircle className="w-4 h-4 text-red-500" />}
             </div>
 
             {/* Form */}

@@ -27,7 +27,7 @@ export async function runEvidenceAnalysis(caseId: string): Promise<string> {
 
   const markdown = response.text?.trim() || '';
   if (markdown) {
-    await prisma.case.update({ where: { id: caseId }, data: { caseFactSheet: markdown } });
+    await prisma.case.update({ where: { id: caseId }, data: { caseFactSheet: markdown, factSheetUpdatedAt: new Date() } });
   }
   return markdown;
 }
@@ -209,7 +209,7 @@ export const saveFactSheet = async (req: Request, res: Response) => {
 
     await prisma.case.update({
       where: { id },
-      data: { caseFactSheet: jsonStr }
+      data: { caseFactSheet: jsonStr, factSheetUpdatedAt: new Date() }
     });
 
     res.json({ success: true });
