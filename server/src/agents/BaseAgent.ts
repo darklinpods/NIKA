@@ -1,4 +1,5 @@
 import { aiService } from '../services/aiService';
+import { DEFAULT_MODEL } from '../constants';
 
 /** Agent 执行上下文，包含当前案件的核心信息 */
 export interface AgentContext {
@@ -46,7 +47,7 @@ export abstract class BaseAgent {
 
         // --- 工具调用循环：AI 可能连续多次请求调用工具 ---
         let response = await aiService.generateContent({
-            model: "gemini-2.5-flash",
+            model: DEFAULT_MODEL,
             contents: currentChatParts,
             tools: this.tools.length > 0 ? this.tools : undefined // 无工具时传 undefined
         });
@@ -89,7 +90,7 @@ export abstract class BaseAgent {
 
             // 携带工具结果再次请求 AI，获取下一步响应
             response = await aiService.generateContent({
-                model: "gemini-2.5-flash",
+                model: DEFAULT_MODEL,
                 contents: currentChatParts,
                 tools: this.tools.length > 0 ? this.tools : undefined
             });

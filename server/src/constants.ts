@@ -1,3 +1,5 @@
+export const DEFAULT_MODEL = 'gemini-2.5-flash';
+
 /**
  * 所有支持案由的枚举（须与前端 constants/caseTypes.ts 同步）
  */

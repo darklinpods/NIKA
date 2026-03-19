@@ -1,10 +1,16 @@
 import { Request, Response } from 'express';
 import { aiService } from '../services/aiService';
+import { DEFAULT_MODEL } from '../constants';
 import { getComplaintElementsExtractionPrompt } from '../prompts/documentPrompts';
 import { logExtraction } from '../utils/extractionLogger';
 import { cleanAndParseJsonObject } from '../utils/aiJsonParser';
 import { TrafficAccidentSkill } from '../skills/TrafficAccidentSkill';
 
+/**
+ * POST /complaints/extract
+ * 从原始文本中提取起诉状要素（当事人、诉讼请求、事实与理由等）。
+ * 交通事故模板直接调用 TrafficAccidentSkill 生成完整 Markdown 诉状；其他模板走通用 AI 提取流程。
+ */
 export const extractComplaintElements = async (req: Request, res: Response) => {
     const startTime = Date.now();
     try {
@@ -62,7 +68,7 @@ export const extractComplaintElements = async (req: Request, res: Response) => {
     }
   ]` +
 
-  (templateId === 'traffic' ? `,
+            (templateId === 'traffic' ? `,
   "claimsList": "【索赔清单】（具体的费用明细项目，如：医疗费XXX元、误工费XXX元、护理费XXX元等。每项费用单独列出，包含计算公式和金额。绝对不能包含诉讼请求的表述如'请求判令'等）",
   "accidentFacts": "【交通事故发生情况】部分事实与理由",
   "liabilityDetermination": "【交通事故责任认定】部分（如交警认定书上的认定结论）",
@@ -74,7 +80,7 @@ export const extractComplaintElements = async (req: Request, res: Response) => {
         const aiPrompt = getComplaintElementsExtractionPrompt(text, templateId);
 
         const response = await aiService.generateContent({
-            model: "gemini-2.5-flash",
+            model: DEFAULT_MODEL,
             contents: [{
                 role: "user", parts: [{
                     text: aiPrompt

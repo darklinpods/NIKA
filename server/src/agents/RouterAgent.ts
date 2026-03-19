@@ -1,4 +1,5 @@
 import { aiService } from '../services/aiService';
+import { DEFAULT_MODEL } from '../constants';
 import { FactAgent } from './FactAgent';
 import { DraftingAgent } from './DraftingAgent';
 import { StrategyAgent } from './StrategyAgent';
@@ -69,7 +70,7 @@ ${context.ragContext.substring(0, 1500)}
         }];
 
         const response = await aiService.generateContent({
-            model: "gemini-2.5-flash",
+            model: DEFAULT_MODEL,
             contents: currentChatParts,
             tools: routerTools
         });

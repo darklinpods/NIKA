@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../prisma';
 import { TrafficAccidentSkill } from '../skills/TrafficAccidentSkill';
+import { buildDocsContent } from '../utils/toolExecutor';
 import PizZip from 'pizzip';
 import process from 'process';
 import path from 'path';
@@ -39,9 +40,7 @@ export const extractTrafficAccident = async (req: Request, res: Response) => {
             });
         }
 
-        const documentsContent = docs
-            .map(d => `--- 文档标题: ${d.title} ---\n${d.content}\n`)
-            .join('\n');
+        const documentsContent = buildDocsContent(docs);
 
         const skill = new TrafficAccidentSkill();
         const text = await skill.generateClaimText({
@@ -77,9 +76,7 @@ export const generateTrafficAccidentDocx = async (req: Request, res: Response) =
             return res.status(400).json({ error: '该案件暂无证据文件，无法生成诉状。' });
         }
 
-        const documentsContent = docs
-            .map(d => `--- 文档标题: ${d.title} ---\n${d.content}\n`)
-            .join('\n');
+        const documentsContent = buildDocsContent(docs);
 
         // 2. 调用 AI 生成 22 个变量
         console.log('[generateTrafficAccidentDocx] Calling AI to generate template variables...');

@@ -1,5 +1,6 @@
 import { Type } from "@google/genai";
 import { aiService } from './aiService';
+import { DEFAULT_MODEL } from '../constants';
 import { caseService } from './caseService';
 import { knowledgeService } from './knowledgeService';
 import { getTaskGenerationPrompt, getTaskImprovementPrompt, getTaskSummaryPrompt } from '../prompts/taskPrompts';
@@ -7,6 +8,7 @@ import { buildKnowledgeContext, CATEGORY_LABELS_EN } from '../utils/knowledgeCon
 import { cleanAndParseJsonObject } from '../utils/aiJsonParser';
 
 export const aiTaskService = {
+    /** 根据用户描述批量生成案件列表（含子任务），使用结构化 JSON Schema 约束输出 */
     async generateTasks(prompt: string, lang: string) {
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
         const kDocs = await knowledgeService.getAllDocuments();
@@ -19,10 +21,11 @@ export const aiTaskService = {
         );
 
         const response = await aiService.generateContent({
-            model: "gemini-2.5-flash",
+            model: DEFAULT_MODEL,
             contents: [{
                 role: "user", parts: [{
-            text: getTaskGenerationPrompt(prompt, languageName, kContext) }]
+                    text: getTaskGenerationPrompt(prompt, languageName, kContext)
+                }]
             }],
             config: {
                 responseMimeType: "application/json",
@@ -52,22 +55,25 @@ export const aiTaskService = {
         return JSON.parse(resultText.trim());
     },
 
+    /** 对单个案件的描述提出 AI 改进建议 */
     async suggestImprovement(taskTitle: string, taskDesc: string, lang: string) {
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
         const response = await aiService.generateContent({
-            model: "gemini-2.5-flash",
+            model: DEFAULT_MODEL,
             contents: [{
                 role: "user", parts: [{
-                    text: getTaskImprovementPrompt(taskTitle, taskDesc, languageName) }]
+                    text: getTaskImprovementPrompt(taskTitle, taskDesc, languageName)
+                }]
             }],
         });
         return response.text || taskDesc;
     },
 
+    /** 生成案件的简短摘要（用于卡片预览） */
     async summarizeTask(title: string, desc: string, lang: string) {
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
         const response = await aiService.generateContent({
-            model: "gemini-2.5-flash",
+            model: DEFAULT_MODEL,
             contents: [{
                 role: "user", parts: [{
                     text: getTaskSummaryPrompt(title, desc, languageName)
@@ -77,6 +83,10 @@ export const aiTaskService = {
         return response.text || "";
     },
 
+    /**
+     * 根据文书类型生成对应的 Markdown 法律文书。
+     * docType 可选值：analysis（争议焦点分析）、strategy（诉讼策略）、offical_doc（正式文书草稿）、evidence_list（证据清单）
+     */
     async generateCaseDocument(docType: string, caseTitle: string, caseDesc: string, lang: string, caseId?: string) {
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
         let ragContext = "";
@@ -156,13 +166,14 @@ export const aiTaskService = {
         }
 
         const response = await aiService.generateContent({
-            model: "gemini-2.5-flash",
+            model: DEFAULT_MODEL,
             contents: [{ role: "user", parts: [{ text: prompt }] }],
         });
 
         return response.text || "";
     },
 
+    /** 为案件生成程序性执行计划，返回包含 subTasks 字符串数组的 JSON 对象 */
     async generateCasePlan(title: string, desc: string, lang: string) {
         const languageName = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
         const kDocs = await knowledgeService.getAllDocuments();
@@ -180,7 +191,7 @@ export const aiTaskService = {
         );
 
         const response = await aiService.generateContent({
-            model: "gemini-2.5-flash",
+            model: DEFAULT_MODEL,
             contents: [{
                 role: "user", parts: [{
                     text: `As a professional legal assistant, create a procedural plan for this case. 

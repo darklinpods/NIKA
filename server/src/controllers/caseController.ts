@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { executeExtractParties } from '../utils/toolExecutor';
+import { executeExtractParties, buildDocsContent } from '../utils/toolExecutor';
 import { runEvidenceAnalysis } from './factSheetController';
 // @ts-ignore
 import multer from 'multer';

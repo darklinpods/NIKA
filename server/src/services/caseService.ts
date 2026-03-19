@@ -1,222 +1,148 @@
 import prisma from '../prisma';
+import { Priority } from '../types';
 
-/**
- * 后端数据库服务层 (Service Layer)
- * 负责提取所有原本耦合在 Controller 里的复杂 Prisma ORM 逻辑
- * 提供纯粹的与数据库直接相关的增查改删方法，同时处理与关系表 (SubTasks, Documents) 的联机操作。
- */
+export interface CaseCreateInput {
+    title: string;
+    description?: string;
+    priority?: Priority;
+    tags?: string[];
+    clientName?: string;
+    courtName?: string;
+    status?: string;
+}
+
+export interface CaseUpdateInput {
+    title?: string;
+    description?: string;
+    priority?: Priority;
+    tags?: string[];
+    clientName?: string;
+    courtName?: string;
+    status?: string;
+    order?: number;
+    parties?: string;
+    caseType?: string;
+    claimData?: string;
+    subTasks?: any[];
+    documents?: any[];
+}
+
 export const caseService = {
-    // 获取全部案件数据（并按照 order 字段升序排列）
+    /** 获取所有案件（含子任务和文档），按 order 和创建时间升序排列 */
     async getAllCases() {
         const cases = await prisma.case.findMany({
-            include: {
-                subTasks: true,
-                documents: true,
-            },
-            orderBy: [
-                { order: 'asc' },
-                { createdAt: 'asc' }
-            ]
+            include: { subTasks: true, documents: true },
+            orderBy: [{ order: 'asc' }, { createdAt: 'asc' }]
         });
-        // 确保数组结构的正确反序列化，从数据库长字符串转换还原成前端期望的类型格式
-        return cases.map(c => ({
-            ...c,
-            tags: c.tags ? JSON.parse(c.tags) : [],
-        }));
+        return cases.map(c => ({ ...c, tags: c.tags ? JSON.parse(c.tags) : [] }));
     },
 
-    // 获取单个案件
+    /** 按 ID 查询单个案件（含子任务和文档），不存在返回 null */
     async getCaseById(id: string) {
-        const c = await prisma.case.findUnique({
-            where: { id },
-            include: {
-                subTasks: true,
-                documents: true,
-            }
-        });
+        const c = await prisma.case.findUnique({ where: { id }, include: { subTasks: true, documents: true } });
         if (!c) return null;
-        return {
-            ...c,
-            tags: c.tags ? JSON.parse(c.tags) : [],
-        };
+        return { ...c, tags: c.tags ? JSON.parse(c.tags) : [] };
     },
 
-    // 直接为指定案件追加上传的文档
-    async addDocument(caseId: string, data: { title: string, content: string, category: string }) {
-        return await prisma.caseDocument.create({
-            data: {
-                ...data,
-                caseId
-            }
-        });
+    /** 为指定案件新增一条文档记录 */
+    async addDocument(caseId: string, data: { title: string; content: string; category: string }) {
+        return prisma.caseDocument.create({ data: { ...data, caseId } });
     },
 
-    // 获取特定状态下当前最大的 order 值
+    /** 查询指定状态列中当前最大 order 值，用于新案件追加到列尾 */
     async getMaxOrder(status: string): Promise<number> {
-        const result = await prisma.case.aggregate({
-            where: { status },
-            _max: { order: true }
-        });
+        const result = await prisma.case.aggregate({ where: { status }, _max: { order: true } });
         return result._max.order ?? -1;
     },
 
-    // 创建新案件记录
-    async createCase(data: any) {
-        const { title, description, priority, tags, clientName, courtName, status = 'todo' } = data;
-
-        // 默认将新案件放到对应状态列的最后
+    /** 创建新案件，自动追加到对应状态列末尾 */
+    async createCase(data: CaseCreateInput) {
+        const { title, description = '', priority = 'medium', tags, clientName = '', courtName, status = 'todo' } = data;
         const maxOrder = await this.getMaxOrder(status);
-
         const newCase = await prisma.case.create({
-            data: {
-                title,
-                description,
-                priority,
-                status,
-                order: maxOrder + 1,
-                tags: JSON.stringify(tags || []),
-                clientName,
-                courtName,
-            },
-            include: {
-                subTasks: true,
-                documents: true,
-            },
+            data: { title, description, priority, status, order: maxOrder + 1, tags: JSON.stringify(tags || []), clientName, courtName },
+            include: { subTasks: true, documents: true },
         });
-        return {
-            ...newCase,
-            tags: JSON.parse(newCase.tags)
-        };
+        return { ...newCase, tags: JSON.parse(newCase.tags) };
     },
 
-    // 更新复杂案件记录的核心逻辑（包含关系表动态替换和更新）
-    async updateCase(id: string, data: any) {
-        // 先剥离出基础字段和可能存在修改并牵扯其他表的字段内容
-        const { tags, subTasks, documents, id: bodyId, createdAt, updatedAt, ...rest } = data;
-
+    /**
+     * 更新案件及其关联的子任务/文档。
+     * - 若案件不存在则自动创建（upsert 语义）
+     * - 状态变更时自动将 order 追加到新状态列末尾
+     * - 子任务/文档采用"删除不在列表中的 + 更新已有的 + 创建新的"策略
+     */
+    async updateCase(id: string, data: CaseUpdateInput) {
+        const { tags, subTasks, documents, ...rest } = data as any;
         const existingCase = await prisma.case.findUnique({ where: { id } });
-
         const updateData: any = { ...rest };
 
-        if (tags) {
-            updateData.tags = JSON.stringify(tags);
-        }
+        if (tags) updateData.tags = JSON.stringify(tags);
 
-        // 如果状态发生了改变，且请求中没有明确指定新的 order，则默认移动到新列的末尾
         if (existingCase && rest.status && rest.status !== existingCase.status && rest.order === undefined) {
-            const maxOrder = await this.getMaxOrder(rest.status);
-            updateData.order = maxOrder + 1;
+            updateData.order = (await this.getMaxOrder(rest.status)) + 1;
         }
 
-        // 精细化的 SubTasks 同步处理
         if (subTasks && Array.isArray(subTasks)) {
-            const existingSubTasks = subTasks.filter((st: any) => st.id && !st.id.toString().startsWith('sub-') && !st.id.toString().startsWith('new-'));
-            const newSubTasks = subTasks.filter((st: any) => !st.id || st.id.toString().startsWith('sub-') || st.id.toString().startsWith('new-'));
-
+            const existing = subTasks.filter((st: any) => st.id && !st.id.toString().startsWith('sub-') && !st.id.toString().startsWith('new-'));
+            const created = subTasks.filter((st: any) => !st.id || st.id.toString().startsWith('sub-') || st.id.toString().startsWith('new-'));
             updateData.subTasks = {
-                deleteMany: {
-                    id: { notIn: existingSubTasks.map(st => st.id) }
-                },
-                update: existingSubTasks.map(st => ({
-                    where: { id: st.id },
-                    data: {
-                        title: st.title,
-                        isCompleted: st.isCompleted,
-                        dueDate: st.dueDate ? new Date(st.dueDate) : null
-                    }
-                })),
-                create: newSubTasks.map(st => ({
-                    title: st.title,
-                    isCompleted: st.isCompleted || false,
-                    dueDate: st.dueDate ? new Date(st.dueDate) : null
-                }))
+                deleteMany: { id: { notIn: existing.map((st: any) => st.id) } },
+                update: existing.map((st: any) => ({ where: { id: st.id }, data: { title: st.title, isCompleted: st.isCompleted, dueDate: st.dueDate ? new Date(st.dueDate) : null } })),
+                create: created.map((st: any) => ({ title: st.title, isCompleted: st.isCompleted || false, dueDate: st.dueDate ? new Date(st.dueDate) : null }))
             };
         }
 
-        // 精细化的文书关联列表 Documents 同步处理
         if (documents && Array.isArray(documents)) {
-            const existingDocuments = documents.filter((doc: any) => doc.id && !doc.id.toString().startsWith('doc-') && !doc.id.toString().startsWith('new-'));
-            const newDocuments = documents.filter((doc: any) => !doc.id || doc.id.toString().startsWith('doc-') || doc.id.toString().startsWith('new-'));
-
+            const existing = documents.filter((d: any) => d.id && !d.id.toString().startsWith('doc-') && !d.id.toString().startsWith('new-'));
+            const created = documents.filter((d: any) => !d.id || d.id.toString().startsWith('doc-') || d.id.toString().startsWith('new-'));
             updateData.documents = {
-                deleteMany: {
-                    id: { notIn: existingDocuments.map(doc => doc.id) }
-                },
-                update: existingDocuments.map(doc => ({
-                    where: { id: doc.id },
-                    data: {
-                        title: doc.title,
-                        content: doc.content,
-                        category: doc.category
-                    }
-                })),
-                create: newDocuments.map(doc => ({
-                    title: doc.title,
-                    content: doc.content,
-                    category: doc.category
-                }))
+                deleteMany: { id: { notIn: existing.map((d: any) => d.id) } },
+                update: existing.map((d: any) => ({ where: { id: d.id }, data: { title: d.title, content: d.content, category: d.category } })),
+                create: created.map((d: any) => ({ title: d.title, content: d.content, category: d.category }))
             };
         }
 
         let updatedCase;
-
         if (!existingCase) {
             const status = rest.status || 'todo';
-            const maxOrder = await this.getMaxOrder(status);
-
             updatedCase = await prisma.case.create({
                 data: {
-                    ...rest,
-                    id,
-                    status,
-                    order: rest.order !== undefined ? rest.order : maxOrder + 1,
+                    ...rest, id, status,
+                    order: rest.order !== undefined ? rest.order : (await this.getMaxOrder(status)) + 1,
                     tags: JSON.stringify(tags || []),
-                    subTasks: subTasks ? {
-                        create: subTasks.map((st: any) => ({
-                            title: st.title,
-                            isCompleted: st.isCompleted || false,
-                            dueDate: st.dueDate ? new Date(st.dueDate) : null
-                        }))
-                    } : undefined,
-                    documents: documents ? {
-                        create: documents.map((doc: any) => ({
-                            title: doc.title,
-                            content: doc.content,
-                            category: doc.category
-                        }))
-                    } : undefined
+                    subTasks: subTasks ? { create: subTasks.map((st: any) => ({ title: st.title, isCompleted: st.isCompleted || false, dueDate: st.dueDate ? new Date(st.dueDate) : null })) } : undefined,
+                    documents: documents ? { create: documents.map((d: any) => ({ title: d.title, content: d.content, category: d.category })) } : undefined
                 },
                 include: { subTasks: true, documents: true }
             });
         } else {
-            updatedCase = await prisma.case.update({
-                where: { id },
-                data: updateData,
-                include: { subTasks: true, documents: true }
-            });
+            updatedCase = await prisma.case.update({ where: { id }, data: updateData, include: { subTasks: true, documents: true } });
         }
 
-        return {
-            ...updatedCase,
-            tags: JSON.parse(updatedCase.tags)
-        };
+        return { ...updatedCase, tags: JSON.parse(updatedCase.tags) };
     },
 
-    // 批量重排案件
-    async reorderCases(updates: { id: string, order: number, status: string }[]) {
-        return await prisma.$transaction(
-            updates.map(u =>
-                prisma.case.update({
-                    where: { id: u.id },
-                    data: { order: u.order, status: u.status }
-                })
-            )
-        );
+    /** 批量更新案件排序和状态（看板拖拽后调用），在事务中执行保证原子性 */
+    async reorderCases(updates: { id: string; order: number; status: string }[]) {
+        return prisma.$transaction(updates.map(u => prisma.case.update({ where: { id: u.id }, data: { order: u.order, status: u.status } })));
     },
 
-    // 安全移除整个案件实体记录
+    /** 删除案件（级联删除子任务和文档由 Prisma schema 的 onDelete 处理） */
     async deleteCase(id: string) {
         await prisma.case.delete({ where: { id } });
-        return { message: 'Case deleted' };
+    },
+
+    /** 将案件数据拼装为 RAG 上下文字符串，注入到 AI 的 System Prompt */
+    buildRagContext(caseRecord: any): string {
+        let ctx = `案件标题: ${caseRecord.title}\n案件类型: ${caseRecord.caseType || '未知'}\n案件描述: ${caseRecord.description}\n当事人信息: ${caseRecord.parties || '暂无'}`;
+        let factSheet = null;
+        try { factSheet = caseRecord.caseFactSheet ? JSON.parse(caseRecord.caseFactSheet) : null; } catch { }
+        if (factSheet) ctx += `\n\n结构化案件事实:\n${JSON.stringify(factSheet, null, 2)}`;
+        if (caseRecord.documents?.length) {
+            ctx += '\n\n关联证据与文档知识库:\n';
+            caseRecord.documents.forEach((doc: any, idx: number) => { ctx += `--- 文档 ${idx + 1}: ${doc.title} ---\n${doc.content}\n`; });
+        }
+        return ctx;
     }
 };
