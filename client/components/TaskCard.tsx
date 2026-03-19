@@ -16,10 +16,11 @@ interface TaskCardProps {
   task: Case;
   index: number;
   theme: 'light' | 'dark';
+  hideProgress?: boolean;
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({
-  task, index, theme
+  task, index, theme, hideProgress
 }) => {
   const {
     setEditingTask, handleDeleteCase, handleGeneratePlan, handleUpdatePriority, handleMoveStage, handleUpdateCaseType
@@ -108,10 +109,10 @@ const TaskCard: React.FC<TaskCardProps> = ({
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           onClick={() => setEditingTask(task)}
-          className={`group relative border rounded-xl p-4 flex flex-col justify-between min-w-[240px] max-w-[240px] transition-all duration-300 cursor-pointer border-l-[4px] shrink-0 ${PRIORITY_CONFIG[task.priority].borderColor
+          className={`group w-full relative border rounded-lg p-4 flex flex-col justify-between transition-all duration-300 cursor-pointer border-l-[4px] shrink-0 ${PRIORITY_CONFIG[task.priority].borderColor
             } ${theme === 'dark'
               ? 'bg-slate-900 border-white/5 hover:border-indigo-500/50 hover:shadow-[0_10px_30px_-10px_rgba(99,102,241,0.25)]'
-              : 'bg-white border-slate-200 hover:border-indigo-200 shadow-sm hover:shadow-md'
+              : 'bg-white border-slate-200/50 hover:border-indigo-200 shadow-sm hover:shadow-lg'
             } ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-indigo-500/50 z-50 scale-105' : ''}`}
         >
           <div className="flex justify-between items-start mb-2">
@@ -137,13 +138,15 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </div>
           </div>
 
-          <ProgressBar
-            progress={progressData.progress}
-            completedCount={progressData.completedCount}
-            totalCount={progressData.totalCount}
-            theme={theme}
-            t={t}
-          />
+          {!hideProgress && (
+            <ProgressBar
+              progress={progressData.progress}
+              completedCount={progressData.completedCount}
+              totalCount={progressData.totalCount}
+              theme={theme}
+              t={t}
+            />
+          )}
 
           <TaskFooter
             progress={progressData.progress}
