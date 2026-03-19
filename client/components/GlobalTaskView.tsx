@@ -1,13 +1,24 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { Case, SubTask } from '../types';
 import { t } from '../translations';
-import { CheckCircle2, Circle, Clock, AlertCircle, Calendar, Briefcase, ChevronRight, Zap } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, AlertCircle, Calendar, Briefcase, ChevronRight, Zap, X, RotateCcw, History } from 'lucide-react';
 import { formatDateOptional, isApproaching, isOverdue } from '../utils/dateUtils';
 import { useAppContext } from '../providers/AppProvider';
+import { fetchOperationLogs, deleteOperationLog } from '../services/api';
 
 interface TaskWithParent {
   task: SubTask;
   parent: Case;
+}
+
+interface OperationLog {
+  id: string;
+  action: string;
+  caseId: string;
+  caseTitle: string;
+  subTaskId: string;
+  subTaskTitle: string;
+  createdAt: string;
 }
 
 interface GlobalTaskViewProps {
@@ -15,10 +26,64 @@ interface GlobalTaskViewProps {
 }
 
 const GlobalTaskView: React.FC<GlobalTaskViewProps> = ({ theme }) => {
-  const { data, toggleSubTask, setEditingTask } = useAppContext();
+  const { data, toggleSubTask, setEditingTask, loadData } = useAppContext();
   const now = new Date();
   const todayStart = new Date(now.setHours(0, 0, 0, 0));
   const todayEnd = new Date(now.setHours(23, 59, 59, 999));
+
+  // 操作记录状态
+  const [operationLogs, setOperationLogs] = useState<OperationLog[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+
+  // 加载操作记录
+  const loadLogs = useCallback(async () => {
+    try {
+      setLogsLoading(true);
+      const res = await fetchOperationLogs();
+      if (res.success) setOperationLogs(res.data);
+    } catch (e) {
+      console.error('Failed to load operation logs', e);
+    } finally {
+      setLogsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadLogs();
+  }, [loadLogs]);
+
+  // 监听 data 变化时自动刷新日志（子任务 toggle 后 data 会更新）
+  useEffect(() => {
+    loadLogs();
+  }, [data, loadLogs]);
+
+  // 撤销操作记录
+  const handleRevertLog = useCallback(async (logId: string) => {
+    try {
+      const res = await deleteOperationLog(logId);
+      if (res.success) {
+        setOperationLogs(prev => prev.filter(l => l.id !== logId));
+        // 刷新看板数据以反映回滚后的子任务状态
+        loadData();
+      }
+    } catch (e) {
+      console.error('Failed to revert operation', e);
+    }
+  }, [loadData]);
+
+  // 格式化时间
+  const formatTime = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHour = Math.floor(diffMs / 3600000);
+
+    if (diffMin < 1) return '刚刚';
+    if (diffMin < 60) return `${diffMin}分钟前`;
+    if (diffHour < 24) return `${diffHour}小时前`;
+    return d.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  };
 
   const groupedTasks = useMemo(() => {
     const overdue: TaskWithParent[] = [];
@@ -135,23 +200,101 @@ const GlobalTaskView: React.FC<GlobalTaskViewProps> = ({ theme }) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-4">
-      <div className="mb-12">
-        <h2 className="text-2xl font-bold">{t.taskView}</h2>
-        <p className="text-sm text-slate-500 mt-1">根据截止日期汇总的所有案件待办事项</p>
+    <div className="flex gap-8">
+      {/* 左侧：任务列表主体 */}
+      <div className="flex-1 min-w-0">
+        <div className="max-w-4xl py-4">
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold">{t.taskView}</h2>
+            <p className="text-sm text-slate-500 mt-1">根据截止日期汇总的所有案件待办事项</p>
+          </div>
+
+          {renderSection(t.overdue, groupedTasks.overdue, <AlertCircle size={14} />, "bg-rose-500")}
+          {renderSection(t.today, groupedTasks.today, <Clock size={14} />, "bg-amber-500")}
+          {renderSection(t.upcoming, groupedTasks.upcoming, <Calendar size={14} />, "bg-indigo-500")}
+          {renderSection(t.completed, groupedTasks.completed, <CheckCircle2 size={14} />, "bg-emerald-500")}
+
+          {Object.values(groupedTasks).every((arr: any) => arr.length === 0) && (
+            <div className="text-center py-20 opacity-50">
+              <Briefcase size={48} className="mx-auto mb-4 text-slate-300" />
+              <p className="font-medium">{t.noTasks}</p>
+            </div>
+          )}
+        </div>
       </div>
 
-      {renderSection(t.overdue, groupedTasks.overdue, <AlertCircle size={14} />, "bg-rose-500")}
-      {renderSection(t.today, groupedTasks.today, <Clock size={14} />, "bg-amber-500")}
-      {renderSection(t.upcoming, groupedTasks.upcoming, <Calendar size={14} />, "bg-indigo-500")}
-      {renderSection(t.completed, groupedTasks.completed, <CheckCircle2 size={14} />, "bg-emerald-500")}
+      {/* 右侧：操作记录面板 */}
+      <div className={`w-80 shrink-0 py-4`}>
+        <div className={`sticky top-4 rounded-2xl border p-5 ${theme === 'dark'
+          ? 'bg-slate-900/60 border-white/5 backdrop-blur-sm'
+          : 'bg-white border-slate-100 shadow-sm'
+          }`}
+        >
+          {/* 面板标题 */}
+          <div className="flex items-center gap-2 mb-5">
+            <div className="bg-violet-500 p-1.5 rounded-lg text-white shadow-sm">
+              <History size={14} />
+            </div>
+            <h3 className="text-sm font-bold uppercase tracking-widest">操作记录</h3>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${theme === 'dark' ? 'bg-white/5 text-slate-500' : 'bg-slate-200 text-slate-600'}`}>
+              {operationLogs.length}
+            </span>
+          </div>
 
-      {Object.values(groupedTasks).every((arr: any) => arr.length === 0) && (
-        <div className="text-center py-20 opacity-50">
-          <Briefcase size={48} className="mx-auto mb-4 text-slate-300" />
-          <p className="font-medium">{t.noTasks}</p>
+          {/* 操作记录列表 */}
+          <div className="space-y-1 max-h-[calc(100vh-220px)] overflow-y-auto custom-scrollbar">
+            {operationLogs.length === 0 && (
+              <div className="text-center py-10 opacity-40">
+                <RotateCcw size={28} className="mx-auto mb-2 text-slate-400" />
+                <p className="text-xs font-medium">暂无操作记录</p>
+              </div>
+            )}
+            {operationLogs.map((log) => (
+              <div
+                key={log.id}
+                className={`group/log relative flex items-start gap-3 p-3 rounded-xl cursor-default transition-all duration-200 ${theme === 'dark'
+                  ? 'hover:bg-white/5'
+                  : 'hover:bg-slate-50'
+                  }`}
+              >
+                {/* 操作类型图标 */}
+                <div className={`mt-0.5 shrink-0 ${log.action === 'toggle_complete' ? 'text-emerald-500' : 'text-amber-500'}`}>
+                  {log.action === 'toggle_complete' ? (
+                    <CheckCircle2 size={16} />
+                  ) : (
+                    <Circle size={16} />
+                  )}
+                </div>
+
+                {/* 操作详情 */}
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs font-semibold truncate ${theme === 'dark' ? 'text-slate-200' : 'text-slate-700'}`}>
+                    {log.action === 'toggle_complete' ? '完成' : '取消完成'}：{log.subTaskTitle}
+                  </p>
+                  <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                    {log.caseTitle}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    {formatTime(log.createdAt)}
+                  </p>
+                </div>
+
+                {/* 悬浮显示的 X 按钮 */}
+                <button
+                  onClick={() => handleRevertLog(log.id)}
+                  className={`absolute right-2 top-2 opacity-0 group-hover/log:opacity-100 p-1 rounded-lg transition-all duration-200 ${theme === 'dark'
+                    ? 'hover:bg-white/10 text-slate-400 hover:text-rose-400'
+                    : 'hover:bg-slate-200 text-slate-400 hover:text-rose-500'
+                    }`}
+                  title="撤销此操作"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

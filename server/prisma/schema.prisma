@@ -68,3 +68,14 @@ model KnowledgeDocument {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+// 操作记录（任务清单页面右侧面板展示，用于追踪子任务勾选/取消操作）
+model OperationLog {
+  id           String   @id @default(uuid())
+  action       String   // "toggle_complete" | "toggle_incomplete"
+  caseId       String
+  caseTitle    String   // 冗余存储，便于前端展示
+  subTaskId    String
+  subTaskTitle String   // 冗余存储
+  createdAt    DateTime @default(now())
+}

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { BoardData, Case, SubTask } from '../types';
-import { createCase, updateCase, deleteCase } from '../services/api';
+import { createCase, updateCase, deleteCase, createOperationLog } from '../services/api';
 import { logError } from '../utils/errorHandler';
 import { t } from '../translations';
 
@@ -73,6 +73,17 @@ export const useTaskOperations = (
 
         try {
             await updateCase(caseId, { subTasks: updatedSubTasks });
+            // 记录操作日志
+            const toggledTask = updatedSubTasks.find(st => st.id === subTaskId);
+            if (toggledTask) {
+                createOperationLog({
+                    action: toggledTask.isCompleted ? 'toggle_complete' : 'toggle_incomplete',
+                    caseId,
+                    caseTitle: currentCase.title,
+                    subTaskId,
+                    subTaskTitle: toggledTask.title,
+                }).catch(e => logError(e, 'createOperationLog'));
+            }
         } catch (e) { logError(e, 'toggleSubTask'); }
     }, [data, editingTask, setData]);
 

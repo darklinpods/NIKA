@@ -98,3 +98,8 @@ export const addKnowledgeText = (title: string, content: string, category: strin
 
 // Complaint Generator API
 export const extractComplaint = (text: string, templateId: string): Promise<{ success: boolean; data?: any; markdownText?: string }> => api.post('/complaints/extract', { text, templateId });
+
+// Operation Log API
+export const fetchOperationLogs = (): Promise<{ success: boolean; data: any[] }> => api.get<{ success: boolean; data: any[] }>('/operation-logs');
+export const createOperationLog = (data: { action: string; caseId: string; caseTitle: string; subTaskId: string; subTaskTitle: string }): Promise<{ success: boolean; data: any }> => api.post('/operation-logs', data);
+export const deleteOperationLog = (id: string): Promise<{ success: boolean; reverted: boolean }> => api.delete<{ success: boolean; reverted: boolean }>(`/operation-logs/${id}`);
