@@ -3,7 +3,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { getCases, createCase, updateCase, deleteCase, reorderCases, smartImportCase, uploadEvidence } from '../controllers/caseController';
 import { extractPartiesFromEvidence } from '../controllers/partiesController';
-import { extractFactSheet, saveFactSheet } from '../controllers/factSheetController';
+import { extractFactSheet, saveFactSheet, analyzeEvidence } from '../controllers/factSheetController';
 import { extractInvoicesFromEvidence } from '../controllers/invoiceController';
 
 // Set up Multer for handling file uploads (in-memory storage)
@@ -17,6 +17,7 @@ router.post('/:id/evidence', upload.single('file'), uploadEvidence);
 router.post('/:id/extract-parties', extractPartiesFromEvidence);
 router.post('/:id/fact-sheet/extract', extractFactSheet);
 router.put('/:id/fact-sheet', saveFactSheet);
+router.post('/:id/analyze-evidence', analyzeEvidence);
 router.post('/:id/extract-invoices', extractInvoicesFromEvidence);
 router.post('/', createCase);
 router.put('/reorder', reorderCases);
@@ -24,10 +25,11 @@ router.put('/:id', updateCase);
 router.delete('/:id', deleteCase);
 
 // Case Chat Copilot routes
-import { getChatHistory, sendMessage, deleteMessage } from '../controllers/chatController';
+import { getChatHistory, sendMessage, deleteMessage, clearHistory } from '../controllers/chatController';
 router.get('/:id/chat', getChatHistory);
 router.post('/:id/chat', sendMessage);
 router.delete('/chat/:messageId', deleteMessage);
+router.delete('/:id/chat', clearHistory);
 
 export default router;
 

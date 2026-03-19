@@ -89,6 +89,8 @@ export const sendChatMessage = (caseId: string, content: string): Promise<{ succ
     api.post<{ success: boolean; userMessage: any; aiMessage: any }>(`/cases/${caseId}/chat`, { content, lang: 'zh' });
 export const deleteChatMessage = (messageId: string): Promise<{ success: boolean }> =>
     api.delete<{ success: boolean }>(`/cases/chat/${messageId}`);
+export const clearChatHistory = (caseId: string): Promise<{ success: boolean }> =>
+    api.delete<{ success: boolean }>(`/cases/${caseId}/chat`);
 
 export const fetchKnowledgeDocs = (): Promise<any[]> => api.get<any[]>('/knowledge');
 export const uploadKnowledgeDoc = (formData: FormData): Promise<any> => api.post<any>('/knowledge/upload', formData);
@@ -98,3 +100,9 @@ export const addKnowledgeText = (title: string, content: string, category: strin
 
 // Complaint Generator API
 export const extractComplaint = (text: string, templateId: string): Promise<{ success: boolean; data?: any; markdownText?: string }> => api.post('/complaints/extract', { text, templateId });
+
+// Case Facts Analysis
+export const analyzeEvidence = (caseId: string): Promise<{ success: boolean; caseFactSheet: string }> =>
+    api.post(`/cases/${caseId}/analyze-evidence`, {});
+export const saveCaseFactSheet = (caseId: string, caseFactSheet: string): Promise<{ success: boolean }> =>
+    api.put(`/cases/${caseId}/fact-sheet`, { factSheet: caseFactSheet });

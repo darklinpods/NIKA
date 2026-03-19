@@ -1,5 +1,35 @@
 // Extraction-related prompts for structured data extraction
 
+export const getEvidenceAnalysisPrompt = (evidenceText: string, caseTitle: string) => `
+你是一位资深律师助理。请仔细阅读以下案件的全部证据材料，用 Markdown 格式撰写一份《案件事实摘要》。
+
+案件名称：${caseTitle}
+
+要求：
+1. 按以下结构输出，每个章节用 ## 标题
+2. 内容忠实于证据，不推测、不捏造
+3. 如某项信息证据中未体现，写"（待补充）"
+
+## 当事人信息
+列出所有当事人（原告、被告、保险公司等）的姓名/名称、身份、联系方式等已知信息。
+
+## 事件经过
+按时间顺序叙述事件经过，包括时间、地点、起因、经过、结果。
+
+## 损失情况
+列出已有证据证明的各项损失（医疗费、误工费、财产损失等），注明金额和来源证据。
+
+## 关键证据清单
+列出已上传的证据材料及其证明内容。
+
+## 争议焦点（初步判断）
+根据现有证据，初步判断本案可能存在的争议焦点。
+
+---
+【证据材料全文】
+${evidenceText}
+`;
+
 export const getPartiesAndFactsExtractionPrompt = (textToAnalyze: string, caseTypesDesc: string) => `
 你是一位资深律师助理，拥有丰富的民商事诉讼经验，尤其擅长机动车交通事故责任纠纷案件。
 请仔细研读以下【案件全部证据材料】，然后完成三项任务并以纯 JSON 格式输出。

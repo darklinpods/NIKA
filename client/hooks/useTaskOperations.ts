@@ -90,6 +90,11 @@ export const useTaskOperations = (
         setEditingTask({ ...editingTask, documents: updatedDocs });
     }, [editingTask]);
 
+    const renameCaseDocument = useCallback((docId: string, newTitle: string) => {
+        if (!editingTask) return;
+        setEditingTask({ ...editingTask, documents: (editingTask.documents || []).map(d => d.id === docId ? { ...d, title: newTitle } : d) });
+    }, [editingTask]);
+
     // 更新编辑模式下某条子任务的标题
     const updateSubTaskTitle = useCallback((subTaskId: string, newTitle: string) => {
         if (!editingTask) return;
@@ -208,6 +213,7 @@ export const useTaskOperations = (
         deleteSubTask,
         addCaseDocument,
         deleteCaseDocument,
+        renameCaseDocument,
         handleDeleteCase,
         handleUpdatePriority,
         handleMoveStage,

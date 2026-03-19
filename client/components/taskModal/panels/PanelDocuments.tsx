@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Package, Download, CheckSquare, Settings2, FileOutput, Plus, Loader2, FileSignature, Calculator, FileText, Trash2, ClipboardList } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Package, Download, CheckSquare, Settings2, FileOutput, Plus, Loader2, FileSignature, Calculator, FileText, Trash2, ClipboardList, Pencil } from 'lucide-react';
 import { getChecklist } from '../../../constants/printChecklist';
 import { TaskModalSubTasksPanel } from '../TaskModalSubTasksPanel';
 import { ClaimListGenerator } from '../../claimList/ClaimListGenerator';
@@ -18,6 +18,7 @@ interface PanelDocumentsProps {
     onAddSubTask: () => void;
     onAddDocument: (doc: CaseDocument) => void;
     onDeleteDocument: (docId: string) => void;
+    onRenameDocument: (docId: string, newTitle: string) => void;
 }
 
 export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
@@ -29,12 +30,16 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
     onDeleteSubTask,
     onAddSubTask,
     onAddDocument,
-    onDeleteDocument
+    onDeleteDocument,
+    onRenameDocument
 }) => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSmartGenerating, setIsSmartGenerating] = useState(false);
     const [selectedDoc, setSelectedDoc] = useState<CaseDocument | null>(null);
     const [showClaimGenerator, setShowClaimGenerator] = useState(false);
+    const [editingDocId, setEditingDocId] = useState<string | null>(null);
+    const [editingTitle, setEditingTitle] = useState('');
+    const editInputRef = useRef<HTMLInputElement>(null);
 
     // Filter to only show generated/official documents, NOT raw evidence
     const generatedDocs = task.documents?.filter(d => d.category !== 'Evidence') || [];
@@ -104,6 +109,18 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
         } finally {
             setIsSmartGenerating(false);
         }
+    };
+
+    const handleRenameStart = (e: React.MouseEvent, doc: CaseDocument) => {
+        e.stopPropagation();
+        setEditingDocId(doc.id);
+        setEditingTitle(doc.title);
+        setTimeout(() => editInputRef.current?.select(), 0);
+    };
+
+    const handleRenameCommit = (docId: string) => {
+        if (editingTitle.trim()) onRenameDocument(docId, editingTitle.trim());
+        setEditingDocId(null);
     };
 
     const handleDownload = (doc: CaseDocument) => {
@@ -244,6 +261,13 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
                                     </div>
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button
+                                            onClick={(e) => handleRenameStart(e, doc)}
+                                            className={`p-1.5 rounded-lg transition-colors ${theme === 'dark' ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
+                                            title="重命名"
+                                        >
+                                            <Pencil size={14} />
+                                        </button>
+                                        <button
                                             onClick={(e) => { e.stopPropagation(); handleDownload(doc); }}
                                             className={`p-1.5 rounded-lg transition-colors ${theme === 'dark' ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
                                             title="Download Markdown"
@@ -259,10 +283,23 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
                                         </button>
                                     </div>
                                 </div>
-                                <h4 className={`text-sm font-bold mb-1 line-clamp-2 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-700'}`}>
-                                    {doc.title}
-                                </h4>
-                                <p className={`text-xs ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+                                {editingDocId === doc.id ? (
+                                    <input
+                                        ref={editInputRef}
+                                        value={editingTitle}
+                                        onChange={e => setEditingTitle(e.target.value)}
+                                        onBlur={() => handleRenameCommit(doc.id)}
+                                        onKeyDown={e => { if (e.key === 'Enter') handleRenameCommit(doc.id); if (e.key === 'Escape') setEditingDocId(null); }}
+                                        onClick={e => e.stopPropagation()}
+                                        className={`text-sm font-bold mb-1 w-full rounded px-1 outline-none border ${theme === 'dark' ? 'bg-slate-700 border-blue-500 text-slate-200' : 'bg-slate-100 border-blue-400 text-slate-700'}`}
+                                        autoFocus
+                                    />
+                                ) : (
+                                    <h4 className={`text-sm font-bold mb-1 line-clamp-2 ${theme === 'dark' ? 'text-slate-200' : 'text-slate-700'}`}>
+                                        {doc.title}
+                                    </h4>
+                                )}
+                                <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
                                     {new Date(doc.createdAt).toLocaleString()}
                                 </p>
                             </div>

@@ -21,6 +21,7 @@ export const useApp = (theme: 'light' | 'dark') => {
     toggleSubTask,
     addCaseDocument,
     deleteCaseDocument,
+    renameCaseDocument,
     handleDeleteCase,
     handleUpdatePriority,
     handleMoveStage,
@@ -65,6 +66,7 @@ export const useApp = (theme: 'light' | 'dark') => {
     saveData: () => { }, // Stub for potential future use or backward compatibility
     addCaseDocument,
     deleteCaseDocument,
+    renameCaseDocument,
     handleDeleteCase,
     handleGeneratePlan,
     handleUpdatePriority,

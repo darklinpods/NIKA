@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
-import { Send, MessageSquare, Loader, User, Bot, FileText, Trash2, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Send, MessageSquare, Loader, User, Bot, FileText, Trash2, ThumbsUp, ThumbsDown, Eraser } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { fetchChatHistory, sendChatMessage, deleteChatMessage, addKnowledgeText } from '../../services/api';
+import { fetchChatHistory, sendChatMessage, deleteChatMessage, clearChatHistory, addKnowledgeText } from '../../services/api';
 import { t } from '../../translations';
 
 interface Message {
@@ -32,6 +32,7 @@ export const CaseChatPanel = forwardRef<CaseChatPanelHandle, CaseChatPanelProps>
     const [isLoading, setIsLoading] = useState(false);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     useImperativeHandle(ref, () => ({ sendMessage: (text: string) => handleSendMessage(text) }));
 
@@ -105,6 +106,12 @@ export const CaseChatPanel = forwardRef<CaseChatPanelHandle, CaseChatPanelProps>
         setMessages(prev => prev.filter(m => m.id !== messageId));
     };
 
+    const handleClearHistory = async () => {
+        if (!confirm('确定要清除所有对话记录吗？')) return;
+        await clearChatHistory(caseId);
+        setMessages([]);
+    };
+
     const handleLike = async (msg: Message) => {
         if (likedIds.has(msg.id)) return;
         const title = msg.content.replace(/\s+/g, ' ').slice(0, 20);
@@ -126,6 +133,16 @@ export const CaseChatPanel = forwardRef<CaseChatPanelHandle, CaseChatPanelProps>
 
     return (
         <div className={`flex flex-col h-full overflow-hidden ${theme === 'dark' ? 'bg-slate-900' : 'bg-[#f5f5f7]'}`}>
+            {/* Toolbar */}
+            {messages.length > 0 && (
+                <div className={`flex justify-end px-4 py-1.5 border-b ${theme === 'dark' ? 'border-white/10' : 'border-slate-200'}`}>
+                    <button onClick={handleClearHistory} title="清除所有对话记录"
+                        className="flex items-center gap-1 text-xs text-slate-400 hover:text-red-500 transition-colors">
+                        <Eraser size={13} />
+                        清除记录
+                    </button>
+                </div>
+            )}
             {/* Chat List */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                 {messages.length === 0 && (
@@ -205,30 +222,50 @@ export const CaseChatPanel = forwardRef<CaseChatPanelHandle, CaseChatPanelProps>
             </div>
 
             {/* Input Area */}
-            <div className={`px-4 py-3 border-t shrink-0 ${theme === 'dark' ? 'border-white/10 bg-slate-900' : 'border-slate-200 bg-white'}`}>
-                <div className={`flex items-center gap-2 px-4 py-2.5 rounded-full border transition-all
-                    ${theme === 'dark' ? 'bg-slate-800 border-white/10 focus-within:border-blue-500/50' : 'bg-slate-50 border-slate-200 focus-within:border-blue-400'}`}>
-                    <input
+            <div className={`px-4 pt-2 pb-3 border-t shrink-0 ${theme === 'dark' ? 'border-white/10 bg-slate-900' : 'border-slate-200 bg-white'}`}>
+                {/* Shortcut chips */}
+                <div className="flex gap-2 mb-2 overflow-x-auto pb-1 scrollbar-none">
+                    {shortcuts.map((s) => (
+                        <button key={s.label} onClick={() => handleSendMessage(s.prompt)}
+                            className={`shrink-0 text-xs px-3 py-1 rounded-full border transition-colors whitespace-nowrap
+                                ${theme === 'dark' ? 'border-white/10 text-slate-400 hover:border-blue-500/50 hover:text-blue-400' : 'border-slate-200 text-slate-500 hover:border-blue-400 hover:text-blue-600 bg-slate-50'}`}>
+                            {s.label}
+                        </button>
+                    ))}
+                </div>
+                {/* Textarea box */}
+                <div className={`rounded-2xl border transition-all ${theme === 'dark' ? 'bg-slate-800 border-white/10 focus-within:border-blue-500/50' : 'bg-slate-50 border-slate-200 focus-within:border-blue-400'}`}>
+                    <textarea
+                        ref={textareaRef}
+                        rows={1}
                         value={input}
-                        onChange={(e) => setInput(e.target.value)}
+                        onChange={(e) => {
+                            setInput(e.target.value);
+                            e.target.style.height = 'auto';
+                            e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                        }}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                                 e.preventDefault();
                                 handleSendMessage();
                             }
                         }}
-                        placeholder={t.chatPlaceholder || '向 AI 提问关于此案件的内容...'}
-                        className={`flex-1 bg-transparent text-sm outline-none ${theme === 'dark' ? 'text-slate-100 placeholder-slate-500' : 'text-slate-800 placeholder-slate-400'}`}
+                        placeholder={t.chatPlaceholder || '输入您对本案的疑问...'}
+                        className={`w-full bg-transparent text-sm outline-none resize-none px-4 pt-3 pb-1 leading-relaxed
+                            ${theme === 'dark' ? 'text-slate-100 placeholder-slate-500' : 'text-slate-800 placeholder-slate-400'}`}
+                        style={{ minHeight: '44px', maxHeight: '120px' }}
                     />
-                    <button
-                        onClick={() => handleSendMessage()}
-                        disabled={!input.trim() || isLoading}
-                        className={`w-7 h-7 rounded-full flex items-center justify-center transition-all shrink-0 ${input.trim() && !isLoading
-                            ? 'bg-blue-500 text-white hover:bg-blue-600'
-                            : 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700'}`}
-                    >
-                        <Send size={13} />
-                    </button>
+                    <div className="flex justify-end px-3 pb-2">
+                        <button
+                            onClick={() => handleSendMessage()}
+                            disabled={!input.trim() || isLoading}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${input.trim() && !isLoading
+                                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                                : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                        >
+                            <Send size={14} />
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

@@ -41,7 +41,8 @@ export const sendMessage = async (req: Request, res: Response) => {
             return res.status(404).json({ error: "Case not found" });
         }
 
-        const factSheet = (targetCase as any).caseFactSheet ? JSON.parse((targetCase as any).caseFactSheet) : null;
+        let factSheet = null;
+        try { factSheet = (targetCase as any).caseFactSheet ? JSON.parse((targetCase as any).caseFactSheet) : null; } catch { }
         let ragContext = `
 案件标题: ${targetCase.title}
 案件类型: ${(targetCase as any).caseType || '未知'}
@@ -122,5 +123,18 @@ export const deleteMessage = async (req: Request, res: Response) => {
         res.json({ success: true });
     } catch (error: any) {
         res.status(500).json({ error: "Failed to delete message" });
+    }
+};
+
+/**
+ * 清除某个案件的全部聊天记录
+ */
+export const clearHistory = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        await (prisma as any).caseChatMessage.deleteMany({ where: { caseId: id } });
+        res.json({ success: true });
+    } catch (error: any) {
+        res.status(500).json({ error: "Failed to clear chat history" });
     }
 };

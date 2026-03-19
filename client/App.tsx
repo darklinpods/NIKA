@@ -42,7 +42,7 @@ const AppLayout: React.FC<{
   onLogout: () => void;
   onThemeToggle: () => void;
 }> = ({ theme, themeMode, onLogout, onThemeToggle }) => {
-  const { data, setData, editingTask, isOverviewGenerating, isSaving, setEditingTask, toggleSubTask, updateSubTaskTitle, updateSubTaskDate, deleteSubTask, addEmptySubTask, addCaseDocument, deleteCaseDocument, handleGenerateAiOverview, saveEditedTask } = useAppContext();
+  const { data, setData, editingTask, isOverviewGenerating, isSaving, setEditingTask, toggleSubTask, updateSubTaskTitle, updateSubTaskDate, deleteSubTask, addEmptySubTask, addCaseDocument, deleteCaseDocument, renameCaseDocument, handleGenerateAiOverview, saveEditedTask } = useAppContext();
   const [activeTab, setActiveTab] = useState<'board' | 'stats' | 'tasks' | 'knowledge' | 'complaint'>('board');
   const [searchQuery, setSearchQuery] = useState('');
   const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set());
@@ -100,6 +100,7 @@ const AppLayout: React.FC<{
           onAddSubTask={addEmptySubTask}
           onAddDocument={addCaseDocument}
           onDeleteDocument={deleteCaseDocument}
+          onRenameDocument={renameCaseDocument}
           onRefreshCase={async () => {
             if (editingTask?.id) {
               try {

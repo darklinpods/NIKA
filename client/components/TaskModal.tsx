@@ -5,6 +5,7 @@ import { LoadingOverlay } from './LoadingOverlay';
 import { t } from '../translations';
 import { ClaimListGenerator } from './claimList/ClaimListGenerator';
 import { uploadCaseEvidence } from '../services/api';
+import { PanelCaseFacts } from './taskModal/panels/PanelCaseFacts';
 import {
     X, FileText, Plus, Download, Trash2,
     Loader, Share2, FileOutput, Calculator,
@@ -159,6 +160,7 @@ interface TaskModalProps {
     onAddSubTask: () => void;
     onAddDocument: (doc: any) => void;
     onDeleteDocument: (docId: string) => void;
+    onRenameDocument: (docId: string, newTitle: string) => void;
     onRefreshCase: () => void;
     onSave: () => void;
     onClose: () => void;
@@ -176,6 +178,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     onAddSubTask,
     onAddDocument,
     onDeleteDocument,
+    onRenameDocument,
     onRefreshCase,
     onSave,
     onClose,
@@ -183,10 +186,13 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     const isDark = theme === 'dark';
 
     const chatRef = useRef<CaseChatPanelHandle>(null);
+    const [centerTab, setCenterTab] = useState<'chat' | 'facts'>('chat');
     const [isUploading, setIsUploading] = useState(false);
     const [viewingDoc, setViewingDoc] = useState<CaseDocument | null>(null);
     const [selectedDoc, setSelectedDoc] = useState<CaseDocument | null>(null);
     const [showClaimGenerator, setShowClaimGenerator] = useState(false);
+    const [editingDocId, setEditingDocId] = useState<string | null>(null);
+    const [editingTitle, setEditingTitle] = useState('');
 
     const evidenceDocs = task.documents?.filter(d => d.category === 'Evidence') || [];
     const generatedDocs = task.documents?.filter(d => d.category !== 'Evidence') || [];
@@ -293,34 +299,48 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     </div>
                 </div>
 
-                {/* ── Middle: AI 研判对话 ── */}
+                {/* ── Middle: Tab 区域 ── */}
                 <div className={`flex-1 min-w-0 flex flex-col ${isDark ? 'bg-slate-900' : 'bg-[#f5f5f7]'}`}>
                     {/* Tab header */}
-                    <div className={`px-6 py-3 border-b flex items-center justify-between shrink-0
+                    <div className={`px-4 py-2 border-b flex items-center gap-1 shrink-0
                         ${isDark ? 'border-white/10 bg-slate-900' : 'border-slate-200 bg-white'}`}>
-                        <span className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>研判对话</span>
-                        <div className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                            <span className="text-xs text-slate-400">AI 助手在线</span>
-                        </div>
+                        {(['chat', 'facts'] as const).map(tab => (
+                            <button key={tab} onClick={() => setCenterTab(tab)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors
+                                    ${centerTab === tab
+                                        ? 'bg-blue-600 text-white'
+                                        : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}>
+                                {tab === 'chat' ? '研判对话' : '案件详情'}
+                            </button>
+                        ))}
+                        {centerTab === 'chat' && (
+                            <div className="flex items-center gap-1.5 ml-auto">
+                                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                <span className="text-xs text-slate-400">AI 助手在线</span>
+                            </div>
+                        )}
                     </div>
-                    <CaseChatPanel
-                        ref={chatRef}
-                        caseId={task.id}
-                        theme={theme}
-                        caseType={task.caseType}
-                        onRefreshCase={onRefreshCase}
-                        onSaveDocument={(content, suggestedTitle) => {
-                            const newDoc: CaseDocument = {
-                                id: `doc-${Date.now()}`,
-                                title: suggestedTitle,
-                                content,
-                                category: 'offical_doc',
-                                createdAt: new Date().toISOString(),
-                            };
-                            onAddDocument(newDoc);
-                        }}
-                    />
+                    {centerTab === 'facts' ? (
+                        <PanelCaseFacts task={task} theme={theme} onTaskChange={onTaskChange} />
+                    ) : (
+                        <CaseChatPanel
+                            ref={chatRef}
+                            caseId={task.id}
+                            theme={theme}
+                            caseType={task.caseType}
+                            onRefreshCase={onRefreshCase}
+                            onSaveDocument={(content, suggestedTitle) => {
+                                const newDoc: CaseDocument = {
+                                    id: `doc-${Date.now()}`,
+                                    title: suggestedTitle,
+                                    content,
+                                    category: 'offical_doc',
+                                    createdAt: new Date().toISOString(),
+                                };
+                                onAddDocument(newDoc);
+                            }}
+                        />
+                    )}
                 </div>
 
                 {/* ── Right: 成果中心 ── */}
@@ -416,8 +436,23 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                                                 ${isDark ? 'bg-slate-800/60 border-white/5 hover:border-white/15' : 'bg-slate-50 border-slate-200 hover:border-slate-300'}`}>
                                             <div className="flex items-start gap-2 mb-2">
                                                 <FileText size={14} className="text-blue-500 shrink-0 mt-0.5" />
-                                                <div className="min-w-0">
-                                                    <p className={`text-xs font-bold truncate ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{doc.title}</p>
+                                                <div className="min-w-0 flex-1">
+                                                    {editingDocId === doc.id ? (
+                                                        <input
+                                                            autoFocus
+                                                            value={editingTitle}
+                                                            onChange={e => setEditingTitle(e.target.value)}
+                                                            onBlur={() => { if (editingTitle.trim()) onRenameDocument(doc.id, editingTitle.trim()); setEditingDocId(null); }}
+                                                            onKeyDown={e => { if (e.key === 'Enter') { if (editingTitle.trim()) onRenameDocument(doc.id, editingTitle.trim()); setEditingDocId(null); } if (e.key === 'Escape') setEditingDocId(null); }}
+                                                            className={`w-full text-xs font-bold rounded px-1 outline-none border ${isDark ? 'bg-slate-700 border-blue-500 text-slate-200' : 'bg-white border-blue-400 text-slate-800'}`}
+                                                        />
+                                                    ) : (
+                                                        <p
+                                                            className={`text-xs font-bold truncate cursor-pointer hover:text-blue-500 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}
+                                                            onDoubleClick={() => { setEditingDocId(doc.id); setEditingTitle(doc.title); }}
+                                                            title="双击重命名"
+                                                        >{doc.title}</p>
+                                                    )}
                                                     <p className="text-[10px] text-slate-400 uppercase tracking-wide mt-0.5">
                                                         {DOC_CATEGORY_LABEL[doc.category] || doc.category}
                                                     </p>
