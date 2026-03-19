@@ -8,6 +8,7 @@ import geminiRoutes from './routes/geminiRoutes';
 import templateRoutes from './routes/templateRoutes';
 import knowledgeRoutes from './routes/knowledgeRoutes';
 import complaintRoutes from './routes/complaintRoutes';
+import operationLogRoutes from './routes/operationLogRoutes';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -38,6 +39,7 @@ apiRouter.use('/ai', geminiRoutes);
 apiRouter.use('/templates', templateRoutes);
 apiRouter.use('/knowledge', knowledgeRoutes);
 apiRouter.use('/complaints', complaintRoutes);
+apiRouter.use('/operation-logs', operationLogRoutes);
 
 // Handle both with and without /api prefix for robustness on Vercel
 app.use('/api', apiRouter);
