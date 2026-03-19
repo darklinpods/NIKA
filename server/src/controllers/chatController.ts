@@ -41,10 +41,13 @@ export const sendMessage = async (req: Request, res: Response) => {
             return res.status(404).json({ error: "Case not found" });
         }
 
+        const factSheet = (targetCase as any).caseFactSheet ? JSON.parse((targetCase as any).caseFactSheet) : null;
         let ragContext = `
 案件标题: ${targetCase.title}
+案件类型: ${(targetCase as any).caseType || '未知'}
 案件描述: ${targetCase.description}
 当事人信息: ${(targetCase as any).parties || '暂无'}
+${factSheet ? `\n结构化案件事实:\n${JSON.stringify(factSheet, null, 2)}` : ''}
 `;
 
         if (targetCase.documents.length > 0) {
@@ -106,5 +109,18 @@ export const sendMessage = async (req: Request, res: Response) => {
     } catch (error: any) {
         console.error("Case Chat Error:", error);
         res.status(500).json({ error: error.message || "Failed to process chat message" });
+    }
+};
+
+/**
+ * 删除单条聊天消息
+ */
+export const deleteMessage = async (req: Request, res: Response) => {
+    try {
+        const { messageId } = req.params;
+        await (prisma as any).caseChatMessage.delete({ where: { id: messageId } });
+        res.json({ success: true });
+    } catch (error: any) {
+        res.status(500).json({ error: "Failed to delete message" });
     }
 };

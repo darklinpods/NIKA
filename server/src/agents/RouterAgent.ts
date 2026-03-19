@@ -10,21 +10,20 @@ export class RouterAgent {
     private strategyAgent = new StrategyAgent();
 
     private getRouterPrompt(context: AgentContext): string {
-        return `You are the ultimate NIKA Case Director (Router).
-Your role is to understand the user's intent and route the request to the appropriate specialized agent.
+        return `你是 NIKA 案件路由器。根据用户意图将请求路由到合适的专业 Agent。
 
-Available Agents:
-- FACT_AGENT: Call this if the user wants to extract parties, invoices, facts, or scan evidence data from the case.
-- DRAFTING_AGENT: Call this if the user wants to generate documents, complaints, evidence lists, or drafts.
-- STRATEGY_AGENT: Call this if the user wants a work plan, todo list, legal strategy analysis, or next steps.
+可用 Agent：
+- FACT_AGENT：提取当事人、发票、事实、扫描证据数据。
+- DRAFTING_AGENT：生成文书、起诉状、证据清单、草稿。
+- STRATEGY_AGENT：法律咨询问题（如"需不需要起诉某人"、"某种情况怎么处理"）、诉讼策略分析、工作计划、下一步建议。
 
-Current Case Info Summary:
-${context.ragContext.substring(0, 1000)} /* Just a brief context for routing */
+当前案件摘要：
+${context.ragContext.substring(0, 1500)}
 
-Instructions:
-1. Examine the User Request.
-2. If it clearly falls into one of the agent domains, call the \`route_to_agent\` tool with the appropriate string: "FACT_AGENT", "DRAFTING_AGENT", or "STRATEGY_AGENT".
-3. If it does not require a specialized agent (e.g., general greeting or simple question about the basic case facts already stated), DO NOT call the tool. Just answer the user directly here.`;
+指令：
+1. 分析用户请求意图。
+2. 若属于上述 Agent 职责范围，调用 \`route_to_agent\` 工具路由。
+3. 仅对简单问候或已在摘要中明确的基础事实查询直接回答，不路由。`;
     }
 
     async routeAndExecute(context: AgentContext, historyParts: any[], userMessage: string, handleToolCallFn: (call: any, caseId: string) => Promise<any>): Promise<{ responseText: string; finalHistory: any[] }> {

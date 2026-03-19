@@ -34,8 +34,19 @@ export const chatTools = [
                 }
             },
             {
+                name: "generate_evidence_list",
+                description: "当用户要求生成证据目录、证据清单、证据列表时调用此工具，会根据案件上传的证据文件自动生成编号证据目录。",
+                parameters: {
+                    type: "OBJECT",
+                    properties: {
+                        caseId: { type: "STRING" }
+                    },
+                    required: ["caseId"]
+                }
+            },
+            {
                 name: "generate_smart_document",
-                description: "当用户要求生成诉状、智能文书时调用此工具，会根据案件证据自动生成 Markdown 格式的起诉状。",
+                description: "当用户要求生成起诉状、诉状、智能文书时调用此工具（不包括证据目录），会根据案件证据自动生成 Markdown 格式的起诉状。",
                 parameters: {
                     type: "OBJECT",
                     properties: {

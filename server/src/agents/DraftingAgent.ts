@@ -5,7 +5,7 @@ import { loadSkill } from '../skills/SkillLoader';
 export class DraftingAgent extends BaseAgent {
     constructor() {
         const myTools = chatTools[0].functionDeclarations.filter(t =>
-            t.name === 'generate_smart_document'
+            t.name === 'generate_smart_document' || t.name === 'generate_evidence_list'
         );
         super(
             'DraftingAgent',
@@ -27,8 +27,9 @@ Current Case Info:
 ${context.ragContext}
 
 Instructions:
-1. When asked to generate a draft or smart document, ALWAYS call the \`generate_smart_document\` tool first.
-2. After the tool returns, output the markdownText DIRECTLY as your final response. Do NOT call the tool again.
+1. When asked to generate a complaint or legal document (起诉状/诉状), call the \`generate_smart_document\` tool.
+2. When asked to generate an evidence list or evidence directory (证据目录/证据清单), call the \`generate_evidence_list\` tool.
+3. After the tool returns, output the markdownText DIRECTLY as your final response. Do NOT call the tool again.
 3. If no specific action is needed, reply professionally as a legal assistant, outputting the text in well-formatted Markdown.
 ${skillSection}`;
     }

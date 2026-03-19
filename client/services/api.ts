@@ -87,11 +87,14 @@ export const uploadCaseEvidence = (id: string, formData: FormData): Promise<{ su
 export const fetchChatHistory = (caseId: string): Promise<{ success: boolean; data: any[] }> => api.get<{ success: boolean; data: any[] }>(`/cases/${caseId}/chat`);
 export const sendChatMessage = (caseId: string, content: string): Promise<{ success: boolean; userMessage: any; aiMessage: any }> =>
     api.post<{ success: boolean; userMessage: any; aiMessage: any }>(`/cases/${caseId}/chat`, { content, lang: 'zh' });
+export const deleteChatMessage = (messageId: string): Promise<{ success: boolean }> =>
+    api.delete<{ success: boolean }>(`/cases/chat/${messageId}`);
 
 export const fetchKnowledgeDocs = (): Promise<any[]> => api.get<any[]>('/knowledge');
 export const uploadKnowledgeDoc = (formData: FormData): Promise<any> => api.post<any>('/knowledge/upload', formData);
 export const deleteKnowledgeDoc = (id: string): Promise<void> => api.delete<void>(`/knowledge/${id}`);
 export const updateKnowledgeDoc = (id: string, data: { title?: string, category?: string }): Promise<any> => api.put<any>(`/knowledge/${id}`, data);
+export const addKnowledgeText = (title: string, content: string, category: string): Promise<any> => api.post<any>('/knowledge/text', { title, content, category });
 
 // Complaint Generator API
 export const extractComplaint = (text: string, templateId: string): Promise<{ success: boolean; data?: any; markdownText?: string }> => api.post('/complaints/extract', { text, templateId });

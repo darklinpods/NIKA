@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
-import { Send, MessageSquare, Loader, User, Bot, FileText } from 'lucide-react';
+import { Send, MessageSquare, Loader, User, Bot, FileText, Trash2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { fetchChatHistory, sendChatMessage } from '../../services/api';
+import { fetchChatHistory, sendChatMessage, deleteChatMessage, addKnowledgeText } from '../../services/api';
 import { t } from '../../translations';
 
 interface Message {
@@ -26,6 +26,8 @@ interface CaseChatPanelProps {
 
 export const CaseChatPanel = forwardRef<CaseChatPanelHandle, CaseChatPanelProps>(({ caseId, theme, caseType, onRefreshCase, onSaveDocument }, ref) => {
     const [messages, setMessages] = useState<Message[]>([]);
+    const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+    const [dislikedIds, setDislikedIds] = useState<Set<string>>(new Set());
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -98,6 +100,22 @@ export const CaseChatPanel = forwardRef<CaseChatPanelHandle, CaseChatPanelProps>
         }
     };
 
+    const handleDeleteMessage = async (messageId: string) => {
+        await deleteChatMessage(messageId);
+        setMessages(prev => prev.filter(m => m.id !== messageId));
+    };
+
+    const handleLike = async (msg: Message) => {
+        if (likedIds.has(msg.id)) return;
+        const title = msg.content.replace(/\s+/g, ' ').slice(0, 20);
+        await addKnowledgeText(title, msg.content, 'notebook_lm');
+        setLikedIds(prev => new Set(prev).add(msg.id));
+    };
+
+    const handleDislike = (msgId: string) => {
+        setDislikedIds(prev => new Set(prev).add(msgId));
+    };
+
     if (isInitialLoading) {
         return (
             <div className="flex-1 flex items-center justify-center p-8">
@@ -131,27 +149,42 @@ export const CaseChatPanel = forwardRef<CaseChatPanelHandle, CaseChatPanelProps>
                             }`}>
                             {msg.role === 'user' ? <User size={14} className="text-white" /> : <Bot size={14} className="text-blue-500" />}
                         </div>
-                        <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
-                            ? 'bg-blue-600 text-white rounded-tr-none'
-                            : (theme === 'dark' ? 'bg-slate-800/80 text-slate-200 rounded-tl-none border border-white/5' : 'bg-white text-slate-700 rounded-tl-none border border-slate-100 shadow-sm')
-                            }`}>
-                            <div className={`prose prose-sm max-w-none prose-p:my-1 prose-ul:my-2 ${msg.role === 'user'
-                                ? 'prose-invert prose-p:text-white prose-strong:text-white prose-headings:text-white'
-                                : (theme === 'dark' ? 'prose-invert' : 'prose-slate')
+                        <div className="max-w-[85%] flex flex-col gap-1">
+                            <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
+                                ? 'bg-blue-600 text-white rounded-tr-none'
+                                : (theme === 'dark' ? 'bg-slate-800/80 text-slate-200 rounded-tl-none border border-white/5' : 'bg-white text-slate-700 rounded-tl-none border border-slate-100 shadow-sm')
                                 }`}>
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                    {msg.content.replace(/\\n/g, '\n')}
-                                </ReactMarkdown>
+                                <div className={`prose prose-sm max-w-none prose-p:my-1 prose-ul:my-2 ${msg.role === 'user'
+                                    ? 'prose-invert prose-p:text-white prose-strong:text-white prose-headings:text-white'
+                                    : (theme === 'dark' ? 'prose-invert' : 'prose-slate')
+                                    }`}>
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                        {msg.content.replace(/\\n/g, '\n')}
+                                    </ReactMarkdown>
+                                </div>
                             </div>
-                            {msg.role === 'assistant' && onSaveDocument && (
-                                <div className="mt-3 flex justify-end">
-                                    <button
-                                        onClick={() => onSaveDocument(msg.content, 'AI 生成文书')}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold rounded-lg transition-colors border ${theme === 'dark' ? 'bg-slate-700/50 border-white/5 hover:bg-slate-700 text-blue-400' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-blue-600'}`}
-                                    >
-                                        <FileText size={12} />
-                                        {t.saveAsDocument || '保存为案件文书'}
+                            {msg.role === 'assistant' && (
+                                <div className="flex items-center gap-1 px-1">
+                                    <button title="好评，存入知识库" onClick={() => handleLike(msg)}
+                                        className={`p-1 rounded transition-colors ${likedIds.has(msg.id) ? 'text-green-500 cursor-default' : 'text-slate-400 hover:text-green-500'}`}
+                                        disabled={likedIds.has(msg.id)}>
+                                        <ThumbsUp size={13} />
                                     </button>
+                                    <button title="差评" onClick={() => handleDislike(msg.id)}
+                                        className={`p-1 rounded transition-colors ${dislikedIds.has(msg.id) ? 'text-slate-300 cursor-default' : 'text-slate-400 hover:text-slate-600'}`}
+                                        disabled={dislikedIds.has(msg.id)}>
+                                        <ThumbsDown size={13} />
+                                    </button>
+                                    <button title="删除" onClick={() => handleDeleteMessage(msg.id)}
+                                        className="p-1 rounded text-slate-400 hover:text-red-500 transition-colors">
+                                        <Trash2 size={13} />
+                                    </button>
+                                    {onSaveDocument && (
+                                        <button title="保存为案件文书" onClick={() => onSaveDocument(msg.content, 'AI 生成文书')}
+                                            className="p-1 rounded text-slate-400 hover:text-blue-500 transition-colors">
+                                            <FileText size={13} />
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>

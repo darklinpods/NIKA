@@ -95,6 +95,19 @@ export const executeExtractInvoices = async (caseId: string) => {
     }
 };
 
+export const executeGenerateEvidenceList = async (caseId: string) => {
+    try {
+        const docs = await prisma.caseDocument.findMany({ where: { caseId }, select: { title: true } });
+        if (!docs || docs.length === 0) return { error: '案件暂无上传的证据文件。' };
+
+        const list = docs.map((d, i) => `${i + 1}. ${d.title}`).join('\n');
+        const markdownText = `## 证据目录\n\n${list}`;
+        return { success: true, markdownText, message: '证据目录已生成。' };
+    } catch (e: any) {
+        return { error: `生成证据目录失败: ${e.message}` };
+    }
+};
+
 export const executeGenerateSmartDocument = async (caseId: string) => {
     try {
         const caseRecord = await prisma.case.findUnique({
@@ -220,8 +233,13 @@ export const handleToolCall = async (functionCall: any, caseId: string) => {
         return { name, response: result };
     }
 
+    if (name === 'generate_evidence_list') {
+        const result = await executeGenerateEvidenceList(caseId);
+        return { name, response: result };
+    }
+
     if (name === 'generate_smart_document') {
-        const result = await executeGenerateSmartDocument(caseId, args.templateName);
+        const result = await executeGenerateSmartDocument(caseId);
         return { name, response: result };
     }
 

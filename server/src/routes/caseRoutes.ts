@@ -24,9 +24,10 @@ router.put('/:id', updateCase);
 router.delete('/:id', deleteCase);
 
 // Case Chat Copilot routes
-import { getChatHistory, sendMessage } from '../controllers/chatController';
+import { getChatHistory, sendMessage, deleteMessage } from '../controllers/chatController';
 router.get('/:id/chat', getChatHistory);
 router.post('/:id/chat', sendMessage);
+router.delete('/chat/:messageId', deleteMessage);
 
 export default router;
 
