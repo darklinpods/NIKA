@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  ocr-service:
+    build:
+      context: ./ocr-service
+      dockerfile: Dockerfile
+    container_name: nika-ocr-service
+    ports:
+      - "8866:8866"
+    restart: unless-stopped
+    # PaddleOCR 模型首次启动时会自动下载并缓存到此目录
+    volumes:
+      - paddle_ocr_models:/root/.paddleocr
+    environment:
+      - PORT=8866
+
+volumes:
+  paddle_ocr_models:

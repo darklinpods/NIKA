@@ -1,0 +1,7 @@
+rapidocr-onnxruntime==1.4.0
+fastapi==0.115.12
+uvicorn[standard]==0.34.0
+pdf2image==1.17.0
+python-multipart==0.0.12
+Pillow==11.1.0
+onnxruntime==1.20.1

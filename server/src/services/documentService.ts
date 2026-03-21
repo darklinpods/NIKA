@@ -5,13 +5,12 @@
  * 供后续 AI 分析模块（如当事人提取、案件事实生成）使用。
  *
  * 支持的文件类型：
- *   - PDF（数字版：直接提取文字；扫描版：调用 Gemini Vision OCR）
+ *   - PDF（数字版：直接提取文字；扫描版：调用本地 PaddleOCR 微服务）
  *   - DOCX（使用 mammoth 库提取原始文字）
  *   - TXT（直接按 UTF-8 编码读取）
  */
 import mammoth from 'mammoth';
 import PDFParser from 'pdf2json';
-import { aiService } from './aiService';
 
 export const documentService = {
     /**
@@ -25,7 +24,7 @@ export const documentService = {
      * 整体流程：
      *   1. 根据 mimeType 或文件扩展名判断文件格式
      *   2. 针对不同格式调用对应的解析逻辑
-     *   3. 对扫描版 PDF 额外触发 Gemini Vision OCR
+     *   3. 对扫描版 PDF 额外触发 PaddleOCR 微服务（HTTP 调用）
      *   4. 若提取结果为空，抛出错误
      */
     async parseDocumentContent(fileBuffer: Buffer, mimeType: string, filename: string): Promise<string> {
@@ -63,31 +62,32 @@ export const documentService = {
                 console.log(`[DocumentService] Digital PDF detected. Extracted ${extractedText.length} chars.`);
             } else {
                 // ── 扫描版 PDF（纯图片，需走 OCR 识别）─────────────────────
-                // cleanText 几乎为空，说明 PDF 内容是扫描图片，无法直接提取文字
-                // 此时将 PDF 原始二进制以 Base64 编码后，通过多模态 Gemini 模型进行 OCR 识别
-                console.log(`[DocumentService] Scanned PDF detected. Using Gemini OCR...`);
+                // cleanText 几乎为空，说明 PDF 内容是扫描图片，无法直接提取文字。
+                // 将 PDF 原始二进制发送到本地 PaddleOCR 微服务（HTTP multipart/form-data），
+                // 微服务内部负责将 PDF 转图片 + 调用 PaddleOCR 并返回识别文字。
+                const paddleOcrUrl = (process.env.PADDLE_OCR_URL || 'http://localhost:8866').replace(/\/$/, '');
+                console.log(`[DocumentService] Scanned PDF detected. Using PaddleOCR at ${paddleOcrUrl}...`);
                 try {
-                    // 复用 aiService 的 Gemini 客户端（含多 key 轮换 + apiVersion 配置）
-                    const gemini = aiService.getGeminiClient();
-                    const uploadedFile = await gemini.files.upload({
-                        file: new Blob([new Uint8Array(fileBuffer)], { type: 'application/pdf' }),
-                        config: { mimeType: 'application/pdf' },
+                    const formData = new FormData();
+                    formData.append(
+                        'file',
+                        new Blob([new Uint8Array(fileBuffer)], { type: 'application/pdf' }),
+                        filename || 'document.pdf'
+                    );
+                    const ocrResp = await fetch(`${paddleOcrUrl}/ocr`, {
+                        method: 'POST',
+                        body: formData,
                     });
-                    const ocrResponse = await gemini.models.generateContent({
-                        model: 'gemini-2.5-flash',
-                        contents: [{
-                            role: 'user',
-                            parts: [
-                                { text: '请将这份 PDF 文档中的所有文字内容完整地、逐字逐句地提取出来。保持原始排版格式（如标题、段落、表格等）。只输出文档原文，不要添加任何总结、分析或额外的说明。如果文档包含表格，请用文字形式呈现表格内容,提取的段落内容之间要换行' },
-                                { fileData: { fileUri: uploadedFile.uri, mimeType: 'application/pdf' } }
-                            ]
-                        }]
-                    });
-                    extractedText = ocrResponse.text || '';
-                    console.log(`[DocumentService] Gemini OCR extracted ${extractedText.length} chars.`);
+                    if (!ocrResp.ok) {
+                        const errBody = await ocrResp.text().catch(() => '');
+                        throw new Error(`PaddleOCR 服务返回错误 ${ocrResp.status}: ${errBody}`);
+                    }
+                    const ocrResult = await ocrResp.json() as { text: string };
+                    extractedText = ocrResult.text || '';
+                    console.log(`[DocumentService] PaddleOCR extracted ${extractedText.length} chars.`);
                 } catch (ocrError: any) {
                     // OCR 失败时记录错误日志并向上抛出友好的中文错误信息
-                    console.error(`[DocumentService] Gemini OCR failed:`, ocrError.message);
+                    console.error(`[DocumentService] PaddleOCR failed:`, ocrError.message);
                     throw new Error('扫描件 PDF OCR 识别失败，请稍后重试: ' + ocrError.message);
                 }
             }

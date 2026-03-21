@@ -28,3 +28,4 @@ samples_docs/
 .env
 server/.env
 client/.env
+ocr-service/.venv/
