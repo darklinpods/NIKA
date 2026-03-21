@@ -59,14 +59,14 @@ class AIService {
     /**
      * 获取当前可用的 Gemini 客户端 (简单轮询)
      */
-    private getGeminiClient() {
+    getGeminiClient() {
         if (this.geminiKeys.length === 0) {
             this.initialize(); // Try re-initializing in case env was loaded late
         }
         if (this.geminiKeys.length === 0) throw new Error("No Gemini API keys configured. Please check GEMINI_API_KEY in .env");
         const key = this.geminiKeys[this.currentGeminiIndex];
-        
-        const config: any = { apiKey: key, apiVersion: 'v1' };
+
+        const config: any = { apiKey: key };
         if (process.env.GEMINI_BASE_URL) {
             config.httpOptions = { baseUrl: process.env.GEMINI_BASE_URL };
         }
@@ -171,7 +171,7 @@ class AIService {
                             return res;
                         };
 
-                        requestBody.tools = params.tools.flatMap((t: any) => 
+                        requestBody.tools = params.tools.flatMap((t: any) =>
                             (t.functionDeclarations || []).map((fd: any) => ({
                                 type: "function",
                                 function: {
@@ -194,7 +194,7 @@ class AIService {
                     if (message?.tool_calls && message.tool_calls.length > 0) {
                         functionCalls = message.tool_calls.map((tc: any) => {
                             let args = {};
-                            try { args = JSON.parse(tc.function.arguments); } catch (e) {}
+                            try { args = JSON.parse(tc.function.arguments); } catch (e) { }
                             return { name: tc.function.name, args };
                         });
                     }

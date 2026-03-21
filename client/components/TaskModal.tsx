@@ -193,6 +193,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     const [showClaimGenerator, setShowClaimGenerator] = useState(false);
     const [editingDocId, setEditingDocId] = useState<string | null>(null);
     const [editingTitle, setEditingTitle] = useState('');
+    const [autoAnalyzeTick, setAutoAnalyzeTick] = useState(0);
 
     const evidenceDocs = task.documents?.filter(d => d.category === 'Evidence') || [];
     const generatedDocs = task.documents?.filter(d => d.category !== 'Evidence') || [];
@@ -206,7 +207,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             const formData = new FormData();
             formData.append('file', file);
             const response = await uploadCaseEvidence(task.id, formData);
-            if (response.success && response.data) onTaskChange(response.data);
+            if (response.success && response.data) {
+                onTaskChange(response.data);
+                setCenterTab('facts');
+                setAutoAnalyzeTick(Date.now());
+            }
         } catch {
             alert(t.evidenceUploadFailed || '上传证据失败');
         } finally {
@@ -321,7 +326,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                         )}
                     </div>
                     {centerTab === 'facts' ? (
-                        <PanelCaseFacts task={task} theme={theme} onTaskChange={onTaskChange} />
+                        <PanelCaseFacts task={task} theme={theme} onTaskChange={onTaskChange} autoAnalyzeTick={autoAnalyzeTick} />
                     ) : (
                         <CaseChatPanel
                             ref={chatRef}

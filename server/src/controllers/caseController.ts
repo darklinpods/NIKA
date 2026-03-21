@@ -161,9 +161,6 @@ export const uploadEvidence = async (req: Request, res: Response) => {
         // Full FactAgent extraction: parties + caseType + facts narrative
         const extractResult = await executeExtractParties(caseId);
 
-        // 自动分析所有证据，生成/更新 Markdown 事实摘要（异步，不阻塞响应）
-        runEvidenceAnalysis(caseId).catch(e => console.error('[uploadEvidence] analysis error:', e));
-
         const updatedCase = await caseService.getCaseById(caseId);
         res.json({ success: true, data: updatedCase, importedParties: (extractResult as any).parties ?? [] });
 

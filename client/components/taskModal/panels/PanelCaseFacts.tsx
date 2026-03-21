@@ -8,9 +8,10 @@ interface Props {
     task: Case;
     theme: 'light' | 'dark';
     onTaskChange: (task: Case) => void;
+    autoAnalyzeTick?: number;
 }
 
-export const PanelCaseFacts: React.FC<Props> = ({ task, theme, onTaskChange }) => {
+export const PanelCaseFacts: React.FC<Props> = ({ task, theme, onTaskChange, autoAnalyzeTick }) => {
     const isDark = theme === 'dark';
     const [content, setContent] = useState(task.caseFactSheet || '');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -36,6 +37,13 @@ export const PanelCaseFacts: React.FC<Props> = ({ task, theme, onTaskChange }) =
             setIsAnalyzing(false);
         }
     };
+
+    // Listen for auto-analyze triggers from parent
+    useEffect(() => {
+        if (autoAnalyzeTick && autoAnalyzeTick > 0 && !isAnalyzing) {
+            handleAnalyze();
+        }
+    }, [autoAnalyzeTick]);
 
     const handleSave = async () => {
         try {

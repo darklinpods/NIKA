@@ -67,15 +67,19 @@ export const documentService = {
                 // 此时将 PDF 原始二进制以 Base64 编码后，通过多模态 Gemini 模型进行 OCR 识别
                 console.log(`[DocumentService] Scanned PDF detected. Using Gemini OCR...`);
                 try {
-                    const ocrResponse = await aiService.generateContent({
-                        model: 'gemini-2.5-flash', // 支持视觉输入的模型
+                    // 复用 aiService 的 Gemini 客户端（含多 key 轮换 + apiVersion 配置）
+                    const gemini = aiService.getGeminiClient();
+                    const uploadedFile = await gemini.files.upload({
+                        file: new Blob([new Uint8Array(fileBuffer)], { type: 'application/pdf' }),
+                        config: { mimeType: 'application/pdf' },
+                    });
+                    const ocrResponse = await gemini.models.generateContent({
+                        model: 'gemini-2.5-flash',
                         contents: [{
                             role: 'user',
                             parts: [
-                                // 系统指令：要求模型逐字逐句提取 PDF 中的文字，保留排版，不做总结
                                 { text: '请将这份 PDF 文档中的所有文字内容完整地、逐字逐句地提取出来。保持原始排版格式（如标题、段落、表格等）。只输出文档原文，不要添加任何总结、分析或额外的说明。如果文档包含表格，请用文字形式呈现表格内容,提取的段落内容之间要换行' },
-                                // 以 inlineData 形式传入 PDF 的 Base64 编码内容
-                                { inlineData: { data: fileBuffer.toString('base64'), mimeType: 'application/pdf' } }
+                                { fileData: { fileUri: uploadedFile.uri, mimeType: 'application/pdf' } }
                             ]
                         }]
                     });

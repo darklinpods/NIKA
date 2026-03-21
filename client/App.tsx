@@ -92,7 +92,13 @@ const AppLayout: React.FC<{
           task={editingTask}
           theme={theme}
           isSaving={isSaving}
-          onTaskChange={setEditingTask}
+          onTaskChange={(newTask) => {
+            setEditingTask(newTask);
+            setData((prev: any) => ({
+              ...prev,
+              tasks: { ...prev.tasks, [newTask.id]: newTask }
+            }));
+          }}
           onToggleSubTask={(subTaskId) => toggleSubTask(editingTask.id, subTaskId)}
           onUpdateSubTaskTitle={updateSubTaskTitle}
           onUpdateSubTaskDate={updateSubTaskDate}
