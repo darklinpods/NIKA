@@ -2,6 +2,7 @@ import { aiService } from '../services/aiService';
 import fs from 'fs';
 import path from 'path';
 import { getTrafficAccidentClaimTextPrompt } from '../prompts/skillPrompts';
+import { formatInsuranceRegistryForPrompt } from '../utils/insuranceRegistry';
 
 /**
  * 交通事故 Skill：
@@ -153,6 +154,10 @@ ${skillContent}
 
 【当事人结构化数据（极重要，请务必优先映射系统已解析的当事人信息至下方要求的各当事人变量，保证一致性，而不是重新从证据瞎编或者漏掉电话和住址）】
 ${params.parties || '暂未提取到结构化的当事人信息，请从下方证据材料原文中提取。'}
+
+---
+
+${formatInsuranceRegistryForPrompt()}
 
 ---
 

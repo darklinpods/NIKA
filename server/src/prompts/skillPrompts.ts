@@ -1,4 +1,5 @@
 // Skill-specific prompts for specialized workflows
+import { formatInsuranceRegistryForPrompt } from '../utils/insuranceRegistry';
 
 export const getTrafficAccidentClaimTextPrompt = (skillContent: string, params: {
   documentsContent: string;
@@ -44,6 +45,10 @@ ${skillContent}
 
 【当事人结构化数据（极重要，请优先使用此处的姓名/性别/民族/电话/地址等详细信息）】
 ${params.parties || '暂未提取到结构化的当事人信息，请从下方证据材料原文中提取。'}
+
+---
+
+${formatInsuranceRegistryForPrompt()}
 
 ---
 
