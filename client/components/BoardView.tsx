@@ -29,7 +29,7 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
   }, [column.taskIds, data.tasks, searchQuery]);
 
   return (
-    <div className={`p-5 rounded-3xl border transition-all ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-slate-100/50'}`}>
+    <div className={`p-5 transition-all`}>
       <button onClick={() => onToggleColumn(column.id)} className="flex items-center gap-3 mb-5 font-bold group">
         <div className={`p-1 rounded-lg transition-colors ${isCollapsed ? 'bg-slate-200/50 dark:bg-slate-800' : 'bg-indigo-100 dark:bg-indigo-500/20'}`}>
           {isCollapsed ? <ChevronRight size={18} className="text-slate-500" /> : <ChevronDown size={18} className="text-indigo-500" />}

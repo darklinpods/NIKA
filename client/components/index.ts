@@ -7,7 +7,7 @@ export { default as TaskCard } from './TaskCard';
 export { default as StatsBoard } from './StatsBoard';
 export { default as GlobalTaskView } from './GlobalTaskView';
 export { KnowledgeBaseView } from './KnowledgeBaseView';
-export { ComplaintGeneratorView } from './complaintGenerator/ComplaintGeneratorView';
+
 
 // TaskModal sub-components
 export { TaskModalHeader } from './taskModal/TaskModalHeader';

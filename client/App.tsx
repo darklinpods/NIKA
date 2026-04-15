@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LoginScreen, Sidebar, Header, TaskModal, BoardView, StatsBoard, GlobalTaskView, KnowledgeBaseView, ComplaintGeneratorView } from './components';
+import { LoginScreen, Sidebar, Header, TaskModal, BoardView, StatsBoard, GlobalTaskView, KnowledgeBaseView } from './components';
 import { useTheme, useAuth, ThemeMode } from './hooks';
 import { AppProvider, useAppContext } from './providers/AppProvider';
 import { Case } from './types';
@@ -43,7 +43,7 @@ const AppLayout: React.FC<{
   onThemeToggle: () => void;
 }> = ({ theme, themeMode, onLogout, onThemeToggle }) => {
   const { data, setData, editingTask, isOverviewGenerating, isSaving, setEditingTask, toggleSubTask, updateSubTaskTitle, updateSubTaskDate, deleteSubTask, addEmptySubTask, addCaseDocument, deleteCaseDocument, renameCaseDocument, handleGenerateAiOverview, saveEditedTask } = useAppContext();
-  const [activeTab, setActiveTab] = useState<'board' | 'stats' | 'tasks' | 'knowledge' | 'complaint'>('board');
+  const [activeTab, setActiveTab] = useState<'board' | 'stats' | 'tasks' | 'knowledge'>('board');
   const [searchQuery, setSearchQuery] = useState('');
   const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set());
 
@@ -139,8 +139,7 @@ const AppLayout: React.FC<{
         return <GlobalTaskView theme={theme} />;
       case 'knowledge':
         return <KnowledgeBaseView theme={theme} />;
-      case 'complaint':
-        return <ComplaintGeneratorView theme={theme} />;
+
       default:
         return (
           <BoardView

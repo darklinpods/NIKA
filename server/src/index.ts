@@ -5,9 +5,7 @@ import express from 'express';
 import cors from 'cors';
 import caseRoutes from './routes/caseRoutes';
 import geminiRoutes from './routes/geminiRoutes';
-import templateRoutes from './routes/templateRoutes';
 import knowledgeRoutes from './routes/knowledgeRoutes';
-import complaintRoutes from './routes/complaintRoutes';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -35,9 +33,7 @@ app.get('/api/health', (req, res) => {
 const apiRouter = express.Router();
 apiRouter.use('/cases', caseRoutes);
 apiRouter.use('/ai', geminiRoutes);
-apiRouter.use('/templates', templateRoutes);
 apiRouter.use('/knowledge', knowledgeRoutes);
-apiRouter.use('/complaints', complaintRoutes);
 
 // 同时挂载 /api 前缀和无前缀路由，兼容 Vercel 部署环境
 app.use('/api', apiRouter);

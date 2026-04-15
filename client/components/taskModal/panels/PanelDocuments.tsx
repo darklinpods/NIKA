@@ -1,10 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { Package, Download, CheckSquare, Settings2, FileOutput, Plus, Loader2, FileSignature, Calculator, FileText, Trash2, ClipboardList, Pencil } from 'lucide-react';
+import { Package, Download, CheckSquare, Settings2, FileOutput, Plus, Loader2, Calculator, FileText, Trash2, ClipboardList, Pencil } from 'lucide-react';
 import { getChecklist } from '../../../constants/printChecklist';
 import { TaskModalSubTasksPanel } from '../TaskModalSubTasksPanel';
 import { ClaimListGenerator } from '../../claimList/ClaimListGenerator';
 import { generateCaseDocument } from '../../../services/geminiService';
-import { api } from '../../../services/api';
 import { Case, CaseDocument, DocumentCategory } from '../../../types';
 import { t } from '../../../translations';
 
@@ -34,7 +33,6 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
     onRenameDocument
 }) => {
     const [isGenerating, setIsGenerating] = useState(false);
-    const [isSmartGenerating, setIsSmartGenerating] = useState(false);
     const [selectedDoc, setSelectedDoc] = useState<CaseDocument | null>(null);
     const [showClaimGenerator, setShowClaimGenerator] = useState(false);
     const [editingDocId, setEditingDocId] = useState<string | null>(null);
@@ -71,45 +69,7 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
         }
     };
 
-    const handleSmartDocxGenerate = async () => {
-        setIsSmartGenerating(true);
-        try {
-            const reqResponse = await api.get<{ fields: string[] }>('/templates/traffic_accident_complaint.txt/requirements');
-            const requiredFields = reqResponse.fields;
 
-            const caseContext = `Title: ${task.title}\nDescription: ${task.description}\nParties: ${task.parties || ''}`;
-            const extResponse = await api.post<{ extractedData: Record<string, any> }>('/templates/extract-data', {
-                caseDetails: caseContext,
-                requiredFields
-            });
-
-            const extractedData = extResponse.extractedData || {};
-
-            const finalData: Record<string, any> = {};
-            requiredFields.forEach(field => {
-                finalData[field] = extractedData[field] || `[待确认 ${field}]`;
-            });
-
-            const genResponse = await api.post<{ filePath: string, message: string }>('/templates/generate', {
-                templateName: 'traffic_accident_complaint.txt',
-                data: finalData
-            });
-
-            const newDoc: CaseDocument = {
-                id: `docx-${Date.now()}`,
-                title: t.trafficDocx,
-                content: t.docxGeneratedSuccess.replace('{path}', genResponse.filePath),
-                category: 'offical_doc',
-                createdAt: new Date().toISOString(),
-            };
-            onAddDocument(newDoc);
-        } catch (error) {
-            console.error('Failed smart docx generation:', error);
-            alert(t.genDocFailedDetail);
-        } finally {
-            setIsSmartGenerating(false);
-        }
-    };
 
     const handleRenameStart = (e: React.MouseEvent, doc: CaseDocument) => {
         e.stopPropagation();
@@ -186,28 +146,13 @@ export const PanelDocuments: React.FC<PanelDocumentsProps> = ({
                         </button>
 
                         {task.caseType === 'traffic_accident' && (
-                            <>
-                                <button
-                                    onClick={handleSmartDocxGenerate}
-                                    disabled={isSmartGenerating}
-                                    className={`p-4 text-sm font-bold flex flex-col gap-2 rounded-xl border-2 transition-all shadow-sm ${isSmartGenerating ? 'opacity-50 cursor-not-allowed' : ''
-                                        } ${theme === 'dark' ? 'border-indigo-500/30 bg-indigo-900/20 hover:bg-indigo-900/40 text-indigo-300' : 'border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700'}`}
-                                >
-                                    <span className="flex items-center gap-2">
-                                        {isSmartGenerating ? <Loader2 size={16} className="animate-spin" /> : <FileSignature size={16} />}
-                                        {t.trafficDocx}
-                                    </span>
-                                    <span className="text-xs font-normal opacity-80">{t.trafficDocxDesc}</span>
-                                </button>
-
-                                <button
-                                    onClick={() => setShowClaimGenerator(true)}
-                                    className={`p-4 text-sm font-bold flex flex-col gap-2 rounded-xl border-2 transition-all shadow-sm ${theme === 'dark' ? 'border-indigo-500/30 bg-indigo-900/20 hover:bg-indigo-900/40 text-indigo-300' : 'border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700'}`}
-                                >
-                                    <span className="flex items-center gap-2"><Calculator size={16} /> {t.compCalc}</span>
-                                    <span className="text-xs font-normal opacity-80">{t.compCalcDesc}</span>
-                                </button>
-                            </>
+                            <button
+                                onClick={() => setShowClaimGenerator(true)}
+                                className={`p-4 text-sm font-bold flex flex-col gap-2 rounded-xl border-2 transition-all shadow-sm ${theme === 'dark' ? 'border-indigo-500/30 bg-indigo-900/20 hover:bg-indigo-900/40 text-indigo-300' : 'border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700'}`}
+                            >
+                                <span className="flex items-center gap-2"><Calculator size={16} /> {t.compCalc}</span>
+                                <span className="text-xs font-normal opacity-80">{t.compCalcDesc}</span>
+                            </button>
                         )}
                     </div>
                 </div>

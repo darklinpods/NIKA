@@ -4,8 +4,8 @@ import { t } from '../translations';
 
 interface SidebarProps {
   theme: 'light' | 'dark';
-  activeTab: 'board' | 'stats' | 'tasks' | 'knowledge' | 'complaint';
-  onTabChange: (tab: 'board' | 'stats' | 'tasks' | 'knowledge' | 'complaint') => void;
+  activeTab: 'board' | 'stats' | 'tasks' | 'knowledge';
+  onTabChange: (tab: 'board' | 'stats' | 'tasks' | 'knowledge') => void;
   onLogout: () => void;
 }
 
@@ -30,9 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ theme, activeTab, onTabChange,
         <button onClick={() => onTabChange('knowledge')} className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg transition-all ${activeTab === 'knowledge' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20' : theme === 'dark' ? 'hover:bg-slate-900' : 'hover:bg-slate-100'}`}>
           <Library size={20} /><span className="font-medium hidden lg:block">{(t as any).knowledgeBase}</span>
         </button>
-        <button onClick={() => onTabChange('complaint')} className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg transition-all ${activeTab === 'complaint' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20' : theme === 'dark' ? 'hover:bg-slate-900' : 'hover:bg-slate-100'}`}>
-          <BrainCircuit size={20} /><span className="font-medium hidden lg:block">{(t as any).complaintGen}</span>
-        </button>
+
         <button onClick={() => onTabChange('stats')} className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg transition-all ${activeTab === 'stats' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20' : theme === 'dark' ? 'hover:bg-slate-900' : 'hover:bg-slate-100'}`}>
           <BarChart3 size={20} /><span className="font-medium hidden lg:block">{t.analytics}</span>
         </button>

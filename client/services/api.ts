@@ -98,9 +98,6 @@ export const deleteKnowledgeDoc = (id: string): Promise<void> => api.delete<void
 export const updateKnowledgeDoc = (id: string, data: { title?: string, category?: string }): Promise<any> => api.put<any>(`/knowledge/${id}`, data);
 export const addKnowledgeText = (title: string, content: string, category: string): Promise<any> => api.post<any>('/knowledge/text', { title, content, category });
 
-// Complaint Generator API
-export const extractComplaint = (text: string, templateId: string): Promise<{ success: boolean; data?: any; markdownText?: string }> => api.post('/complaints/extract', { text, templateId });
-
 // Case Facts Analysis
 export const analyzeEvidence = (caseId: string): Promise<{ success: boolean; caseFactSheet: string }> =>
     api.post(`/cases/${caseId}/analyze-evidence`, {});
