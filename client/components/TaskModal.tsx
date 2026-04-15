@@ -6,10 +6,11 @@ import { t } from '../translations';
 import { ClaimListGenerator } from './claimList/ClaimListGenerator';
 import { uploadCaseEvidence } from '../services/api';
 import { PanelCaseFacts } from './taskModal/panels/PanelCaseFacts';
+import { PanelEvidence } from './taskModal/panels/PanelEvidence';
 import {
     X, FileText, Plus, Download, Trash2,
     Loader, Share2, FileOutput, Calculator,
-    FileSignature, Clock, Sparkles, Settings, ClipboardList
+    FileSignature, Clock, Sparkles, Settings, ClipboardList, FolderSearch
 } from 'lucide-react';
 import { CASE_TYPES } from '../constants/caseTypes';
 import { getChecklist } from '../constants/printChecklist';
@@ -186,7 +187,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     const isDark = theme === 'dark';
 
     const chatRef = useRef<CaseChatPanelHandle>(null);
-    const [centerTab, setCenterTab] = useState<'chat' | 'facts'>('chat');
+    const [centerTab, setCenterTab] = useState<'chat' | 'facts' | 'evidence'>('chat');
     const [isUploading, setIsUploading] = useState(false);
     const [viewingDoc, setViewingDoc] = useState<CaseDocument | null>(null);
     const [selectedDoc, setSelectedDoc] = useState<CaseDocument | null>(null);
@@ -309,13 +310,13 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     {/* Tab header */}
                     <div className={`px-4 py-2 border-b flex items-center gap-1 shrink-0
                         ${isDark ? 'border-white/10 bg-slate-900' : 'border-slate-200 bg-white'}`}>
-                        {(['chat', 'facts'] as const).map(tab => (
+                        {(['chat', 'facts', 'evidence'] as const).map(tab => (
                             <button key={tab} onClick={() => setCenterTab(tab)}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors
                                     ${centerTab === tab
                                         ? 'bg-blue-600 text-white'
                                         : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}>
-                                {tab === 'chat' ? '研判对话' : '案件详情'}
+                                {tab === 'chat' ? '研判对话' : tab === 'facts' ? '案件详情' : '证据整理'}
                             </button>
                         ))}
                         {centerTab === 'chat' && (
@@ -327,6 +328,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     </div>
                     {centerTab === 'facts' ? (
                         <PanelCaseFacts task={task} theme={theme} onTaskChange={onTaskChange} autoAnalyzeTick={autoAnalyzeTick} />
+                    ) : centerTab === 'evidence' ? (
+                        <PanelEvidence task={task} theme={theme} onTaskChange={onTaskChange} onAddDocument={onAddDocument} onDeleteDocument={onDeleteDocument} />
                     ) : (
                         <CaseChatPanel
                             ref={chatRef}
@@ -422,6 +425,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                                     const w = window.open('', '_blank');
                                     if (w) { w.document.write(html); w.document.close(); w.print(); }
                                 }} />
+                            <QuickActionBtn theme={theme} icon={<FolderSearch size={18} />} label="证据整理"
+                                onClick={() => setCenterTab('evidence')} />
                             {isTrafficAccident && (
                                 <QuickActionBtn theme={theme} icon={<Calculator size={18} />} label="索赔计算器"
                                     onClick={() => setShowClaimGenerator(true)} />

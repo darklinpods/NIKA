@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { FileText, Plus, Database, Wand2, Loader, Scan, Users, Eye, Download, Trash2, X, Edit2, Check, AlignLeft, Receipt } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { FileText, Plus, Database, Wand2, Loader, Scan, Users, Eye, Download, Trash2, X, Edit2, Check, AlignLeft, Receipt, ListOrdered, AlertTriangle, CheckCircle2, MoreVertical } from 'lucide-react';
 import { Case, CaseDocument, InvoiceItem } from '../../../types';
 import { t } from '../../../translations';
-import { uploadCaseEvidence, api } from '../../../services/api';
+import { uploadCaseEvidence, api, organizeEvidence, EvidenceOrganizeResult } from '../../../services/api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import MDEditor from '@uiw/react-md-editor';
@@ -125,11 +125,23 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
 }) => {
     const isDark = theme === 'dark';
 
+    const [openMenuDocId, setOpenMenuDocId] = useState<string | null>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpenMenuDocId(null);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
     const [isUploading, setIsUploading] = useState(false);
     const [isExtractingParties, setIsExtractingParties] = useState(false);
     const [isExtractingInvoices, setIsExtractingInvoices] = useState(false);
     const [viewingDoc, setViewingDoc] = useState<CaseDocument | null>(null);
     const [isEditingDesc, setIsEditingDesc] = useState(false);
+    const [isOrganizing, setIsOrganizing] = useState(false);
+    const [organizeResult, setOrganizeResult] = useState<EvidenceOrganizeResult | null>(null);
 
     const isTrafficAccident = task.caseType === 'traffic_accident';
 
@@ -194,6 +206,19 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
         }
     };
 
+    const handleOrganizeEvidence = async () => {
+        try {
+            setIsOrganizing(true);
+            setOrganizeResult(null);
+            const res = await organizeEvidence(task.id);
+            if (res.success) setOrganizeResult(res.data);
+        } catch (err: any) {
+            alert(err?.message || '证据整理失败，请稍后重试。');
+        } finally {
+            setIsOrganizing(false);
+        }
+    };
+
     const handleDownload = (doc: CaseDocument) => {
         const baseName = doc.title.replace(/\.[^.]+$/, '');
         const blob = new Blob([doc.content], { type: 'text/plain;charset=utf-8' });
@@ -241,17 +266,28 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
                             </h3>
                             <p className="text-[11px] text-slate-500 mt-0.5">{t.uploadClientMaterials}</p>
                         </div>
-                        <div className="relative shrink-0">
-                            <input type="file" accept=".pdf,.doc,.docx"
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                onChange={handleUploadEvidence}
-                                disabled={isUploading || isExtractingParties} />
-                            <button disabled={isUploading}
+                        <div className="flex items-center gap-2 shrink-0">
+                            <button onClick={handleOrganizeEvidence}
+                                disabled={isOrganizing || isUploading || evidenceDocs.length === 0}
                                 className={`px-3 py-1.5 font-bold text-xs rounded-lg flex items-center gap-1.5 transition-colors
-                                    ${isUploading ? 'bg-slate-200 text-slate-400 dark:bg-slate-800' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
-                                {isUploading ? <Loader size={13} className="animate-spin" /> : <Plus size={13} />}
-                                {t.importFile}
+                                    ${isOrganizing || evidenceDocs.length === 0
+                                        ? 'bg-slate-200 text-slate-400 dark:bg-slate-800 cursor-not-allowed'
+                                        : (isDark ? 'bg-teal-900/40 text-teal-300 hover:bg-teal-900/60 border border-teal-500/30' : 'bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100')}`}>
+                                {isOrganizing ? <Loader size={13} className="animate-spin" /> : <ListOrdered size={13} />}
+                                整理证据
                             </button>
+                            <div className="relative">
+                                <input type="file" accept=".pdf,.doc,.docx"
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    onChange={handleUploadEvidence}
+                                    disabled={isUploading || isExtractingParties} />
+                                <button disabled={isUploading}
+                                    className={`px-3 py-1.5 font-bold text-xs rounded-lg flex items-center gap-1.5 transition-colors
+                                        ${isUploading ? 'bg-slate-200 text-slate-400 dark:bg-slate-800' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
+                                    {isUploading ? <Loader size={13} className="animate-spin" /> : <Plus size={13} />}
+                                    {t.importFile}
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -268,19 +304,33 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
                                     <p className={`text-xs font-bold truncate ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{doc.title}</p>
                                     <p className="text-[10px] text-slate-500 mt-0.5">{doc.content.length.toLocaleString()} 字符</p>
                                 </div>
-                                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                                    <button onClick={() => setViewingDoc(doc)} title="查看提取内容"
-                                        className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-blue-500/20 text-blue-400' : 'hover:bg-blue-100 text-blue-500'}`}>
-                                        <Eye size={13} />
+                                <div className="relative shrink-0" ref={openMenuDocId === doc.id ? menuRef : undefined}>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setOpenMenuDocId(openMenuDocId === doc.id ? null : doc.id); }}
+                                        className={`p-1.5 rounded-lg transition-colors opacity-0 group-hover:opacity-100
+                                            ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-200 text-slate-500'}`}>
+                                        <MoreVertical size={14} />
                                     </button>
-                                    <button onClick={() => handleDownload(doc)} title="下载 .txt"
-                                        className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-200 text-slate-500'}`}>
-                                        <Download size={13} />
-                                    </button>
-                                    <button onClick={() => onDeleteDocument(doc.id)} title="删除"
-                                        className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-red-500/20 text-red-400' : 'hover:bg-red-100 text-red-500'}`}>
-                                        <Trash2 size={13} />
-                                    </button>
+                                    {openMenuDocId === doc.id && (
+                                        <div className={`absolute right-0 top-7 z-50 w-32 rounded-xl shadow-lg border overflow-hidden
+                                            ${isDark ? 'bg-slate-800 border-white/10' : 'bg-white border-slate-200'}`}>
+                                            <button onClick={() => { setViewingDoc(doc); setOpenMenuDocId(null); }}
+                                                className={`w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors
+                                                    ${isDark ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-50 text-slate-700'}`}>
+                                                <Eye size={13} /> 查看内容
+                                            </button>
+                                            <button onClick={() => { handleDownload(doc); setOpenMenuDocId(null); }}
+                                                className={`w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors
+                                                    ${isDark ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-50 text-slate-700'}`}>
+                                                <Download size={13} /> 下载 .txt
+                                            </button>
+                                            <button onClick={() => { onDeleteDocument(doc.id); setOpenMenuDocId(null); }}
+                                                className={`w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors
+                                                    ${isDark ? 'hover:bg-red-500/20 text-red-400' : 'hover:bg-red-50 text-red-600'}`}>
+                                                <Trash2 size={13} /> 删除
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -291,6 +341,79 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
                             </div>
                         )}
                     </div>
+
+                    {/* ── 证据整理结果 ─────────────────────────────────── */}
+                    {organizeResult && (
+                        <div className={`mx-3 mb-3 rounded-xl border overflow-hidden text-xs
+                            ${isDark ? 'border-white/10 bg-slate-800/60' : 'border-teal-200 bg-teal-50/50'}`}>
+                            <div className={`px-4 py-2.5 flex items-center justify-between border-b
+                                ${isDark ? 'border-white/10 bg-slate-800/80' : 'border-teal-200 bg-teal-50'}`}>
+                                <div className="flex items-center gap-1.5">
+                                    <ListOrdered size={13} className="text-teal-600 dark:text-teal-400" />
+                                    <span className="font-bold text-teal-700 dark:text-teal-300">证据整理结果</span>
+                                </div>
+                                <button onClick={() => setOrganizeResult(null)}
+                                    className={`p-1 rounded transition-colors ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-teal-100 text-slate-500'}`}>
+                                    <X size={13} />
+                                </button>
+                            </div>
+                            {organizeResult.summary && (
+                                <p className={`px-4 py-2 border-b text-[11px] italic ${isDark ? 'border-white/10 text-slate-400' : 'border-teal-100 text-slate-500'}`}>
+                                    {organizeResult.summary}
+                                </p>
+                            )}
+                            {/* 排序建议 */}
+                            {organizeResult.sortedDocs?.length > 0 && (
+                                <div className="px-4 py-2.5 space-y-1.5">
+                                    <p className={`font-bold mb-1.5 flex items-center gap-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                                        <CheckCircle2 size={12} className="text-teal-500" /> 建议提交顺序
+                                    </p>
+                                    {organizeResult.sortedDocs.sort((a, b) => a.suggestedOrder - b.suggestedOrder).map((doc, i) => (
+                                        <div key={i} className={`flex items-start gap-2 p-2 rounded-lg
+                                            ${isDark ? 'bg-slate-700/50' : 'bg-white border border-teal-100'}`}>
+                                            <span className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px]
+                                                ${isDark ? 'bg-teal-900/60 text-teal-300' : 'bg-teal-100 text-teal-700'}`}>{doc.suggestedOrder}</span>
+                                            <div className="min-w-0">
+                                                <p className={`font-bold truncate ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{doc.title}</p>
+                                                <p className="text-slate-400">{doc.evidenceType}　{doc.reason}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {/* 缺失证据 */}
+                            {organizeResult.missingEvidence?.length > 0 && (
+                                <div className={`px-4 py-2.5 border-t space-y-1.5 ${isDark ? 'border-white/10' : 'border-teal-100'}`}>
+                                    <p className={`font-bold mb-1.5 flex items-center gap-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                                        <AlertTriangle size={12} className="text-amber-500" /> 可能缺失的证据
+                                    </p>
+                                    {organizeResult.missingEvidence.map((item, i) => (
+                                        <div key={i} className={`flex items-start gap-2 p-2 rounded-lg
+                                            ${isDark ? 'bg-slate-700/50' : 'bg-white border border-amber-100'}`}>
+                                            <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold
+                                                ${item.importance === 'high'
+                                                    ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                                                    : item.importance === 'medium'
+                                                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                                                        : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'}`}>
+                                                {item.importance === 'high' ? '重要' : item.importance === 'medium' ? '建议' : '可选'}
+                                            </span>
+                                            <div className="min-w-0">
+                                                <p className={`font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{item.name}</p>
+                                                <p className="text-slate-400">{item.reason}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {organizeResult.missingEvidence?.length === 0 && (
+                                <p className={`px-4 py-2.5 border-t flex items-center gap-1.5 text-teal-600 dark:text-teal-400 font-medium
+                                    ${isDark ? 'border-white/10' : 'border-teal-100'}`}>
+                                    <CheckCircle2 size={13} /> 未发现明显缺失证据
+                                </p>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* ── 右栏：当事人 + 事实叙述 ───────────────────────── */}

@@ -106,3 +106,11 @@ export const analyzeEvidence = (caseId: string): Promise<{ success: boolean; cas
     api.post(`/cases/${caseId}/analyze-evidence`, {});
 export const saveCaseFactSheet = (caseId: string, caseFactSheet: string): Promise<{ success: boolean }> =>
     api.put(`/cases/${caseId}/fact-sheet`, { factSheet: caseFactSheet });
+
+export type EvidenceOrganizeResult = {
+    sortedDocs: { title: string; evidenceType: string; suggestedOrder: number; reason: string }[];
+    missingEvidence: { name: string; importance: string; reason: string }[];
+    summary: string;
+};
+export const organizeEvidence = (caseId: string): Promise<{ success: boolean; data: EvidenceOrganizeResult }> =>
+    api.post(`/cases/${caseId}/organize-evidence`, {});

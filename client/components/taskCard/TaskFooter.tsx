@@ -4,9 +4,6 @@ import { CASE_TYPES, getCaseTypeLabel } from '../../constants/caseTypes';
 import { t } from '../../translations';
 
 interface TaskFooterProps {
-  progress: number;
-  clientName: string;
-  tags: string[];
   caseType: string;
   taskId: string;
   onUpdateCaseType: (caseId: string, caseType: string) => Promise<void>;
@@ -14,7 +11,7 @@ interface TaskFooterProps {
 }
 
 export const TaskFooter: React.FC<TaskFooterProps> = ({
-  progress, clientName, tags, caseType, taskId, onUpdateCaseType, theme
+  caseType, taskId, onUpdateCaseType, theme
 }) => {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -43,7 +40,7 @@ export const TaskFooter: React.FC<TaskFooterProps> = ({
   const isGeneral = !caseType || caseType === 'general';
 
   return (
-    <div className="flex flex-col gap-1.5 mt-auto pt-3 border-t border-white/5">
+    <div className="mt-auto pt-3 border-t border-white/5">
       {/* 案由下拉选择行 */}
       <div className="relative" ref={dropdownRef}>
         <button
@@ -99,23 +96,6 @@ export const TaskFooter: React.FC<TaskFooterProps> = ({
             })}
           </div>
         )}
-      </div>
-
-      {/* 当事人 + 标签 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <div className={`w-2 h-2 rounded-full ${progress === 100 ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-          <span className={`text-[10px] font-bold ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
-            {clientName}
-          </span>
-        </div>
-        <div className="flex gap-1">
-          {tags.slice(0, 1).map(tag => (
-            <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-500 font-bold">
-              {tag}
-            </span>
-          ))}
-        </div>
       </div>
     </div>
   );

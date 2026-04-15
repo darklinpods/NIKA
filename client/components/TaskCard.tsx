@@ -6,7 +6,6 @@ import { MoreVertical } from 'lucide-react';
 import { t } from '../translations';
 import { summarizeTask } from '../services/geminiService';
 import { TaskTitle } from './taskCard/TaskTitle';
-import { ProgressBar } from './taskCard/ProgressBar';
 import { TaskFooter } from './taskCard/TaskFooter';
 import { TaskMenu } from './taskCard/TaskMenu';
 import { SummaryPanel } from './taskCard/SummaryPanel';
@@ -137,18 +136,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </div>
           </div>
 
-          <ProgressBar
-            progress={progressData.progress}
-            completedCount={progressData.completedCount}
-            totalCount={progressData.totalCount}
-            theme={theme}
-            t={t}
-          />
-
           <TaskFooter
-            progress={progressData.progress}
-            clientName={task.clientName}
-            tags={task.tags}
             caseType={task.caseType}
             taskId={task.id}
             onUpdateCaseType={handleUpdateCaseType}
