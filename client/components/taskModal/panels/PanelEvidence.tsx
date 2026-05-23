@@ -6,6 +6,7 @@ import { uploadCaseEvidence, api, organizeEvidence, EvidenceOrganizeResult } fro
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import MDEditor from '@uiw/react-md-editor';
+import { EvidencePdfOrganizer } from '../../evidenceOrganizer/EvidencePdfOrganizer';
 
 
 interface PanelEvidenceProps {
@@ -142,6 +143,7 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
     const [isEditingDesc, setIsEditingDesc] = useState(false);
     const [isOrganizing, setIsOrganizing] = useState(false);
     const [organizeResult, setOrganizeResult] = useState<EvidenceOrganizeResult | null>(null);
+    const [showPdfOrganizer, setShowPdfOrganizer] = useState(false);
 
     const isTrafficAccident = task.caseType === 'traffic_accident';
 
@@ -252,6 +254,13 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
     return (
         <>
             {viewingDoc && <DocViewer doc={viewingDoc} theme={theme} onClose={() => setViewingDoc(null)} />}
+            {showPdfOrganizer && (
+                <EvidencePdfOrganizer
+                    caseId={task.id}
+                    theme={theme}
+                    onClose={() => setShowPdfOrganizer(false)}
+                />
+            )}
 
             <div className={`flex h-full w-full overflow-hidden ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
 
@@ -267,6 +276,15 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
                             <p className="text-[11px] text-slate-500 mt-0.5">{t.uploadClientMaterials}</p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
+                            <button onClick={() => setShowPdfOrganizer(true)}
+                                disabled={isUploading || isExtractingParties}
+                                className={`px-3 py-1.5 font-bold text-xs rounded-lg flex items-center gap-1.5 transition-colors
+                                    ${isUploading || isExtractingParties
+                                        ? 'bg-slate-200 text-slate-400 dark:bg-slate-800 cursor-not-allowed'
+                                        : (isDark ? 'bg-blue-900/40 text-blue-300 hover:bg-blue-900/60 border border-blue-500/30' : 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100')}`}>
+                                <AlignLeft size={13} />
+                                PDF 整理
+                            </button>
                             <button onClick={handleOrganizeEvidence}
                                 disabled={isOrganizing || isUploading || evidenceDocs.length === 0}
                                 className={`px-3 py-1.5 font-bold text-xs rounded-lg flex items-center gap-1.5 transition-colors

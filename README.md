@@ -40,6 +40,7 @@ Agent 通过 Gemini Function Calling 机制调用以下工具，定义见 [`tool
 |---|---|
 | `extract_parties` | 提取当事人、案由、案件事实 |
 | `extract_invoices` | 提取发票清单（交通事故类） |
+| `generate_timeline` | 提取关键时间节点并生成本案时间轴 |
 | `generate_evidence_list` | 生成编号证据目录 |
 | `generate_smart_document` | 生成 Markdown 格式起诉状 |
 | `generate_execution_plan` | 生成案件执行计划子任务 |
@@ -52,15 +53,17 @@ Agent 通过 Gemini Function Calling 机制调用以下工具，定义见 [`tool
 
 文书生成由 **Skill 文件**驱动——每种案件类型对应一份 Markdown 规则文件，定义赔偿计算逻辑、诉讼请求结构和起诉状模板。
 
-[`SkillLoader`](server/src/skills/SkillLoader.ts) 根据 `caseType` 加载对应 Skill 文件和 docx 模板：
+[`SkillLoader`](server/src/skills/SkillLoader.ts) 根据 `caseType` 加载对应 Skill 文件和 docx 模板（案由定义与注册见 [`SUPPORTED_CASE_TYPES`](server/src/constants.ts)）：
 
-| 案件类型 | Skill 文件 | 起诉状模板 |
-|---|---|---|
-| `traffic_accident` | [`skills/traffic_accident.md`](skills/traffic_accident.md) | 机动车交通事故责任纠纷 |
-| `divorce` | [`skills/divorce.md`](skills/divorce.md) | 离婚纠纷 |
-| `loan_dispute` | [`skills/loan_dispute.md`](skills/loan_dispute.md) | 民间借贷纠纷 |
-| `labor_contract` | [`skills/labor_dispute.md`](skills/labor_dispute.md) | 劳动争议纠纷 |
-| `sales_contract` | — | 买卖合同纠纷 |
+| 案由代码 (`caseType`) | 案由名称 | Skill 规则文件 | docx 起诉状模板 |
+|---|---|---|---|
+| `traffic_accident` | 机动车交通事故责任纠纷 | [`skills/traffic_accident.md`](skills/traffic_accident.md) | 民事起诉状（机动车交通事故责任纠纷）.docx |
+| `divorce` | 离婚纠纷 | [`skills/divorce.md`](skills/divorce.md) | 民事起诉状（离婚纠纷）.docx |
+| `loan_dispute` | 民间借贷纠纷 | [`skills/loan_dispute.md`](skills/loan_dispute.md) | 民事起诉状（民间借贷纠纷）.docx |
+| `labor_contract` | 劳务合同纠纷 | [`skills/labor_dispute.md`](skills/labor_dispute.md) | 民事起诉状（劳动争议纠纷）.docx |
+| `sales_contract` | 买卖合同纠纷 | — | 民事起诉状（买卖合同纠纷）.docx |
+| `unjust_enrichment` | 不当得利 | — | （使用默认模板） |
+| `general` | 一般案件 / 其它 | — | （使用默认模板） |
 
 新增案件类型只需：① 在 [`SUPPORTED_CASE_TYPES`](server/src/constants.ts) 注册，② 编写对应 Skill Markdown，③ 在 [`SkillLoader`](server/src/skills/SkillLoader.ts) 添加映射。
 
@@ -83,12 +86,22 @@ Agent 通过 Gemini Function Calling 机制调用以下工具，定义见 [`tool
 
 ## ✨ 核心功能
 
-- **AI 对话驱动**：在案件详情页通过自然语言触发所有操作，无需手动填表
-- **智能证据提取**：从 PDF / Word / 图片中自动提取当事人、案由、发票清单
-- **一键生成文书**：基于 Skill 规则，AI 直接输出完整起诉状，支持在线编辑后导出 docx
-- **诉讼策略分析**：AI 分析案件事实，生成执行计划与诉讼策略
-- **知识库 RAG**：案件对话自动注入知识库上下文，提升回答准确性
-- **看板管理**：拖拽式案件阶段管理（待办 / 进行中 / 已完成）
+- **AI 对话驱动**：在案件详情页通过自然语言与智能 Agent 交互，触发所有专业操作，无需手动填写复杂表单。
+- **智能证据解析**：支持从 PDF、Word、图片等多种原始证据格式中自动 OCR 提取并结构化当事人、识别案由并计算发票费用清单。
+- **AI 证据整理与缺失检测**：
+  - **证据建议顺序**：一键对上传的证据文件进行全盘分析，智能梳理并给出建议提交的证据目录顺序及推荐理由。
+  - **证据缺失检测**：自动分析案情，智能评估可能缺失的关键、建议或可选证据，大幅降低漏交证据的诉讼风险。
+- **可视化 PDF 页级人工整理**：
+  - **灵活排序**：在前端直观拖拽 PDF 页面卡片，对页面进行任意重排。
+  - **旋转修正**：支持对偏斜、倒置的页面进行 90°/180°/270° 快速旋转校正。
+  - **多页拼合**：支持将多个源页面合并拼贴到单页 A4 格式上。
+  - **快速导出**：整理完成后，一键重新编译并下载纯净的新 PDF。
+- **一键智能文书生成**：基于 Skill 规则文件，AI 直接输出高完整度起诉状，提供富文本编辑器在线微调并可无缝导出完美排版的 docx。
+- **诉讼策略与执行看板**：
+  - **诉讼策略地图**：AI 深度剖析案件事实与证据，输出全面的诉讼应对方案。
+  - **关键时间轴**：自动梳理证据时间线并生成本案关键节点时间轴。
+  - **工作流看板**：自动生成阶段式可执行的律师子任务清单，支持拖拽和状态更新。
+- **专业法律 RAG 知识库**：案件对话自动检索并注入相关法律法规、裁判要旨等知识库上下文，确保回答极具专业性。
 
 ---
 

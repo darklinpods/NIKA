@@ -69,6 +69,25 @@ class ApiClient {
     public delete<T>(endpoint: string, options?: RequestInit) {
         return this.request<T>(endpoint, { ...options, method: 'DELETE' });
     }
+
+    public async postBlob(endpoint: string, body: FormData, options: RequestInit = {}): Promise<Blob> {
+        const url = `${API_Base}${endpoint}`;
+        const response = await fetch(url, { ...options, method: 'POST', body });
+
+        if (!response.ok) {
+            let message = `Failed to fetch from ${endpoint}`;
+            try {
+                const errorData = await response.json();
+                message = errorData.details || errorData.error || message;
+            } catch {
+                const text = await response.text().catch(() => '');
+                if (text) message = text;
+            }
+            throw new Error(message);
+        }
+
+        return response.blob();
+    }
 }
 
 // 导出统一的单例实例
@@ -111,3 +130,10 @@ export type EvidenceOrganizeResult = {
 };
 export const organizeEvidence = (caseId: string): Promise<{ success: boolean; data: EvidenceOrganizeResult }> =>
     api.post(`/cases/${caseId}/organize-evidence`, {});
+
+export const exportOrganizedPdf = (caseId: string, file: File, pages: Array<number | number[] | { pages: number[]; rotation: number }>): Promise<Blob> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('pages', JSON.stringify(pages));
+    return api.postBlob(`/cases/${caseId}/pdf-organizer/export`, formData);
+};

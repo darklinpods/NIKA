@@ -7,6 +7,7 @@ import { extractInvoicesFromEvidence } from '../controllers/invoiceController';
 import { getChatHistory, sendMessage, deleteMessage, clearHistory } from '../controllers/chatController';
 import { extractTrafficAccident, generateTrafficAccidentDocx } from '../controllers/skillController';
 import { organizeEvidence } from '../controllers/evidenceOrganizerController';
+import { exportOrganizedPdf } from '../controllers/pdfOrganizerController';
 
 // 文件上传使用内存存储，不落盘
 const upload = multer({ storage: multer.memoryStorage() });
@@ -25,6 +26,7 @@ router.post('/:id/fact-sheet/extract', extractFactSheet);                   // A
 router.put('/:id/fact-sheet', saveFactSheet);                               // 保存事实摘要
 router.post('/:id/analyze-evidence', analyzeEvidence);                      // 重新分析证据生成 Markdown 摘要
 router.post('/:id/organize-evidence', organizeEvidence);                    // AI 证据整理（排序 + 缺失检测）
+router.post('/:id/pdf-organizer/export', upload.single('file'), exportOrganizedPdf); // 页级 PDF 人工排序后导出
 router.post('/:id/extract-invoices', extractInvoicesFromEvidence);          // 提取发票（交通事故专用）
 router.put('/:id', updateCase);                                             // 更新案件
 router.delete('/:id', deleteCase);                                          // 删除案件
