@@ -57,6 +57,17 @@ export const PRINT_CHECKLISTS: Record<string, CaseChecklist> = {
             { label: '仲裁裁决书（如已仲裁）', required: false },
         ],
     },
+    labor_service_injury: {
+        title: '提供劳务者受害责任纠纷 — 出庭材料清单',
+        items: [
+            ...DEFAULT_ITEMS,
+            { label: '劳务关系证明材料', required: true },
+            { label: '受伤经过证明材料', required: true },
+            { label: '医疗费票据及病历资料', required: true },
+            { label: '误工证明及收入证明', required: false },
+            { label: '伤残鉴定报告（如有）', required: false },
+        ],
+    },
 };
 
 export const getChecklist = (caseType: string): CaseChecklist => {

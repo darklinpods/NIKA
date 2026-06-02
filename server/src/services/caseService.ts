@@ -9,6 +9,7 @@ export interface CaseCreateInput {
     clientName?: string;
     courtName?: string;
     status?: string;
+    caseType?: string;
 }
 
 export interface CaseUpdateInput {
@@ -57,10 +58,10 @@ export const caseService = {
 
     /** 创建新案件，自动追加到对应状态列末尾 */
     async createCase(data: CaseCreateInput) {
-        const { title, description = '', priority = 'medium', tags, clientName = '', courtName, status = 'todo' } = data;
+        const { title, description = '', priority = 'medium', tags, clientName = '', courtName, status = 'todo', caseType = 'general' } = data;
         const maxOrder = await this.getMaxOrder(status);
         const newCase = await prisma.case.create({
-            data: { title, description, priority, status, order: maxOrder + 1, tags: JSON.stringify(tags || []), clientName, courtName },
+            data: { title, description, priority, status, order: maxOrder + 1, tags: JSON.stringify(tags || []), clientName, courtName, caseType },
             include: { subTasks: true, documents: true },
         });
         return { ...newCase, tags: JSON.parse(newCase.tags) };

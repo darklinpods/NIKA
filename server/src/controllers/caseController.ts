@@ -103,6 +103,7 @@ export const smartImportCase = async (req: Request, res: Response) => {
             priority: caseData.priority || 'medium',
             tags: caseData.tags || [],
             clientName: caseData.clientName || '',
+            caseType: caseData.caseType || 'general',
             status: 'todo',
         });
 
