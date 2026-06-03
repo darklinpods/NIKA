@@ -10,6 +10,7 @@ export interface CaseCreateInput {
     courtName?: string;
     status?: string;
     caseType?: string;
+    evidenceData?: string;
 }
 
 export interface CaseUpdateInput {
@@ -24,6 +25,7 @@ export interface CaseUpdateInput {
     parties?: string;
     caseType?: string;
     claimData?: string;
+    evidenceData?: string;
     subTasks?: any[];
     documents?: any[];
 }
@@ -58,10 +60,10 @@ export const caseService = {
 
     /** 创建新案件，自动追加到对应状态列末尾 */
     async createCase(data: CaseCreateInput) {
-        const { title, description = '', priority = 'medium', tags, clientName = '', courtName, status = 'todo', caseType = 'general' } = data;
+        const { title, description = '', priority = 'medium', tags, clientName = '', courtName, status = 'todo', caseType = 'general', evidenceData } = data;
         const maxOrder = await this.getMaxOrder(status);
         const newCase = await prisma.case.create({
-            data: { title, description, priority, status, order: maxOrder + 1, tags: JSON.stringify(tags || []), clientName, courtName, caseType },
+            data: { title, description, priority, status, order: maxOrder + 1, tags: JSON.stringify(tags || []), clientName, courtName, caseType, evidenceData },
             include: { subTasks: true, documents: true },
         });
         return { ...newCase, tags: JSON.parse(newCase.tags) };
@@ -137,9 +139,10 @@ export const caseService = {
     /** 将案件数据拼装为 RAG 上下文字符串，注入到 AI 的 System Prompt */
     buildRagContext(caseRecord: any): string {
         let ctx = `案件标题: ${caseRecord.title}\n案件类型: ${caseRecord.caseType || '未知'}\n案件描述: ${caseRecord.description}\n当事人信息: ${caseRecord.parties || '暂无'}`;
-        let factSheet = null;
-        try { factSheet = caseRecord.caseFactSheet ? JSON.parse(caseRecord.caseFactSheet) : null; } catch { }
-        if (factSheet) ctx += `\n\n结构化案件事实:\n${JSON.stringify(factSheet, null, 2)}`;
+        if (caseRecord.caseFactSheet) ctx += `\n\n案件事实摘要:\n${caseRecord.caseFactSheet}`;
+        let evidenceData = null;
+        try { evidenceData = caseRecord.evidenceData ? JSON.parse(caseRecord.evidenceData) : null; } catch { }
+        if (evidenceData) ctx += `\n\n证据派生数据:\n${JSON.stringify(evidenceData, null, 2)}`;
         if (caseRecord.documents?.length) {
             ctx += '\n\n关联证据与文档知识库:\n';
             caseRecord.documents.forEach((doc: any, idx: number) => { ctx += `--- 文档 ${idx + 1}: ${doc.title} ---\n${doc.content}\n`; });

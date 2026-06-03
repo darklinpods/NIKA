@@ -3,6 +3,7 @@ import { Scale, BookOpen, MessageSquare, Lightbulb, Edit2, Check, X, Plus, Trash
 import { CaseChatPanel } from '../CaseChatPanel';
 import { t } from '../../../translations';
 import { ClaimItem, InvoiceItem, Case } from '../../../types';
+import { parseEvidenceData, serializeEvidenceData } from '../../../utils/evidenceData';
 
 interface PanelAnalysisProps {
     task: Case;
@@ -12,19 +13,9 @@ interface PanelAnalysisProps {
 
 export const PanelAnalysis: React.FC<PanelAnalysisProps> = ({ task, theme, onTaskChange }) => {
 
-    // Retrieve claims/invoices from caseFactSheet
-    let claims: ClaimItem[] = [];
-    let invoices: InvoiceItem[] = [];
-    try {
-        if (task.caseFactSheet) {
-            const sheet = JSON.parse(task.caseFactSheet);
-            claims = Array.isArray(sheet.claimsList) ? sheet.claimsList : [];
-            invoices = Array.isArray(sheet.invoices) ? sheet.invoices : [];
-        }
-    } catch {
-        claims = [];
-        invoices = [];
-    }
+    const evidenceData = parseEvidenceData(task);
+    let claims: ClaimItem[] = evidenceData.claimsList || [];
+    let invoices: InvoiceItem[] = evidenceData.invoices || [];
 
     const totalClaimAmount = claims.reduce((sum, c) => sum + (c.amount || 0), 0);
     const hasInvoices = invoices.length > 0;
@@ -35,10 +26,9 @@ export const PanelAnalysis: React.FC<PanelAnalysisProps> = ({ task, theme, onTas
 
     const handleSaveClaims = (newClaims: ClaimItem[]) => {
         if (onTaskChange) {
-            const existing = task.caseFactSheet ? JSON.parse(task.caseFactSheet) : {};
             onTaskChange({
                 ...task,
-                caseFactSheet: JSON.stringify({ ...existing, claimsList: newClaims })
+                evidenceData: serializeEvidenceData(task, { claimsList: newClaims })
             });
         }
     };

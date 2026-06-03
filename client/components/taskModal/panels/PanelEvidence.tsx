@@ -7,6 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import MDEditor from '@uiw/react-md-editor';
 import { EvidencePdfOrganizer } from '../../evidenceOrganizer/EvidencePdfOrganizer';
+import { parseEvidenceData, serializeEvidenceData } from '../../../utils/evidenceData';
 
 
 interface PanelEvidenceProps {
@@ -170,15 +171,10 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
         try {
             setIsExtractingParties(true);
             const res = await api.post<{
-                success: boolean; parties: any[]; caseFactsNarrative: string; caseType: string; caseData: any;
+                success: boolean; parties: any[]; caseData?: Case;
             }>(`/cases/${task.id}/extract-parties`, {});
             if (res.success && res.caseData) {
-                onTaskChange({
-                    ...task,
-                    parties: res.caseData.parties,
-                    ...(res.caseData.caseType ? { caseType: res.caseData.caseType } : {}),
-                    ...(res.caseData.description ? { description: res.caseData.description } : {}),
-                });
+                onTaskChange(res.caseData);
             }
         } catch {
             alert(t.partiesExtractionFailed);
@@ -194,11 +190,9 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
                 `/cases/${task.id}/extract-invoices`, {}
             );
             if (res.success) {
-                // Merge returned invoices into local task state via caseFactSheet JSON
-                const existing = task.caseFactSheet ? JSON.parse(task.caseFactSheet) : {};
                 onTaskChange({
                     ...task,
-                    caseFactSheet: JSON.stringify({ ...existing, invoices: res.invoices })
+                    evidenceData: serializeEvidenceData(task, { invoices: res.invoices })
                 });
             }
         } catch (err: any) {
@@ -241,14 +235,7 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
             : (Array.isArray(task.parties) ? task.parties : []);
     } catch { partiesArray = []; }
 
-    // Parse invoices from caseFactSheet
-    let invoices: InvoiceItem[] = [];
-    try {
-        if (task.caseFactSheet) {
-            const sheet = JSON.parse(task.caseFactSheet);
-            invoices = Array.isArray(sheet.invoices) ? sheet.invoices : [];
-        }
-    } catch { invoices = []; }
+    const invoices: InvoiceItem[] = parseEvidenceData(task).invoices || [];
     const invoiceTotal = invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
 
     return (
@@ -393,7 +380,7 @@ export const PanelEvidence: React.FC<PanelEvidenceProps> = ({
                                                 ${isDark ? 'bg-teal-900/60 text-teal-300' : 'bg-teal-100 text-teal-700'}`}>{doc.suggestedOrder}</span>
                                             <div className="min-w-0">
                                                 <p className={`font-bold truncate ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{doc.title}</p>
-                                                <p className="text-slate-400">{doc.evidenceType}　{doc.reason}</p>
+                                                <p className="text-slate-400">{doc.evidenceType}　{doc.proofPurpose || doc.reason}</p>
                                             </div>
                                         </div>
                                     ))}

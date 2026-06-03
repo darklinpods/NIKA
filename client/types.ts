@@ -37,9 +37,10 @@ export interface Case {
   description: string;
   aiSummary?: string;
   claimData?: string;
+  evidenceData?: string;
   caseType: string;
   caseReason?: string; // 案由
-  caseFactSheet?: string;   // JSON string with structured case facts
+  caseFactSheet?: string;   // lawyer-reviewed case facts, usually Markdown
   factSheetUpdatedAt?: string;
   priority: Priority;
   status: 'todo' | 'in-progress' | 'done';

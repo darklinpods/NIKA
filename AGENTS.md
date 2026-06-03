@@ -20,6 +20,9 @@ No test runner is configured — no test commands exist.
 
 ## Critical Patterns
 
+### Project Wiki Workflow
+This repository uses the Hermes-Team style project wiki in `docs/`. Before starting non-trivial work, read `docs/CURRENT.md` and `docs/TASKS.md`. After finishing work, update `docs/CURRENT.md`; also update `docs/CHANGELOG.md`, `docs/TASKS.md`, and `docs/DECISIONS.md` when their trigger conditions in `docs/AGENTS.md` apply.
+
 ### AI JSON Parsing
 Always use [`cleanAndParseJsonObject()`](server/src/utils/aiJsonParser.ts) / [`cleanAndParseJsonArray()`](server/src/utils/aiJsonParser.ts) to parse AI responses — never `JSON.parse()` directly. AI returns markdown-wrapped JSON.
 
@@ -33,7 +36,16 @@ Always use [`cleanAndParseJsonObject()`](server/src/utils/aiJsonParser.ts) / [`c
 [`SUPPORTED_CASE_TYPES`](server/src/constants.ts) is the single source of truth for valid `caseType` values — must be kept in sync with [`client/constants/caseTypes.ts`](client/constants/caseTypes.ts).
 
 ### Prisma JSON Fields
-`Case.tags`, `Case.parties`, `Case.claimData`, `Case.caseFactSheet` are stored as JSON strings in SQLite — always `JSON.stringify()` before write, `JSON.parse()` after read.
+`Case.tags`, `Case.parties`, `Case.claimData`, and `Case.evidenceData` are stored as JSON strings in SQLite — always `JSON.stringify()` before write, `JSON.parse()` after read. `Case.caseFactSheet` is the lawyer-reviewed case facts surface and is usually Markdown; do not store machine-derived evidence data in it.
+
+### Evidence Management Paradigm
+Raw evidence is represented by `CaseDocument` rows whose `category` is exactly `Evidence`. Evidence-reading AI flows must use `getEvidenceDocuments()` / `filterEvidenceDocuments()` from `server/src/utils/evidenceRepository.ts` instead of reading all case documents. Generated documents (`analysis`, `strategy`, `offical_doc`, `evidence_list`) are outputs, not evidence inputs, and must not be fed back into evidence extraction unless explicitly requested.
+
+Evidence extraction endpoints that mutate the case, such as `POST /cases/:id/extract-parties`, should return the updated case object as `caseData` in addition to extracted snippets. Frontend callers should prefer replacing local case state with `caseData` instead of manually merging guessed fields.
+
+Machine-derived evidence data such as invoices and claim calculation items belongs in `Case.evidenceData`. The client should use `client/utils/evidenceData.ts` to parse and serialize it, because that helper also provides backwards-compatible reads for older cases that stored these arrays inside `caseFactSheet`.
+
+Evidence organization logic lives in `server/src/services/evidenceOrganizerService.ts`. Both `POST /cases/:id/organize-evidence` and the `generate_evidence_list` tool must reuse this service so sorting, missing-evidence detection, evidence type, and proof-purpose wording stay consistent.
 
 ### AI Provider Config
 `GEMINI_API_KEY` supports comma-separated multiple keys (round-robin rotation). `AI_PROVIDER` env switches to `openai`/`deepseek`/`doubao`/`qwen` — but image/OCR calls always fall back to Gemini regardless of provider.

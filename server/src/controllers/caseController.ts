@@ -6,6 +6,7 @@ import multer from 'multer';
 import { caseService } from '../services/caseService';
 import { documentService } from '../services/documentService';
 import { aiAnalysisService } from '../services/aiAnalysisService';
+import { EVIDENCE_DOCUMENT_CATEGORY } from '../utils/evidenceRepository';
 
 // Multer 默认将 filename 按 Latin-1 解码，对于 UTF-8 编码的中文文件名会产生乱码。
 export function fixFilename(name: string): string {
@@ -111,7 +112,7 @@ export const smartImportCase = async (req: Request, res: Response) => {
         await caseService.addDocument(newCase.id, {
             title: originalName,
             content: extractedText,
-            category: 'Evidence',
+            category: EVIDENCE_DOCUMENT_CATEGORY,
         });
 
         // 返回包含 documents 在内的完整案件对象
@@ -156,7 +157,7 @@ export const uploadEvidence = async (req: Request, res: Response) => {
         await caseService.addDocument(caseId, {
             title: originalName,
             content: extractedText,
-            category: "Evidence"
+            category: EVIDENCE_DOCUMENT_CATEGORY
         });
 
         // Full FactAgent extraction: parties + caseType + facts narrative

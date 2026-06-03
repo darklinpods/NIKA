@@ -13,6 +13,10 @@ export interface Case {
     title: string;
     description: string;
     aiSummary?: string;
+    claimData?: string;
+    evidenceData?: string;
+    caseFactSheet?: string;
+    caseType?: string;
     priority: Priority;
     tags: string[];
     createdAt: string;
@@ -22,7 +26,7 @@ export interface Case {
     documents?: CaseDocument[];
 }
 
-export type DocumentCategory = 'input' | 'analysis' | 'strategy' | 'offical_doc' | 'evidence_list';
+export type DocumentCategory = 'input' | 'analysis' | 'strategy' | 'offical_doc' | 'evidence_list' | 'Evidence';
 
 export interface CaseDocument {
     id: string;

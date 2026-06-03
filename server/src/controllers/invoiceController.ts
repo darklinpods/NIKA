@@ -18,7 +18,7 @@ export interface InvoiceItem {
  * 扫描该案件所有上传证据，提取结构化发票/票据清单，
  * 仅适用于 traffic_accident（机动车交通事故责任纠纷）案件。
  *
- * 结果以 JSON 字符串形式存入 Case.caseFactSheet：
+ * 结果以 JSON 字符串形式存入 Case.evidenceData：
  * { "invoices": [ ...InvoiceItem[] ] }
  */
 export const extractInvoicesFromEvidence = async (req: Request, res: Response) => {

@@ -7,7 +7,7 @@ export const extractPartiesFromEvidence = async (req: Request, res: Response) =>
         const { id: caseId } = req.params;
         const result = await executeExtractParties(caseId);
         if (result.error) return res.status(400).json({ error: result.error });
-        res.json({ success: true, parties: result.parties });
+        res.json({ success: true, parties: result.parties, caseData: result.caseData });
     } catch (error: any) {
         console.error('[ExtractParties] Error:', error);
         res.status(500).json({ error: '从证据中提取当事人失败', details: error.message });

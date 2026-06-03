@@ -124,7 +124,7 @@ export const saveCaseFactSheet = (caseId: string, caseFactSheet: string): Promis
     api.put(`/cases/${caseId}/fact-sheet`, { factSheet: caseFactSheet });
 
 export type EvidenceOrganizeResult = {
-    sortedDocs: { title: string; evidenceType: string; suggestedOrder: number; reason: string }[];
+    sortedDocs: { title: string; evidenceType: string; proofPurpose?: string; suggestedOrder: number; reason: string }[];
     missingEvidence: { name: string; importance: string; reason: string }[];
     summary: string;
 };

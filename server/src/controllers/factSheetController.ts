@@ -7,6 +7,7 @@ import { getFactSheetExtractionPrompt, getEvidenceAnalysisPrompt } from '../prom
 import { cleanAndParseJsonObject } from '../utils/aiJsonParser';
 import { DEFAULT_MODEL } from '../constants';
 import { buildDocsContent } from '../utils/toolExecutor';
+import { getEvidenceDocuments } from '../utils/evidenceRepository';
 
 /**
  * 读取案件所有证据 → AI 生成 Markdown 事实摘要 → 保存到 caseFactSheet
@@ -14,7 +15,7 @@ import { buildDocsContent } from '../utils/toolExecutor';
  */
 export async function runEvidenceAnalysis(caseId: string): Promise<string> {
   const [docs, caseRecord] = await Promise.all([
-    prisma.caseDocument.findMany({ where: { caseId, category: 'Evidence' } }),
+    getEvidenceDocuments(caseId),
     prisma.case.findUnique({ where: { id: caseId }, select: { title: true } }),
   ]);
   if (!docs.length) return '';
@@ -58,7 +59,7 @@ export const extractFactSheet = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const docs = await prisma.caseDocument.findMany({ where: { caseId: id } });
+    const docs = await getEvidenceDocuments(id);
     const currentCase = await prisma.case.findUnique({ where: { id } });
 
     if (!docs || docs.length === 0) {

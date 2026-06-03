@@ -4,6 +4,8 @@ import { getPartiesAndFactsExtractionPrompt, getInvoiceExtractionPrompt } from '
 import { SUPPORTED_CASE_TYPES, DEFAULT_MODEL } from '../constants';
 import { TrafficAccidentSkill } from '../skills/TrafficAccidentSkill';
 import { cleanAndParseJsonObject, cleanAndParseJsonArray } from './aiJsonParser';
+import { getEvidenceDocuments } from './evidenceRepository';
+import { evidenceOrganizerService } from '../services/evidenceOrganizerService';
 
 // 重新导出 chatTools，调用方可从本文件或 toolDefinitions.ts 任意引入
 export { chatTools } from './toolDefinitions';
@@ -20,7 +22,7 @@ export function buildDocsContent(docs: { title: string; content: string }[]): st
  */
 export const executeExtractParties = async (caseId: string) => {
     try {
-        const docs = await prisma.caseDocument.findMany({ where: { caseId } });
+        const docs = await getEvidenceDocuments(caseId);
         if (!docs.length) return { error: '案件暂无上传的证据文件，提取失败。' };
 
         const textToAnalyze = buildDocsContent(docs).substring(0, 25000);
@@ -43,9 +45,18 @@ export const executeExtractParties = async (caseId: string) => {
         const updateData: any = { parties: JSON.stringify(newParties), caseType: validType };
         // 仅当 AI 提取到案情摘要时才覆盖 description 字段
         if (factsText.trim()) updateData.description = factsText.trim();
-        await prisma.case.update({ where: { id: caseId }, data: updateData });
+        const updatedCase = await prisma.case.update({
+            where: { id: caseId },
+            data: updateData,
+            include: { subTasks: true, documents: true },
+        });
 
-        return { success: true, message: `成功提取当事人 ${newParties.length} 个，案由识别为: ${validType}。`, parties: newParties };
+        return {
+            success: true,
+            message: `成功提取当事人 ${newParties.length} 个，案由识别为: ${validType}。`,
+            parties: newParties,
+            caseData: { ...updatedCase, tags: JSON.parse(updatedCase.tags) },
+        };
     } catch (e: any) {
         console.error('[Tool: extract_parties] Error:', e);
         return { error: `提取当事人失败: ${e.message}` };
@@ -55,7 +66,7 @@ export const executeExtractParties = async (caseId: string) => {
 /**
  * 工具：提取发票明细（仅限交通事故案件）
  * - 读取文档后送 AI 识别发票条目，金额统一转为 number
- * - 将发票列表合并写入 caseFactSheet.invoices（保留其他字段）
+ * - 将发票列表合并写入 evidenceData.invoices（保留其他字段）
  */
 export const executeExtractInvoices = async (caseId: string) => {
     try {
@@ -63,7 +74,7 @@ export const executeExtractInvoices = async (caseId: string) => {
         if (!caseRecord) return { error: '案件不存在。' };
         if (caseRecord.caseType !== 'traffic_accident') return { error: '发票提取功能目前仅支持"机动车交通事故责任纠纷"类型案件。' };
 
-        const docs = await prisma.caseDocument.findMany({ where: { caseId } });
+        const docs = await getEvidenceDocuments(caseId);
         if (!docs.length) return { error: '该案件暂无上传的证据文件。' };
 
         const textToAnalyze = buildDocsContent(docs).substring(0, 30000);
@@ -78,11 +89,17 @@ export const executeExtractInvoices = async (caseId: string) => {
             ...inv, amount: typeof inv.amount === 'string' ? parseFloat(inv.amount) || 0 : (inv.amount || 0),
         }));
 
-        // 读取已有 factSheet，仅更新 invoices 字段，避免覆盖其他数据
-        let existingFactSheet: Record<string, any> = {};
-        try { if (caseRecord.caseFactSheet) existingFactSheet = JSON.parse(caseRecord.caseFactSheet); } catch { }
+        let existingEvidenceData: Record<string, any> = {};
+        try { if ((caseRecord as any).evidenceData) existingEvidenceData = JSON.parse((caseRecord as any).evidenceData); } catch { }
+        try {
+            if (!existingEvidenceData.invoices && caseRecord.caseFactSheet) {
+                const legacyFactSheet = JSON.parse(caseRecord.caseFactSheet);
+                if (Array.isArray(legacyFactSheet.invoices)) existingEvidenceData.invoices = legacyFactSheet.invoices;
+                if (Array.isArray(legacyFactSheet.claimsList)) existingEvidenceData.claimsList = legacyFactSheet.claimsList;
+            }
+        } catch { }
 
-        await prisma.case.update({ where: { id: caseId }, data: { caseFactSheet: JSON.stringify({ ...existingFactSheet, invoices }) } });
+        await prisma.case.update({ where: { id: caseId }, data: { evidenceData: JSON.stringify({ ...existingEvidenceData, invoices }) } });
 
         const total = invoices.reduce((sum, inv) => sum + inv.amount, 0);
         return { success: true, invoices, total, message: `成功提取发票 ${invoices.length} 张，合计 ${total} 元。` };
@@ -98,7 +115,7 @@ export const executeExtractInvoices = async (caseId: string) => {
  */
 export const executeGenerateTimeline = async (caseId: string) => {
     try {
-        const docs = await prisma.caseDocument.findMany({ where: { caseId } });
+        const docs = await getEvidenceDocuments(caseId);
         if (!docs.length) return { error: '案件暂无上传的证据文件。' };
 
         const response = await aiService.generateContent({
@@ -113,15 +130,19 @@ export const executeGenerateTimeline = async (caseId: string) => {
 
 /**
  * 工具：生成证据目录
- * - 仅读取文档标题，按序号列表输出，无需 AI 调用
+ * - 复用证据整理结果，输出证据名称、类型、证明目的
  */
 export const executeGenerateEvidenceList = async (caseId: string) => {
     try {
-        const docs = await prisma.caseDocument.findMany({ where: { caseId }, select: { title: true } });
-        if (!docs.length) return { error: '案件暂无上传的证据文件。' };
+        const caseRecord = await prisma.case.findUnique({ where: { id: caseId }, include: { documents: true } });
+        if (!caseRecord) return { error: '案件不存在。' };
 
-        const list = docs.map((d, i) => `${i + 1}. ${d.title}`).join('\n');
-        return { success: true, markdownText: `## 证据目录\n\n${list}`, message: '证据目录已生成。' };
+        const organized = await evidenceOrganizerService.organizeCaseEvidence(caseRecord);
+        return {
+            success: true,
+            markdownText: evidenceOrganizerService.formatEvidenceListMarkdown(organized),
+            message: '证据目录已生成。',
+        };
     } catch (e: any) {
         return { error: `生成证据目录失败: ${e.message}` };
     }
@@ -135,10 +156,11 @@ export const executeGenerateSmartDocument = async (caseId: string) => {
     try {
         const caseRecord = await prisma.case.findUnique({ where: { id: caseId }, include: { documents: true } });
         if (!caseRecord) return { error: '案件不存在。' };
+        const evidenceDocs = (caseRecord.documents || []).filter(d => d.category === 'Evidence');
 
         const skill = new TrafficAccidentSkill();
         const markdownText = await skill.generateClaimText({
-            documentsContent: buildDocsContent(caseRecord.documents || []),
+            documentsContent: buildDocsContent(evidenceDocs),
             caseTitle: caseRecord.title,
             caseDescription: caseRecord.description || '',
             parties: caseRecord.parties || ''
