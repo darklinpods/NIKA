@@ -12,6 +12,10 @@ NIKA 已具备案件看板、证据导入、AI 抽取、Agent 对话、证据整
 
 ## 最近一次工作
 
+- 首页案件流转看板新增案由筛选。
+- 筛选选项复用 `client/constants/caseTypes.ts` 的 `CASE_TYPES`。
+- 各看板列、列数量和顶部案件总数会同时应用“搜索词 + 案由”组合筛选。
+- 已通过浏览器验证机动车交通事故责任纠纷和离婚案由的筛选结果。
 - 按 Hermes-Team 方法论重梳理证据管理逻辑。
 - 新增证据读取范式：原始证据统一为 `CaseDocument(category='Evidence')`。
 - 新增 `server/src/utils/evidenceRepository.ts`，证据 AI 读取入口统一走该 helper。
@@ -64,6 +68,10 @@ NIKA 已具备案件看板、证据导入、AI 抽取、Agent 对话、证据整
 
 ## 最近验证
 
+- 已运行 `npm run build`，首页案由筛选变更通过客户端 Vite 和服务端 `tsc` 构建。
+- 已在 `http://localhost:3000` 验证首页案由筛选：
+  - 机动车交通事故责任纠纷显示 60 件，列数量为 23 / 31 / 6。
+  - 离婚显示 2 件，列数量为 1 / 1 / 0。
 - 已运行 `npx prisma db push --schema=server/prisma/schema.prisma`，本地数据库已同步。
 - 已运行 `npm run build`，客户端 Vite 和服务端 `tsc` 均通过。
 - Vite 构建有大 chunk 警告，这是既有打包体积提示，不影响本次变更正确性。
@@ -109,4 +117,4 @@ NIKA 已具备案件看板、证据导入、AI 抽取、Agent 对话、证据整
 
 ---
 
-*最后更新：2026-06-03*
+*最后更新：2026-06-04*

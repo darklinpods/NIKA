@@ -1,23 +1,34 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
-import { Plus, ChevronDown, ChevronRight, Zap, Loader2 } from 'lucide-react';
-import { Column } from '../types';
+import { Plus, ChevronDown, ChevronRight, Zap, Loader2, Filter } from 'lucide-react';
+import { Case, Column } from '../types';
 import { t } from '../translations';
 import TaskCard from './TaskCard';
 import { useAppContext } from '../providers/AppProvider';
 import { smartImportCase } from '../services/api';
+import { CASE_TYPES } from '../constants/caseTypes';
+
+const matchesBoardFilters = (task: Case, searchQuery: string, caseTypeFilter: string) => {
+  const normalizedQuery = searchQuery.toLowerCase();
+  const matchesCaseType = caseTypeFilter === 'all' || task.caseType === caseTypeFilter;
+  const matchesSearch = task.title.toLowerCase().includes(normalizedQuery)
+    || task.clientName.toLowerCase().includes(normalizedQuery);
+
+  return matchesCaseType && matchesSearch;
+};
 
 interface BoardColumnProps {
   columnId: string;
   column: Column;
   theme: 'light' | 'dark';
   searchQuery: string;
+  caseTypeFilter: string;
   collapsedColumns: Set<string>;
   onToggleColumn: (id: string) => void;
 }
 
 const BoardColumn: React.FC<BoardColumnProps> = ({
-  columnId, column, theme, searchQuery, collapsedColumns, onToggleColumn,
+  columnId, column, theme, searchQuery, caseTypeFilter, collapsedColumns, onToggleColumn,
 }) => {
   const { data } = useAppContext();
   const isCollapsed = collapsedColumns.has(columnId);
@@ -25,8 +36,8 @@ const BoardColumn: React.FC<BoardColumnProps> = ({
   const tasks = useMemo(() => {
     return column.taskIds
       .map(id => data.tasks[id])
-      .filter(c => c && (c.title.toLowerCase().includes(searchQuery.toLowerCase()) || c.clientName.toLowerCase().includes(searchQuery.toLowerCase())));
-  }, [column.taskIds, data.tasks, searchQuery]);
+      .filter(c => c && matchesBoardFilters(c, searchQuery, caseTypeFilter));
+  }, [column.taskIds, data.tasks, searchQuery, caseTypeFilter]);
 
   return (
     <div className={`p-5 transition-all`}>
@@ -74,6 +85,12 @@ export const BoardView: React.FC<BoardViewProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [caseTypeFilter, setCaseTypeFilter] = useState('all');
+
+  const filteredTaskCount = useMemo(
+    () => Object.values(data.tasks).filter(task => matchesBoardFilters(task, searchQuery, caseTypeFilter)).length,
+    [data.tasks, searchQuery, caseTypeFilter],
+  );
 
   const handleSmartImportClick = () => {
     fileInputRef.current?.click();
@@ -116,12 +133,29 @@ export const BoardView: React.FC<BoardViewProps> = ({
         accept=".pdf,.doc,.docx"
         className="hidden"
       />
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">{t.sprintBoard}</h2>
-          <p className="text-slate-500 text-sm">{t.managingTasks.replace('{count}', Object.keys(data.tasks).length.toString())}</p>
+          <p className="text-slate-500 text-sm">{t.managingTasks.replace('{count}', filteredTaskCount.toString())}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative">
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+            <select
+              value={caseTypeFilter}
+              onChange={(event) => setCaseTypeFilter(event.target.value)}
+              aria-label={t.filterByType}
+              className={`h-[42px] min-w-[190px] pl-9 pr-8 rounded-lg text-sm font-medium border outline-none transition-colors
+                ${theme === 'dark'
+                  ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'
+                  : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
+            >
+              <option value="all">全部案由</option>
+              {CASE_TYPES.map(caseType => (
+                <option key={caseType.value} value={caseType.value}>{caseType.label}</option>
+              ))}
+            </select>
+          </div>
           <button
             onClick={handleSmartImportClick}
             disabled={isImporting}
@@ -150,6 +184,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                 column={data.columns[columnId]}
                 theme={theme}
                 searchQuery={searchQuery}
+                caseTypeFilter={caseTypeFilter}
                 collapsedColumns={collapsedColumns}
                 onToggleColumn={onToggleColumn}
               />
