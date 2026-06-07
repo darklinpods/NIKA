@@ -98,10 +98,22 @@ NIKA 的核心分层：
 
 ### 数据库
 
-- SQLite JSON 字段写入前必须 `JSON.stringify()`
+- 当前数据库真源是 Supabase PostgreSQL，本地开发和 Vercel production 共用远程库
+- 本地不需要安装 Supabase；通过 `DATABASE_URL` 连接远程 Postgres
+- 运行时使用 Supabase pooler URL，并带 `?pgbouncer=true`
+- 不提交 `server/.env`、`.vercel` 或任何真实连接串/密钥
+- Prisma CLI 迁移后续应使用 direct connection，运行时继续使用 pooler connection
+- JSON 字符串字段写入前必须 `JSON.stringify()`
 - 读取时必须容错解析
-- 修改 `server/prisma/schema.prisma` 后需要同步本地数据库并生成 Prisma Client
-- 若进入多人协作或部署环境，应优先使用 Prisma migration，而不是只用 `db push`
+- 修改 `server/prisma/schema.prisma` 后需要同步 Supabase schema 并生成 Prisma Client
+- 生产/多人协作应优先使用 Prisma migration，而不是临时 SQL 或只用 `db push`
+
+### Vercel Serverless
+
+- 前端构建产物目录是 `client/dist`，`vercel.json` 必须显式配置 `outputDirectory`
+- API 入口是根级 `api/index.ts`
+- Serverless 函数运行目录只读，不要写 `uploads/`、项目目录或相对路径缓存
+- 上传文件优先使用 `multer.memoryStorage()`；如必须落盘，只能写 `/tmp` 并负责清理
 
 ---
 
@@ -198,5 +210,4 @@ git diff --stat
 
 ---
 
-*最后更新：2026-06-03*
-
+*最后更新：2026-06-07*

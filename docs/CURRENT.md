@@ -6,12 +6,20 @@
 
 ## 当前阶段
 
-NIKA 已具备案件看板、证据导入、AI 抽取、Agent 对话、证据整理、PDF 页级整理和文书生成能力。当前阶段重点是把证据管理、案件事实、证据派生数据和生成文档的边界稳定下来，形成长期可维护的办案范式。
+NIKA 已具备案件看板、证据导入、AI 抽取、Agent 对话、证据整理、PDF 页级整理和文书生成能力，并已完成 Vercel + Supabase 的云端生产部署。当前阶段重点是把本地开发与云端生产统一到同一套 PostgreSQL 数据库，同时继续稳定证据管理、案件事实、证据派生数据和生成文档的边界。
 
 ---
 
 ## 最近一次工作
 
+- 完成 Supabase 新项目连接验证，并将生产数据库从本地 SQLite 切换为 Supabase PostgreSQL。
+- 已把本地 SQLite 中 70 个案件迁移到 Supabase，仅保留案件名称、阶段和案由；其他运行必填字段使用最小默认值。
+- 本地 `server/.env` 已指向 Supabase pooler，本地无需安装 Supabase 服务即可读取云端数据。
+- Supabase pooler 与 Prisma Client 使用 `?pgbouncer=true` 兼容参数，避免 prepared statement 冲突。
+- Vercel 项目 `nika` 已绑定 GitHub 仓库并完成生产部署，生产别名为 `https://nika-liard.vercel.app`。
+- `vercel.json` 指定 `outputDirectory: client/dist`，避免 Vercel 默认寻找 `public`。
+- 修复 Vercel Serverless 只读文件系统导致的 API 启动失败：知识库上传由 `multer({ dest: 'uploads/' })` 改为 `memoryStorage()`。
+- 已运行本地 `npm run build`，并验证本地 API 能从 Supabase 读取 70 个案件。
 - 首页案件流转看板新增案由筛选。
 - 筛选选项复用 `client/constants/caseTypes.ts` 的 `CASE_TYPES`。
 - 各看板列、列数量和顶部案件总数会同时应用“搜索词 + 案由”组合筛选。
@@ -29,6 +37,24 @@ NIKA 已具备案件看板、证据导入、AI 抽取、Agent 对话、证据整
 ---
 
 ## 当前本地修改
+
+当前工作区已提交并推送，最近提交：
+
+- `1968f73 Fix Vercel deployment configuration`
+
+### 云端部署与数据库
+- `vercel.json`
+  - 指定 `buildCommand: npm run build`。
+  - 指定 `outputDirectory: client/dist`。
+  - API 请求 rewrite 到 `/api/index.ts`，SPA fallback 到 `/index.html`。
+- `.gitignore`
+  - 忽略 `.vercel` 本地绑定目录。
+- `server/src/routes/knowledgeRoutes.ts`
+  - 知识库上传改用 `multer.memoryStorage()`，避免 Vercel Serverless 启动时创建只读目录。
+- `server/src/services/knowledgeService.ts`
+  - 上传文件优先读取 `file.buffer`，并保留 `file.path` 兼容旧路径。
+- `server/.env`（未提交）
+  - 本地 `DATABASE_URL` 指向 Supabase pooler，并带 `?pgbouncer=true`。
 
 ### 证据管理重构
 - `server/src/utils/evidenceRepository.ts`
@@ -68,6 +94,18 @@ NIKA 已具备案件看板、证据导入、AI 抽取、Agent 对话、证据整
 
 ## 最近验证
 
+- 已验证 Supabase pooler 连接成功。
+- 已在 Supabase 创建项目表：`Case`、`SubTask`、`CaseDocument`、`CaseChatMessage`、`KnowledgeDocument`。
+- 已从本地 SQLite 向 Supabase 迁移 70 个案件。
+- 已验证远端案件分布：
+  - `done`: 6
+  - `in-progress`: 36
+  - `todo`: 28
+  - `traffic_accident`: 59
+- 已验证本地 `http://localhost:3001/api/cases` 能返回 Supabase 中的 70 个案件。
+- 已完成 Vercel production 部署，生产别名为 `https://nika-liard.vercel.app`。
+- 已更新 Vercel production 环境变量，`DATABASE_URL` 使用 Supabase pooler 并带 `?pgbouncer=true`。
+- 已通过 Vercel 日志确认修复后没有新的 `EROFS /var/task/uploads` 错误。
 - 已运行 `npm run build`，首页案由筛选变更通过客户端 Vite 和服务端 `tsc` 构建。
 - 已在 `http://localhost:3000` 验证首页案由筛选：
   - 机动车交通事故责任纠纷显示 60 件，列数量为 23 / 31 / 6。
@@ -80,31 +118,37 @@ NIKA 已具备案件看板、证据导入、AI 抽取、Agent 对话、证据整
 
 ## 下一步建议
 
-1. 先手动验证证据管理主流程，这是当前 P1 技术债务的第一项。
+1. 先手动验证线上和本地案件看板数据一致。
+   - 本地：`http://localhost:3000/`
+   - 线上：`https://nika-liard.vercel.app`
+   - 确认 70 个案件按阶段显示。
+   - 新增/编辑案件后确认本地和线上都能看到同一份 Supabase 数据。
+
+2. 继续手动验证证据管理主流程，这是当前 P1 技术债务的第一项。
    - 上传新证据。
    - 重扫案卷，确认当事人、案由、描述同步刷新。
    - 提取发票，确认发票列表显示正常。
    - 进入策略/分析面板，确认可基于发票生成索赔试算。
    - 生成证据目录，确认包含证据类型和证明目的。
 
-2. 验证通过后，按 `docs/TASKS.md` 的“当前技术债务总览”处理 P1 债务。
+3. 验证通过后，按 `docs/TASKS.md` 的“当前技术债务总览”处理 P1 债务。
    - 证据整理结果持久化。
    - `caseFactSheet` 长期形态。
    - AI 工具结果落库策略。
    - 关键服务测试。
 
-3. 决定是否将“证据整理结果”持久化。
+4. 决定是否将“证据整理结果”持久化。
    - 当前 `/organize-evidence` 和 `generate_evidence_list` 每次会重新调用 AI。
    - 如果用户需要编辑、保存、复用证据项，应新增持久化结构，例如 `EvidenceItem` 或 `evidenceData.organizedEvidence`。
 
-4. 梳理 `caseFactSheet` 的长期形态。
+5. 梳理 `caseFactSheet` 的长期形态。
    - 当前兼容 Markdown 案件事实摘要。
    - 旧的结构化事实编辑器仍会尝试解析 JSON；失败时回落为空表单。
    - 后续可考虑拆分为 `caseFactSheetMarkdown` 与 `caseFactsData`，或明确保留 Markdown 单形态。
 
-5. 建立迁移规范。
-   - 当前使用 `prisma db push` 直推 SQLite。
-   - 若进入多人协作或生产部署，应改为 Prisma migration 文件管理。
+6. 建立迁移规范。
+   - 当前 Supabase 表结构由 Prisma schema 生成 SQL 后通过 `psql` 执行。
+   - 若进入多人协作或长期生产部署，应改为 Prisma migration 文件管理，并区分 direct connection 与 pooler runtime connection。
 
 ---
 
@@ -113,8 +157,9 @@ NIKA 已具备案件看板、证据导入、AI 抽取、Agent 对话、证据整
 - 不要把生成文档、策略分析或证据目录再次喂给证据抽取流程。
 - 不要再把 `invoices`、`claimsList` 写入 `caseFactSheet`。
 - 修改证据管理、AI 工具、字段职责后，必须同步更新 `docs/DECISIONS.md` 和 `docs/AGENTS.md`。
-- 本轮工作已有本地数据库变更：`server/prisma/dev.db`。
+- 不要提交 `server/.env`、`.vercel` 或任何真实数据库/API 密钥。
+- 本地开发当前使用远程 Supabase，而不是本地 SQLite；如需回到 SQLite，必须同步改回 Prisma datasource 和 `DATABASE_URL`。
 
 ---
 
-*最后更新：2026-06-04*
+*最后更新：2026-06-07*

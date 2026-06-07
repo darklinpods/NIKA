@@ -4,6 +4,17 @@
 
 ## 当前推荐下一步
 
+### [P1] 验证本地与线上共用 Supabase 数据
+- **描述**：当前本地开发和 Vercel 生产环境均指向 Supabase PostgreSQL，需要通过页面验证两端数据一致。
+- **验收标准**：
+  - 本地 `http://localhost:3000/` 能显示 70 个案件
+  - 线上 `https://nika-liard.vercel.app` 能显示 70 个案件
+  - 新增或修改一个测试案件后，两端刷新均可看到一致结果
+  - Vercel logs 不再出现 `EROFS /var/task/uploads` 或 prepared statement 冲突
+- **状态**：待验证
+
+---
+
 ### [P1] 手动验证证据管理重构主流程
 - **描述**：证据读取、当事人提取、发票提取、证据整理和证据目录生成已完成代码重构，需要在真实页面流程中手动验证。
 - **验收标准**：
@@ -76,7 +87,12 @@
 - **状态**：待调研
 
 ### [P2] Prisma migration 管理
-- **描述**：当前本地使用 `prisma db push`，若进入多人协作或部署环境，应建立迁移文件流程。
+- **描述**：当前 Supabase 表结构通过 Prisma schema 生成 SQL 后执行，尚未建立正式 migration 流程。后续应区分 Prisma CLI direct connection 和运行时 Supabase pooler connection。
+- **验收标准**：
+  - 明确 `DATABASE_URL` 用于运行时 pooler，带 `?pgbouncer=true`
+  - 增加 direct connection 配置用于 Prisma CLI migration
+  - 使用 migration 文件管理 schema 变更，而不是临时 SQL 或 `db push`
+  - 更新 Vercel 与本地环境变量说明
 - **状态**：待开始
 
 ### [P2] 前端大 chunk 优化
@@ -110,7 +126,7 @@
 | P1 | `caseFactSheet` 长期形态未确定 | Markdown 摘要与旧结构化编辑器体验不一致 | 3 |
 | P1 | AI 工具结果落库策略不统一 | 工具有的写库、有的只返回，后续 Agent 行为容易漂移 | 4 |
 | P1 | 缺少关键服务测试 | 证据整理、派生数据解析、AI JSON 解析缺少回归保护 | 5 |
-| P2 | Prisma migration 体系缺失 | 本地 `db push` 可用，但多人协作/部署风险较高 | 6 |
+| P2 | Prisma migration 体系缺失 | Supabase 已上线，但 schema 变更仍缺少 direct/pooler 分离和 migration 文件 | 6 |
 | P2 | 前端大 chunk 警告 | 构建通过，但首屏和加载性能有优化空间 | 7 |
 | P2 | 错误处理不统一 | 多处 `alert()` 和后端错误格式不一致，体验与排查成本较高 | 8 |
 | P2 | 前后端 Case 类型重复 | `client/types.ts` 与 `server/src/types.ts` 易漂移 | 9 |
@@ -132,6 +148,13 @@
 
 ## 已完成任务
 
+### 2026-06-07
+- [x] [新增] 完成 Vercel 生产部署
+- [x] [重构] 本地开发和线上生产切换为 Supabase PostgreSQL
+- [x] [迁移] 将本地 70 个案件导入 Supabase
+- [x] [修复] 修复 Vercel Serverless 只读文件系统导致 API 初始化失败
+- [x] [修复] Supabase pooler 连接串加入 `?pgbouncer=true`
+
 ### 2026-06-04
 - [x] [新增] 首页案件流转看板支持按案由筛选
 
@@ -144,4 +167,4 @@
 
 ---
 
-*最后更新：2026-06-04*
+*最后更新：2026-06-07*

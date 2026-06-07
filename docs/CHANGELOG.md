@@ -12,6 +12,33 @@
 
 ---
 
+## 2026-06-07
+
+### [新增] 完成 Vercel + Supabase 生产部署
+- 绑定 Vercel 项目 `nika` 与 GitHub 仓库
+- 配置 Vercel production 环境变量
+- 指定 `vercel.json` 的 `buildCommand` 和 `outputDirectory`
+- 生产别名为 `https://nika-liard.vercel.app`
+
+**影响范围**：`vercel.json`、Vercel project settings
+
+### [重构] 数据库切换为 Supabase PostgreSQL
+- Prisma datasource 使用 PostgreSQL
+- 本地开发和线上生产共用 Supabase 数据库
+- 从本地 SQLite 迁移 70 个案件到 Supabase
+- Supabase pooler 运行时连接串加入 `?pgbouncer=true`，避免 Prisma prepared statement 冲突
+
+**影响范围**：`server/prisma/schema.prisma`、`server/.env`、Vercel `DATABASE_URL`
+
+### [修复] 修复 Vercel Serverless 只读文件系统导致的 API 500
+- 知识库上传从 `multer({ dest: 'uploads/' })` 改为 `multer.memoryStorage()`
+- 知识库文件解析优先读取 `file.buffer`
+- 保留 `file.path` 兼容旧的磁盘上传路径
+
+**影响范围**：`server/src/routes/knowledgeRoutes.ts`、`server/src/services/knowledgeService.ts`
+
+---
+
 ## 2026-06-04
 
 ### [新增] 首页支持按案由筛选案件

@@ -14,6 +14,89 @@
 
 ---
 
+## 2026-06-07: 云端部署采用 Vercel + Supabase PostgreSQL
+
+### 背景
+
+NIKA 需要部署到云端 Vercel，并让本地开发和线上生产读取同一批案件数据。原先项目使用本地 SQLite (`server/prisma/dev.db`)，适合单机开发，但不适合 Vercel Serverless：
+
+- Vercel 函数运行环境不提供持久化项目目录
+- SQLite 文件无法作为稳定生产数据库
+- 本地和线上容易出现两套数据
+
+### 选项
+
+1. **继续使用 SQLite 并随部署上传数据库文件**
+   - 优点：改动最少
+   - 缺点：线上不可持久化，部署后数据写入不可靠
+
+2. **自建 PostgreSQL 或 Docker 化后端**
+   - 优点：控制力强
+   - 缺点：运维成本高，偏离 Vercel 轻量部署路径
+
+3. **使用 Supabase PostgreSQL 作为远程数据库**
+   - 优点：适合 Vercel Serverless，部署快，本地和线上可共用一套数据
+   - 缺点：需要处理 pooler 与 Prisma 的连接参数，以及后续 migration 规范
+
+### 决策
+
+选择 **方案 3：Vercel + Supabase PostgreSQL**。
+
+- Prisma datasource 切换为 PostgreSQL
+- 本地和 Vercel production 均通过 `DATABASE_URL` 连接 Supabase
+- Supabase pooler 连接串用于运行时访问
+- pooler URL 必须带 `?pgbouncer=true`，避免 Prisma prepared statement 冲突
+
+### 影响
+
+- 本地不需要安装 Supabase 服务
+- `server/prisma/dev.db` 变成历史/本地备份数据，不再是当前真源
+- 当前案件数据真源是 Supabase PostgreSQL
+- 已迁移 70 个本地案件到 Supabase，仅保留案件名称、阶段和案由等基础信息
+- 后续 schema 变更应建立 Prisma migration 流程，并区分 CLI direct connection 与 runtime pooler connection
+
+---
+
+## 2026-06-07: Vercel Serverless 上传使用内存而非项目目录
+
+### 背景
+
+部署后 `/api/cases` 和 `/api/knowledge` 出现 500。Vercel 日志显示：
+
+```text
+Error: EROFS: read-only file system, mkdir '/var/task/uploads'
+```
+
+根因是知识库路由在模块加载时使用 `multer({ dest: 'uploads/' })`，Multer 尝试在 Vercel 函数的只读项目目录下创建 `uploads`。
+
+### 选项
+
+1. **继续写 `uploads/`**
+   - 优点：本地兼容旧代码
+   - 缺点：Vercel Serverless 不可用
+
+2. **改写到 `/tmp`**
+   - 优点：Serverless 可写
+   - 缺点：仍需管理临时文件清理
+
+3. **改为 `multer.memoryStorage()`**
+   - 优点：不触碰文件系统，最适合当前 10MB 上传限制
+   - 缺点：大文件场景需要注意内存
+
+### 决策
+
+选择 **方案 3：知识库上传使用内存存储**。
+
+同时服务层优先读取 `file.buffer`，并保留 `file.path` 兼容旧的磁盘上传形态。
+
+### 影响
+
+- Vercel API 初始化不再因只读文件系统失败
+- 知识库上传仍保留 10MB 限制
+- 若未来支持更大文件或持久化原始文件，应接入对象存储，而不是写项目目录
+
+---
+
 ## 2026-06-03: 证据管理采用“原始证据 / 派生数据 / 输出文档”三层范式
 
 ### 背景
@@ -111,4 +194,3 @@ NIKA 是长期迭代项目，涉及 AI、法律业务、证据管理、文书生
 ---
 
 *注：每次做出重要技术或产品决策后，请在此处添加记录。重点记录“为什么这么选”。*
-

@@ -58,7 +58,8 @@
 ### 后端
 - Express + TypeScript
 - Prisma ORM
-- SQLite 本地数据库：`server/prisma/dev.db`
+- 生产/当前本地开发数据库：Supabase PostgreSQL
+- 历史本地 SQLite 数据库：`server/prisma/dev.db`
 - 文件解析：PDF / Word / OCR 相关服务
 
 ### AI
@@ -76,6 +77,13 @@
 - 核心表：`Case`
 - 关键字段：`caseType`、`parties`、`caseFactSheet`、`evidenceData`、`claimData`
 - `SUPPORTED_CASE_TYPES` 是案由枚举单一来源，需与前端 case type 常量同步
+
+### 数据库部署
+- Prisma datasource 当前使用 PostgreSQL。
+- 本地开发和 Vercel production 共用远程 Supabase PostgreSQL。
+- 本地不需要安装 Supabase 服务；Node/Prisma 通过 `DATABASE_URL` 连接远程数据库。
+- Supabase pooler 连接串用于运行时访问，并需要 `?pgbouncer=true` 以避免 Prisma prepared statement 冲突。
+- Prisma CLI 的 schema 推送/迁移不宜直接依赖 pooler；后续应建立 direct connection + migration 的规范。
 
 ### 原始证据
 - 原始证据真源：`CaseDocument(category='Evidence')`
@@ -106,7 +114,8 @@
 
 ### 技术约束
 - 没有测试框架配置，当前主要验证方式是 `npm run build` 和手动功能验证
-- Prisma schema 修改后需要同步本地 SQLite，并确认 Prisma Client 已生成
+- Prisma schema 修改后需要同步 Supabase PostgreSQL，并确认 Prisma Client 已生成
+- Vercel Serverless 运行目录只读，上传文件不能写入项目目录；优先使用内存上传或 `/tmp`
 
 ---
 
@@ -121,5 +130,4 @@
 
 ---
 
-*最后更新：2026-06-03*
-
+*最后更新：2026-06-07*
