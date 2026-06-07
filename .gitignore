@@ -29,3 +29,4 @@ samples_docs/
 server/.env
 client/.env
 ocr-service/.venv/
+.vercel

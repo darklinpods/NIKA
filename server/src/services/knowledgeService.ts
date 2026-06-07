@@ -40,8 +40,7 @@ export const knowledgeService = {
         const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
 
         try {
-            // Read file into buffer
-            const fileBuffer = fs.readFileSync(filePath);
+            const fileBuffer = file.buffer || fs.readFileSync(filePath);
 
             // 复用已有功能强大的文档解析服务，直接抽出文本
             const content = await documentService.parseDocumentContent(fileBuffer, file.mimetype, originalName);
@@ -63,7 +62,7 @@ export const knowledgeService = {
             return newDoc;
         } finally {
             // 清理缓存文件
-            if (fs.existsSync(filePath)) {
+            if (filePath && fs.existsSync(filePath)) {
                 fs.unlinkSync(filePath);
             }
         }

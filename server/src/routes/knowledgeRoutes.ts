@@ -4,9 +4,9 @@ import { knowledgeController } from '../controllers/knowledgeController';
 
 const router = express.Router();
 
-// 配置临时存放上传文件的路径和大小
+// Vercel Serverless 文件系统只允许写 /tmp；知识库上传直接用内存避免启动时创建 uploads 目录。
 const upload = multer({
-    dest: 'uploads/',
+    storage: multer.memoryStorage(),
     limits: { fileSize: 10 * 1024 * 1024 } // 限制 10MB
 });
 
